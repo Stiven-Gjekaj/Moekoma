@@ -34,6 +34,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import io.github.stivengjekaj.moekoma.AppContainer
@@ -78,7 +79,9 @@ fun MoekomaRoot(container: AppContainer) {
         val book = reading?.let { id -> container.model.library.collectAsState().value.book(UUID.fromString(id)) }
         Box(Modifier.fillMaxSize()) {
             // A phone shows the tabs at the bottom. A tablet or an unfolded phone shows them at the side.
-            BoxWithConstraints(Modifier.fillMaxSize().background(palette.background)) {
+            // A screen reader does not read the tabs under an open book.
+            val hidden = if (book != null || remote != null) Modifier.clearAndSetSemantics {} else Modifier
+            BoxWithConstraints(Modifier.fillMaxSize().background(palette.background).then(hidden)) {
                 val content: @Composable () -> Unit = {
                     when (tab) {
                         Tab.Library -> LibraryScreen(container.model, container.settings) { reading = it.id.toString() }
