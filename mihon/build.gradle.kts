@@ -32,4 +32,5 @@ dependencies {
     api(libs.jsoup)
     api(libs.androidx.preference)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.webkit)
 }

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
-import android.webkit.WebSettings
 import dalvik.system.DelegateLastClassLoader
 import dalvik.system.PathClassLoader
 import eu.kanade.tachiyomi.network.GET
@@ -193,12 +192,8 @@ class MihonHost(private val context: Context, private val http: OkHttpClient) {
             Injekt.addSingleton<Json>(json)
             // The type must be ProtoBuf. The object ProtoBuf alone has the type of its companion.
             Injekt.addSingleton<ProtoBuf>(ProtoBuf)
-            Injekt.addSingletonFactory { NetworkHelper(app) { userAgent(app) } }
+            Injekt.addSingletonFactory { NetworkHelper(app, { BrowserChecks.userAgent(app) }, BrowserChecks::report) }
             injektReady = true
-        }
-
-        private fun userAgent(context: Context): String = runCatching { WebSettings.getDefaultUserAgent(context) }.getOrElse {
-            "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
         }
 
         /**

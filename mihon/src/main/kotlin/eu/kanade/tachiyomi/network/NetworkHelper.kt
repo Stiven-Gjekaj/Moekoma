@@ -12,12 +12,13 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * The network client that the Mihon extensions use. The class, its package, and its public parts are the same as
- * in Mihon, because the extensions call them by name. Moekoma has no settings for DNS over HTTPS or for logs,
- * and its Cloudflare interceptor finds the browser check but does not pass it.
+ * in Mihon, because the extensions call them by name. Moekoma has no settings for DNS over HTTPS or for logs.
  */
 class NetworkHelper(
     context: Context,
     private val userAgent: () -> String,
+    /** Gets the URL of a site whose browser check needs the user. */
+    onCheck: (String) -> Unit = {},
 ) {
 
     val cookieJar = AndroidCookieJar()
@@ -30,7 +31,7 @@ class NetworkHelper(
         .cache(Cache(directory = File(context.cacheDir, "network_cache"), maxSize = 5L * 1024 * 1024))
         .addInterceptor(UncaughtExceptionInterceptor())
         .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
-        .addInterceptor(CloudflareInterceptor())
+        .addInterceptor(CloudflareInterceptor(context, cookieJar, ::defaultUserAgentProvider, onCheck))
         .build()
 
     /**

@@ -9,10 +9,13 @@ Moekoma changed these files:
 - source/model/SMangaImpl.kt and source/model/SChapterImpl.kt: an empty
   JsonObject replaces JsonObject.EMPTY of mihon.core.common.
 - source/model/FilterList.kt: the Compose annotation @Stable is removed.
-- network/NetworkHelper.kt: written again for Moekoma. It has no Cloudflare
-  web view for Cloudflare, no DNS over HTTPS, and no logs. Its public parts are the same.
-- network/interceptor/CloudflareInterceptor.kt: written again. It finds the
-  browser check of Cloudflare and gives a fault. It does not open a web view.
+- network/NetworkHelper.kt: written again for Moekoma. It has no DNS over
+  HTTPS and no logs. Its public parts are the same.
+- network/interceptor/CloudflareInterceptor.kt and WebViewInterceptor.kt: a
+  check that does not pass goes to a callback of the app, which offers to
+  open the site. The messages are in English text, and not in the strings
+  of Mihon. They have no toast and no coroutine scope.
+- util/system/WebViewUtil.kt: the logs go to android.util.Log.
 - network/interceptor/UncaughtExceptionInterceptor.kt: it also catches a
   LinkageError, such as an error in the start of a class of an extension.
 - AppInfo.kt: written again. It gives the version of Moekoma.
