@@ -10,7 +10,6 @@ Moekoma 1.0.0 has the functions of Asabunko 2.2.0 and the Android extras.
 
 ## Releases up to 1.0.0
 
-- 0.5.0 MOBI and AZW3 books with no DRM.
 - 0.6.0 The folders of the device, which the app watches.
 - 0.7.0 The sources in Settings, which install with no tap, the OPDS
   catalogs, Search, Discover, and the page of a title that compares its

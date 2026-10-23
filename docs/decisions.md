@@ -383,3 +383,16 @@ the form of a function before you write it again here. Do not guess it.
   page at a time. The mode of a PDF is left to right at the start.
 - Reason: the same function as Asabunko, with no second reader. PDFKit of
   iOS has its own view, and Android has none.
+
+## 2026-10-23: Kindle books
+
+- The importer is the importer of Asabunko, in the core module: the PalmDB
+  records, PalmDOC, the trailing entries, the EXTH facts, and the skeletons
+  and the fragments of KF8. A joint file opens its KF8 part.
+- An `<img>` that points to an SVG flow of KF8 becomes the SVG in the page.
+  A browser loads no image that an SVG in an `<img>` points to, so the cover
+  page of a Gutenberg AZW3 was empty. Asabunko has the same `<img>`, and
+  this fix can go back to it.
+- The checks: the unit tests of Asabunko, a test of the SVG, and a live
+  test with the AZW3 and the MOBI of Project Gutenberg with
+  `MOEKOMA_LIVE=1`.
