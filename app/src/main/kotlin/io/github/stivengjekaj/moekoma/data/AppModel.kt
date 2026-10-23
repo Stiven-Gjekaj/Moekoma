@@ -4,9 +4,13 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import io.github.stivengjekaj.moekoma.core.Book
 import io.github.stivengjekaj.moekoma.core.BookFormat
+import io.github.stivengjekaj.moekoma.core.BookImporter
+import io.github.stivengjekaj.moekoma.core.ImportSource
+import io.github.stivengjekaj.moekoma.core.Novel
 import io.github.stivengjekaj.moekoma.core.ComicFiles
 import io.github.stivengjekaj.moekoma.core.ComicImporter
 import io.github.stivengjekaj.moekoma.core.ImportException
@@ -125,19 +129,28 @@ class AppModel(private val context: Context, private val scope: CoroutineScope, 
 
     private fun importDocument(uri: Uri): Pair<String, Result<Book>> {
         val name = displayName(uri)
-        val ext = name.substringAfterLast('.', "").lowercase()
+        val ext = BookImporter.extension(name)
         return name to runCatching {
-            if (ext !in ComicImporter.archiveExtensions) throw ImportException.Unsupported(ext.ifEmpty { "?" })
+            if (ext !in BookImporter.supportedExtensions) throw ImportException.Unsupported(ext.ifEmpty { "?" })
             val resolver = context.contentResolver
+            val source = object : ImportSource {
+                override val fileName = name
+                override fun files() = ArchiveFiles { resolver.openFileDescriptor(uri, "r") ?: throw java.io.IOException("$name cannot be opened.") }
+                override fun bytes() = resolver.openInputStream(uri)?.use { it.readBytes() } ?: throw java.io.IOException("$name cannot be opened.")
+            }
             try {
-                importComic(ArchiveFiles { resolver.openFileDescriptor(uri, "r") ?: throw java.io.IOException("$name cannot be opened.") }, name)
+                importBook(source)
             } catch (e: ArchiveException) {
                 // A file that another app shares can come as a stream, which libarchive cannot seek.
                 // A copy in the cache can.
                 val copy = File(context.cacheDir, "import-${UUID.randomUUID()}.$ext")
                 try {
                     resolver.openInputStream(uri)?.use { input -> copy.outputStream().use { input.copyTo(it) } } ?: throw e
-                    importComic(ArchiveFiles { android.os.ParcelFileDescriptor.open(copy, android.os.ParcelFileDescriptor.MODE_READ_ONLY) }, name)
+                    importBook(object : ImportSource {
+                        override val fileName = name
+                        override fun files() = ArchiveFiles { ParcelFileDescriptor.open(copy, ParcelFileDescriptor.MODE_READ_ONLY) }
+                        override fun bytes() = copy.readBytes()
+                    })
                 } finally {
                     copy.delete()
                 }
@@ -145,6 +158,21 @@ class AppModel(private val context: Context, private val scope: CoroutineScope, 
         }
     }
 
+    private fun importBook(source: ImportSource): Book {
+        val id = UUID.randomUUID()
+        val folder = File(booksFolder, id.toString().uppercase())
+        val imported = BookImporter.importBook(source, folder)
+        imported.cover?.let { runCatching { makeCover(it, File(folder, "cover.jpg")) } }
+        return Book(
+            id = id, title = imported.title, author = imported.author, summary = imported.summary,
+            format = imported.format, fileName = source.fileName, pageCount = imported.pageCount, mode = imported.mode,
+        )
+    }
+
+    /** The chapters of a novel, or null when its file does not load. */
+    fun novel(book: Book): Novel? = runCatching { Novel.load(folder(book)) }.getOrNull()
+
+    /** Imports a folder of images as a comic. */
     private fun importComic(files: ComicFiles, name: String): Book {
         val id = UUID.randomUUID()
         val folder = File(booksFolder, id.toString().uppercase())
