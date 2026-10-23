@@ -121,7 +121,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, onRead: (Book) -> Unit) {
                     Card(padding = PaddingValues(0.dp)) {
                         EmptyArt(
                             title = "Your shelf is empty",
-                            text = "Import an EPUB, a PDF, a comic archive such as CBZ or CBR, a TXT or FB2 file, an HTML page, or a folder of images. Search and Discover come with the sources.",
+                            text = "Import an EPUB, a PDF, a comic archive such as CBZ or CBR, a TXT, FB2, MOBI, or AZW3 file, an HTML page, or a folder of images. Search and Discover come with the sources.",
                         ) { PillButton("Import a book", { pickFiles.launch(importTypes) }) }
                     }
                 }

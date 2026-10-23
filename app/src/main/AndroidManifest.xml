@@ -46,6 +46,9 @@
                 <data android:mimeType="application/x-tar" />
                 <data android:mimeType="application/epub+zip" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/x-mobipocket-ebook" />
+                <data android:mimeType="application/vnd.amazon.ebook" />
+                <data android:mimeType="application/vnd.amazon.mobi8-ebook" />
                 <data android:mimeType="application/x-fictionbook+xml" />
                 <data android:mimeType="application/x-fb2" />
                 <data android:mimeType="text/plain" />
