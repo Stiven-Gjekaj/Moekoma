@@ -9,7 +9,10 @@ import io.github.stivengjekaj.moekoma.data.PdfPageFetcher
 import io.github.stivengjekaj.moekoma.data.PdfPageKeyer
 import io.github.stivengjekaj.moekoma.data.AppModel
 import io.github.stivengjekaj.moekoma.data.Folders
+import io.github.stivengjekaj.moekoma.data.RemoteImageFetcher
+import io.github.stivengjekaj.moekoma.data.RemoteImageKeyer
 import io.github.stivengjekaj.moekoma.data.Settings
+import io.github.stivengjekaj.moekoma.data.Sources
 import io.github.stivengjekaj.moekoma.update.UpdateChecker
 import io.github.stivengjekaj.moekoma.update.UpdateInstaller
 import kotlinx.coroutines.CoroutineScope
@@ -28,13 +31,15 @@ class MoekomaApp : Application(), SingletonImageLoader.Factory {
         container = AppContainer(this)
     }
 
-    /** The image loader of the app also draws the pages of a PDF. */
+    /** The image loader of the app also draws the pages of a PDF and the images of the sources. */
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)
             .components {
                 add(OkHttpNetworkFetcherFactory(callFactory = { container.http }))
                 add(PdfPageFetcher.Factory())
                 add(PdfPageKeyer())
+                add(RemoteImageFetcher.Factory { container.sources.load(it) })
+                add(RemoteImageKeyer())
             }
             .build()
 }
@@ -50,6 +55,7 @@ class AppContainer(app: Application, root: File = File(app.filesDir, "Moekoma"))
     val model = AppModel(app, scope, root, http)
     val folders = Folders(app, model, root, scope)
     val settings = Settings(app)
+    val sources = Sources(app, model, settings, http, scope)
     val updates = UpdateChecker(http)
     val installer = UpdateInstaller(app, http, scope)
 }

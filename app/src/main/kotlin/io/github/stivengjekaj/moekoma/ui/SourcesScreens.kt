@@ -218,7 +218,7 @@ fun EditSourcesScreen(container: AppContainer, onBack: () -> Unit) {
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 PillButton("Save", {
-                    val list = container.model.saveSources(draft)
+                    val list = container.sources.save(draft)
                     draft = SourceList.format(list)
                     saved = "Saved ${list.size} source" + if (list.size == 1) "." else "s."
                 })

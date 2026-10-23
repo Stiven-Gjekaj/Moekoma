@@ -311,7 +311,7 @@ class AppModel(
      * Writes the library a short time after the last change, off the main thread. A page turn changes
      * the library, so many changes become one write.
      */
-    private fun change(change: (Library) -> Library) {
+    internal fun change(change: (Library) -> Library) {
         state.value = change(state.value)
         if (lockedState.value) return
         saveJob?.cancel()

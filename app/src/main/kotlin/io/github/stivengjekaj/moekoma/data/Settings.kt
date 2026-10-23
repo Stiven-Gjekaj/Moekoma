@@ -24,6 +24,8 @@ data class Preferences(
     val text: TextStyle = TextStyle(),
     /** The app asked one time if it can use the E-ink look on this device. */
     val askedEInk: Boolean = false,
+    /** The sources for adults install and show. */
+    val adult: Boolean = false,
 )
 
 /** Keeps the preferences in the shared preferences of Android. */
@@ -38,6 +40,7 @@ class Settings(context: Context) {
         volumeKeys = prefs.getBoolean("volumeKeys", true),
         volumeReversed = prefs.getBoolean("volumeReversed", false),
         askedEInk = prefs.getBoolean("askedEInk", false),
+        adult = prefs.getBoolean("adult", false),
         keepScreenOn = prefs.getBoolean("keepScreenOn", true),
         readListOrder = prefs.getString("readListOrder", null)?.let { name -> ReadListOrder.entries.firstOrNull { it.name == name } } ?: ReadListOrder.Added,
         text = TextStyle(
@@ -57,6 +60,7 @@ class Settings(context: Context) {
             .putBoolean("volumeKeys", next.volumeKeys)
             .putBoolean("volumeReversed", next.volumeReversed)
             .putBoolean("askedEInk", next.askedEInk)
+            .putBoolean("adult", next.adult)
             .putBoolean("keepScreenOn", next.keepScreenOn)
             .putString("readListOrder", next.readListOrder.name)
             .putString("text.family", next.text.family.name)
