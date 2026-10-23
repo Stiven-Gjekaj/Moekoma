@@ -1,0 +1,4 @@
+<resources>
+    <!-- The CSS that the web view of a chapter shows now. -->
+    <item name="moekoma_css" type="id" />
+</resources>

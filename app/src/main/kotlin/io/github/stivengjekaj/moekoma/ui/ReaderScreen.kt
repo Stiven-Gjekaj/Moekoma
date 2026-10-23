@@ -397,7 +397,7 @@ fun KeepScreenOn(on: Boolean) {
 
 /** The bars of the system show with the bars of the reader. */
 @Composable
-private fun SystemBars(visible: Boolean) {
+fun SystemBars(visible: Boolean) {
     val view = LocalView.current
     val window = (view.context as? Activity)?.window ?: return
     DisposableEffect(visible) {
