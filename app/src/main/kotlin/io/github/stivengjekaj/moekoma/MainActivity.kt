@@ -25,6 +25,12 @@ class MainActivity : ComponentActivity() {
         importShared(intent)
     }
 
+    /** The library writes at once when the app goes to the background, because Android can stop it there. */
+    override fun onStop() {
+        container.model.flush()
+        super.onStop()
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean = pageKey(event) || super.onKeyDown(keyCode, event)
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean = pageKey(event) || super.onKeyUp(keyCode, event)

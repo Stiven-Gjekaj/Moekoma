@@ -16,6 +16,8 @@ import io.github.stivengjekaj.moekoma.core.NewerFormException
 import io.github.stivengjekaj.moekoma.core.ReadingMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +38,7 @@ class AppModel(private val context: Context, private val scope: CoroutineScope, 
     private val booksFolder = File(root, "Books")
     private val state = MutableStateFlow(Library())
     private val saving = Mutex()
+    private var saveJob: Job? = null
 
     val library: StateFlow<Library> = state.asStateFlow()
 
@@ -45,14 +48,32 @@ class AppModel(private val context: Context, private val scope: CoroutineScope, 
     private val importState = MutableStateFlow<ImportProgress?>(null)
     val importing: StateFlow<ImportProgress?> = importState.asStateFlow()
 
+    private val lockedState = MutableStateFlow(false)
+
+    /**
+     * True when the library file did not load. Then no save writes over it, until the user
+     * restores a backup or starts a new library.
+     */
+    val libraryLocked: StateFlow<Boolean> = lockedState.asStateFlow()
+
     init {
         try {
             state.value = LibraryStore.load(libraryFile)
         } catch (e: NewerFormException) {
-            fault.value = "A newer version of Moekoma wrote this library. Update the app to open it."
+            lockedState.value = true
+            fault.value = "A newer version of Moekoma wrote this library. Update the app to open it. Moekoma does not change the file."
         } catch (e: Exception) {
-            fault.value = "The library file cannot be read."
+            lockedState.value = true
+            val copy = runCatching { LibraryStore.keepBroken(libraryFile) }.getOrNull()
+            fault.value = "The library file cannot be read. Moekoma does not change it" + (copy?.let { ", and keeps a copy as ${it.name}" } ?: "") +
+                ". Start a new library in Settings."
         }
+    }
+
+    /** Starts an empty library in place of a file that did not load. The copy of the old file stays. */
+    fun startNewLibrary() {
+        lockedState.value = false
+        change { Library() }
     }
 
     // Books
@@ -151,23 +172,43 @@ class AppModel(private val context: Context, private val scope: CoroutineScope, 
 
     // Store
 
+    /**
+     * Writes the library a short time after the last change, off the main thread. A page turn changes
+     * the library, so many changes become one write.
+     */
     private fun change(change: (Library) -> Library) {
         state.value = change(state.value)
+        if (lockedState.value) return
+        saveJob?.cancel()
+        saveJob = scope.launch {
+            delay(SAVE_DELAY)
+            write(state.value)
+        }
+    }
+
+    /** Writes the library now, such as when the app goes to the background. */
+    fun flush() {
+        val job = saveJob ?: return
+        if (lockedState.value || !job.isActive) return
+        job.cancel()
+        saveJob = null
         val snapshot = state.value
-        scope.launch(Dispatchers.IO) {
-            saving.withLock {
-                // A newer change saves after this one, so an old state does not win.
-                if (snapshot !== state.value) return@withLock
-                try {
-                    LibraryStore.save(snapshot, libraryFile)
-                } catch (e: Exception) {
-                    fault.value = "The library was not saved: ${e.message}"
-                }
+        scope.launch { write(snapshot) }
+    }
+
+    private suspend fun write(snapshot: Library) = withContext(Dispatchers.IO) {
+        saving.withLock {
+            try {
+                LibraryStore.save(snapshot, libraryFile)
+            } catch (e: Exception) {
+                fault.value = "The library was not saved: ${e.message}"
             }
         }
     }
 
     companion object {
+        private const val SAVE_DELAY = 400L
+
         /** Writes a JPEG of the first page with the long side at most [maxPixels]. */
         fun makeCover(page: File, cover: File, maxPixels: Int = 600) {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
