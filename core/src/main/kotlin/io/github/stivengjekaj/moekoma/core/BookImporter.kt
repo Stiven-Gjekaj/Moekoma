@@ -28,7 +28,10 @@ interface ImportSource {
 object BookImporter {
     val novelExtensions = setOf("epub", "txt", "text", "fb2", "html", "htm", "xhtml")
 
-    val supportedExtensions: Set<String> get() = ComicImporter.archiveExtensions + novelExtensions
+    /** The app opens a PDF with the renderer of Android, so the core only names it. */
+    const val PDF = "pdf"
+
+    val supportedExtensions: Set<String> get() = ComicImporter.archiveExtensions + novelExtensions + PDF
 
     fun extension(fileName: String) = fileName.substringAfterLast('.', "").lowercase()
 

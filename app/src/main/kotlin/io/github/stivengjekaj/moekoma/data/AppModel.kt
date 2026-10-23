@@ -88,6 +88,9 @@ class AppModel(private val context: Context, private val scope: CoroutineScope, 
 
     fun pages(book: Book): List<File> = ComicImporter.pages(folder(book))
 
+    /** The PDF of a book, which the reader opens and closes. */
+    fun pdf(book: Book): File = File(folder(book), PdfImporter.FILE_NAME)
+
     fun update(id: UUID, change: (Book) -> Book) = change { it.update(id, change) }
 
     fun setDefaultMode(mode: ReadingMode) = change { it.copy(defaultMode = mode) }
@@ -161,6 +164,14 @@ class AppModel(private val context: Context, private val scope: CoroutineScope, 
     private fun importBook(source: ImportSource): Book {
         val id = UUID.randomUUID()
         val folder = File(booksFolder, id.toString().uppercase())
+        if (BookImporter.extension(source.fileName) == BookImporter.PDF) {
+            // Most PDFs are western documents and scans, so they open from the left.
+            val pdf = PdfImporter.importBook(source.bytes(), source.fileName, folder)
+            return Book(
+                id = id, title = pdf.title, author = pdf.author, format = BookFormat.Pdf,
+                fileName = source.fileName, pageCount = pdf.pageCount, mode = ReadingMode.LeftToRight,
+            )
+        }
         val imported = BookImporter.importBook(source, folder)
         imported.cover?.let { runCatching { makeCover(it, File(folder, "cover.jpg")) } }
         return Book(
