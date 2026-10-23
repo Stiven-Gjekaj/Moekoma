@@ -87,7 +87,7 @@ the form of a function before you write it again here. Do not guess it.
 - The app imports the same files as Asabunko: CBZ, CBR, CB7, CBT, ZIP, RAR,
   RAR5, 7z, TAR, folders of images, EPUB, TXT, FB2, HTML, and PDF.
 - It also reads MOBI and AZW3 books with no DRM. This is on the roadmap of
-  Asabunko too.
+  Asabunko too. It comes after 1.0.0, see "Parity with Asabunko first".
 - The archives open with libarchive, through the Android library of
   zhanghai, under the Apache License 2.0. Android has no libarchive of the
   system.
@@ -154,12 +154,13 @@ the form of a function before you write it again here. Do not guess it.
   Apache License 2.0. The host follows the host of Asabunko. The html
   imports use Jsoup, which SwiftSoup copies.
 - The canvas imports of Aidoku use the Bitmap and the Canvas of Android. The
-  js imports use a web view.
+  js imports use a web view. They come after 1.0.0, see "Parity with
+  Asabunko first".
 - Reason: JavaScriptCore is not on Android. QuickJS is small and fast, and
   it runs the same bundle. Jsoup is the library that the Aidoku sources
   expect.
 
-## 2026-10-23: The Cloudflare challenge
+## 2026-10-23: The Cloudflare challenge (moved after 1.0.0 on 2026-10-23, see "Parity with Asabunko first")
 
 - When a site gives a Cloudflare challenge, the app opens it in a web view.
   The user passes the challenge, and the web view closes.
@@ -170,7 +171,7 @@ the form of a function before you write it again here. Do not guess it.
 - Reason: the owner asked for each Android extra. Android has a full web
   view with its cookie store, and the same solution serves each source.
 
-## 2026-10-23: Downloads in the background
+## 2026-10-23: Downloads in the background (moved after 1.0.0 on 2026-10-23, see "Parity with Asabunko first")
 
 - The user downloads the chapters of an online book to read with no network.
 - The downloads run in WorkManager, with a notification that shows the
@@ -222,3 +223,26 @@ the form of a function before you write it again here. Do not guess it.
 - It has the rules for agents and the form of the documents of Asabunko:
   AGENTS.md, docs/decisions.md, TODO.md, CHANGELOG.md, and README.md.
 - Reason: the owner asked for the same form.
+
+## 2026-10-23: Parity with Asabunko first
+
+- 1.0.0 has each function of Asabunko 1.0.1 and the functions that only
+  Android permits:
+  - the Mihon extensions on the device, and the Kotatsu parsers as a plugin.
+  - the E-ink look, the volume keys, and the folders that the app watches.
+  - the updates inside the app, and the import of a Mihon backup.
+- These functions come after 1.0.0. Each one comes when Asabunko has it,
+  with the form of Asabunko:
+  - the Cloudflare challenge in a web view, with executeInWebView of
+    Paperback.
+  - MOBI and AZW3 books.
+  - the downloads of chapters in the background.
+  - the filters and the settings of the sources.
+  - the canvas and js imports of Aidoku.
+- This replaces the order of the releases in "The releases and the
+  updates". The new order is in [TODO.md](../TODO.md).
+- Until the Cloudflare web view comes, a Mihon source behind a challenge
+  does not work on the device. A Suwayomi server can run it.
+- Reason: the owner builds these functions in Asabunko now. One design in
+  each of the two apps keeps them the same and does not do the work two
+  times.
