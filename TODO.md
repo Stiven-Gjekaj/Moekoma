@@ -10,7 +10,6 @@ Moekoma 1.0.0 has the functions of Asabunko 2.2.0 and the Android extras.
 
 ## Releases up to 1.0.0
 
-- 0.10.0 The Kotatsu parsers as a plugin.
 - 0.11.0 LNReader plugins, with their filters, their settings, and gRPC.
 - 0.12.0 Suwayomi servers.
 - 0.13.0 Aidoku sources, with their filters, their settings, and the canvas

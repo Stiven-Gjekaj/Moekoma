@@ -7,6 +7,17 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.10.0 (2026-10-24)
+
+- Run the Kotatsu parsers. Paste the URL of a repository of the parsers,
+  such as https://github.com/Gekkoushi/plugin, in Settings, Sources.
+  Moekoma takes its latest plugin and adds its English sources.
+- Search, Discover, and the title page ask these sources too.
+- Each installed source shows the name of its list.
+- A title page asks at most 24 other sources, so it opens fast with many
+  sources.
+- A fault with no message names the kind of error.
+
 ## 0.9.0 (2026-10-23)
 
 - Pass the browser check of Cloudflare. Moekoma passes most checks with no

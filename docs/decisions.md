@@ -133,7 +133,7 @@ the form of a function before you write it again here. Do not guess it.
 - Reason: this is the largest advantage of Android. iOS cannot run an APK, so
   Asabunko needs a Suwayomi server for these sources.
 
-## 2026-10-23: The Kotatsu parsers as a plugin
+## 2026-10-23: The Kotatsu parsers as a plugin (replaced on 2026-10-24, see "The Kotatsu parsers of Gekkoushi")
 
 - The Kotatsu parsers are a library of about 1000 sources. They are not in
   the APK of Moekoma.
@@ -531,3 +531,45 @@ the form of a function before you write it again here. Do not guess it.
   a real check depends on the network and on Cloudflare.
 - The installed sources move to a screen of their own with a filter.
   Reason: a repository such as Keiyoushi installs hundreds of sources.
+
+## 2026-10-24: The Kotatsu parsers of Gekkoushi
+
+- KotatsuApp archived the Kotatsu parsers in November 2025. The maintained
+  fork is Gekkoushi/plugin-source, under the GPL 3. Its API is a separate
+  library, UsagiApp/Tsuki. Its CI publishes the parsers as a dex jar in the
+  releases of Gekkoushi/plugin.
+- Moekoma uses that jar as the plugin, and its CI does not build one.
+  Reason: the fork already makes the plugin, and the plugin changes often.
+  A copy of the build in Moekoma would only be older.
+- The jar holds only the parsers. Tsuki is in the app, in the module
+  `:tsuki`, from the tag 1.0.5, which is the version of the jar. A new jar
+  for a newer Tsuki needs a new release of Moekoma.
+- The user pastes the URL of the repository, such as
+  `https://github.com/Gekkoushi/plugin`, or the URL of a jar. The app takes
+  the jar of the latest release. The jar has no signature, so the trust is
+  the URL that the user pasted.
+- The app gives the parsers the client of the Mihon extensions, with the
+  cookies and the browser check, a web view for their JavaScript, the
+  bitmaps of Android for the images that a site mixes, and the default of
+  each setting. The client adds the headers of the parser of a request, then
+  calls its interceptor, as Kotatsu does. An image gets the site as its
+  referer, as in Kotatsu.
+- The kind is "kotatsu", which Asabunko does not know, so the library file
+  keeps it in `moekomaKind`. A broken parser and a parser of novels do not
+  show.
+- R8 must keep Tsuki as it is. With "allowoptimization", R8 made an open
+  method final, and a parser that overrides it did not load. The release
+  build is the check.
+- With the lists of Keiyoushi and Gekkoushi, the app installs 576 sources.
+  A title page now asks at most 24 other sources: the sources of the books
+  first. Reason: it asked 575 sources each time a title opened. An
+  installed source names its list, because two lists can have a source with
+  the same name.
+- The checks: core tests of the jar of a release and of the kind; a live
+  device test that loads the plugin (915 sources, 263 in English) and reads
+  a page of MangaPill; on the emulator, the save of the list (200 English
+  sources in about 30 seconds), a title page and a chapter of MangaPill in
+  the debug and the release builds.
+- The emulator stopped two times in a long session: the system server did
+  not answer, and a test waited. A new start of the emulator fixed it. The
+  checks run on a new emulator before each release.
