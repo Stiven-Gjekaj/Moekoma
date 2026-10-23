@@ -7,6 +7,25 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.8.0 (2026-10-23)
+
+- Run Mihon extensions on your device. Paste the URL of a repository, such
+  as Keiyoushi, in Settings, Sources. Moekoma installs its English sources
+  with no tap. Each APK must be signed by the key of its repository.
+- Search: type a title, and Moekoma asks all your sources at the same time.
+  A title that many sources have shows one time, with the number of its
+  sources.
+- Discover: a banner of popular titles, and rows of the popular titles and
+  the new chapters of your sources.
+- The page of a title compares its sources and chooses the source with the
+  most chapters. You can choose another source. A long list of chapters
+  shows by volume or in parts of 50.
+- Read a series one chapter at a time. The buttons for the next chapter
+  show on the last page. A series that you open stays in Continue reading.
+- Add a series to the read list with the bookmark.
+- A site with the browser check of Cloudflare gives a clear message. The
+  check comes in the next version.
+
 ## 0.7.0 (2026-10-23)
 
 - Add your sources in Settings, Sources. Paste one URL on each line.

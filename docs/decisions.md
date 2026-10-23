@@ -118,7 +118,7 @@ the form of a function before you write it again here. Do not guess it.
 - The app has no source in it. The user adds the URL of a list.
 - Reason: the owner asked for all sources that the app can support.
 
-## 2026-10-23: The Mihon extensions on the device
+## 2026-10-23: The Mihon extensions on the device (details on 2026-10-23, see "Mihon extensions, Search, and Discover")
 
 - A Mihon extension is an APK. Moekoma downloads the APK and loads its code
   in a class loader of its own. The extension is not installed in the
@@ -447,3 +447,56 @@ the form of a function before you write it again here. Do not guess it.
   and a test on the emulator with `scripts/test-server.py` of Asabunko at
   `http://10.0.2.2:8765/opds/catalog`. The password, the covers, the search,
   the stream reader, and the download work.
+
+## 2026-10-23: Mihon extensions, Search, and Discover
+
+- The module `:mihon` has the source API of Mihon (commit d001e6f): the
+  source classes, the models, the network helpers, the rate limits, and
+  Jsoup helpers. The packages and the names stay as in Mihon, because the
+  extensions call them by name. `mihon/NOTICE` lists the files that Moekoma
+  changed. The app gives the extensions OkHttp with Brotli and Zstandard,
+  kotlinx.serialization (JSON and ProtoBuf), coroutines, RxJava 1, Injekt,
+  Jsoup, and AndroidX Preference, as Mihon does.
+- An APK is a file of the app in `files/Mihon`. It loads with a
+  DelegateLastClassLoader, as in Mihon. Android 14 loads code only from a
+  file that the app cannot write, so each APK is read only.
+- An APK installs only when it asks for the feature `tachiyomi.extension`,
+  is for the library 1.4 or 1.6, and the key of its repository signed it.
+  The key is the `signingKeyFingerprint` of `repo.json`, or the key of the
+  new index. Reason: the user trusts the repository that they pasted, not
+  each file that it points to.
+- A repository has three forms: the old `index.min.json` with `repo.json`,
+  a `repo.json` that points to `index.pb`, and the new index in Protocol
+  Buffers. Keiyoushi keeps a stub "Outdated App" in its old index, so the
+  app follows `index_v2`. The core reads all three, with tests.
+- The library file of Asabunko does not know the kind "mihon". Moekoma keeps
+  it in `moekomaKind`, and "kind" is empty, so that Asabunko reads the file.
+  A kind that Moekoma does not know reads as no kind, and the app finds the
+  kind again.
+- A save of the source list installs the English sources of each list, as
+  in Asabunko 2.2.0. For Keiyoushi this is 376 sources in 365 APKs, 28.9 MB
+  on the emulator, and the install took about 70 seconds. The user removes
+  a source in its list.
+- Only the APKs of the 24 sources that the user used last stay in the
+  memory. Reason: Search loads each installed source.
+- An extension can keep facts in the memo of a series or a chapter
+  (library 1.6). Moekoma keeps the memo in the ID, after a line break, so
+  that the source gets it back.
+- Many extensions put their own interceptors before Mihon's
+  `CloudflareInterceptor`, so the client has one with that name. In this
+  release it finds the browser check and gives a clear fault. The web view
+  comes in 0.9.0.
+- An error of an extension, such as a class that does not start, is a
+  fault of its source. It does not stop the app.
+- Search, Discover, the title page, and the reader of a series are the
+  screens of Asabunko 2.2.0: Search asks six sources at the same time and
+  joins one title of many sources; the title page compares the sources and
+  chooses the source with the most chapters; Discover asks the first ten
+  sources. With the 376 sources of Keiyoushi, a search for "Frieren" took
+  about two minutes for all sources and gave 192 titles. The first results
+  came after about 20 seconds.
+- The readers cover the tabs, so that a tab keeps its open screens.
+- The checks: the core tests of the search, the chapter groups, the
+  languages, the merge of chapters, the index, and the kinds; a live core
+  test with the index of Keiyoushi; and a live device test that installs
+  MangaDex and reads a page (`-Pandroid.testInstrumentationRunnerArguments.live=1`).

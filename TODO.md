@@ -10,8 +10,6 @@ Moekoma 1.0.0 has the functions of Asabunko 2.2.0 and the Android extras.
 
 ## Releases up to 1.0.0
 
-- 0.8.0 Mihon extensions on the device, which install with no tap, Search,
-  Discover, and the page of a title that compares its sources.
 - 0.9.0 The browser check of Cloudflare in a web view, for each source.
 - 0.10.0 The Kotatsu parsers as a plugin.
 - 0.11.0 LNReader plugins, with their filters, their settings, and gRPC.

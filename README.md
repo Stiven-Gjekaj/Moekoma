@@ -60,13 +60,18 @@ Moekoma has no sources in it. Your books stay on your device.
 - "Open with" and "Share" from another app import the file
 - Folders that Moekoma watches: each new book in them comes into the
   library, also when the app is closed
+- Mihon extensions on the device: paste a repository, such as Keiyoushi,
+  and Moekoma installs its English sources. Search asks all of them at the
+  same time, and Discover shows their popular and new titles
+- A title page that compares the sources of a title and chooses the source
+  with the most chapters, with the chapters by volume or in parts of 50
 - OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
   read a comic at once, or download a book. A password stays encrypted on
   the device
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 
-The next functions are in [TODO.md](TODO.md): Mihon extensions on the device, the Kotatsu
+The next functions are in [TODO.md](TODO.md): the browser check of Cloudflare, the Kotatsu
 parsers, LNReader, Suwayomi, Aidoku, and Paperback.
 
 ## Install
@@ -96,6 +101,7 @@ core/        the parts that do not need a screen, with their tests
 assets/brand/   the icon, the banner, and the scripts that make them from the logo of Asabunko
 docs/        the reason behind each choice
 scripts/     a test server for the sources
+mihon/       the source API of Mihon, so that the Mihon extensions run
 ```
 
 ## Building
