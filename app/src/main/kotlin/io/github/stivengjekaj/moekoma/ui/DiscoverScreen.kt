@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import io.github.stivengjekaj.moekoma.data.BrowserChecks
 import io.github.stivengjekaj.moekoma.AppContainer
 import io.github.stivengjekaj.moekoma.data.DiscoverFeed
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
@@ -63,6 +64,9 @@ fun DiscoverScreen(container: AppContainer, openTitle: (TitleRoute) -> Unit, ope
     val featured by feed.featured.collectAsState()
     val loading by feed.loading.collectAsState()
     LaunchedEffect(library.installed.map { it.id }) { feed.load() }
+    // A passed browser check asks the sources again.
+    val passes by BrowserChecks.passes.collectAsState()
+    LaunchedEffect(passes) { if (passes > 0) feed.load(force = true) }
 
     fun open(item: DiscoverFeed.Item) = openTitle(TitleRoute(listOf(item.hit), findOthers = true))
 

@@ -75,6 +75,7 @@ import coil3.compose.AsyncImage
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
+import io.github.stivengjekaj.moekoma.data.BrowserChecks
 import io.github.stivengjekaj.moekoma.AppContainer
 import io.github.stivengjekaj.moekoma.core.InstalledSource
 import io.github.stivengjekaj.moekoma.core.NotAFeedException
@@ -293,7 +294,8 @@ fun OpdsFeedScreen(container: AppContainer, source: SourceLink, url: String, tit
 
     suspend fun fetch(address: String) = Opds.parse(container.model.fetch(address, source), address)
 
-    LaunchedEffect(url) {
+    val passes by BrowserChecks.passes.collectAsState()
+    LaunchedEffect(url, passes) {
         try {
             feed = fetch(url)
             fault = null
@@ -462,3 +464,4 @@ fun PublicationScreen(container: AppContainer, source: SourceLink, book: OpdsPub
         }
     }
 }
+

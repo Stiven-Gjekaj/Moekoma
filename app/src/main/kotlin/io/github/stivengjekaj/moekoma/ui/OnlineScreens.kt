@@ -76,6 +76,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import io.github.stivengjekaj.moekoma.data.BrowserChecks
 import io.github.stivengjekaj.moekoma.AppContainer
 import io.github.stivengjekaj.moekoma.core.Book
 import io.github.stivengjekaj.moekoma.core.ChapterGroups
@@ -175,6 +176,8 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
     var range by remember { mutableStateOf<Int?>(null) }
     var sourceMenu by remember { mutableStateOf(false) }
     var reload by remember { mutableStateOf(0) }
+    // A passed browser check loads the page again.
+    val passes by BrowserChecks.passes.collectAsState()
 
     fun installedOf(hit: SearchHit) = library.installed.firstOrNull { it.id == hit.source }
     fun bookOf(hit: SearchHit): Book? = installedOf(hit)?.let { library.book(sources.originOf(it, hit.series.id)) }
@@ -198,7 +201,7 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
 
     // Asks each source for the title at the same time. The source of a book in the library wins, so that the place
     // of the user stays. Else the source with the most chapters wins.
-    LaunchedEffect(reload) {
+    LaunchedEffect(reload, passes) {
         answers.clear()
         faults.clear()
         if (!userChose) hits.firstOrNull { bookOf(it) != null }?.let { chosen = it }
@@ -504,6 +507,9 @@ fun OnlineSourceScreen(container: AppContainer, installed: InstalledSource, open
         }
     }
     LaunchedEffect(latest, searching) { loadPage(1) }
+    // A passed browser check loads a list with a fault again.
+    val passes by BrowserChecks.passes.collectAsState()
+    LaunchedEffect(passes) { if (fault != null) loadPage(1) }
 
     SubScreen(installed.info.name, onBack) {
         LazyVerticalGrid(

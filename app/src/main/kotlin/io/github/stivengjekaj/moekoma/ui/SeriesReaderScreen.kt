@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import io.github.stivengjekaj.moekoma.data.BrowserChecks
 import io.github.stivengjekaj.moekoma.AppContainer
 import io.github.stivengjekaj.moekoma.core.OnlineChapter
 import io.github.stivengjekaj.moekoma.core.OnlineSeries
@@ -65,7 +66,8 @@ fun SeriesReaderScreen(container: AppContainer, bookId: UUID, onClose: () -> Uni
     var attempt by remember { mutableIntStateOf(0) }
     val count = novel?.chapters?.size ?: 0
 
-    LaunchedEffect(chapter, attempt) {
+    val passes by BrowserChecks.passes.collectAsState()
+    LaunchedEffect(chapter, attempt, passes) {
         pages = null
         fault = null
         val item = novel?.chapters?.getOrNull(chapter)
