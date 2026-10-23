@@ -33,3 +33,6 @@
     rx.internal.util.atomic.LinkedQueueNode consumerNode;
 }
 -keepclasseswithmembers class okhttp3.MultipartBody$Builder { *; }
+# Zstandard finds its Java classes by name from native code.
+-keep class com.squareup.zstd.** { *; }
+-keep,allowoptimization class org.brotli.** { public protected *; }
