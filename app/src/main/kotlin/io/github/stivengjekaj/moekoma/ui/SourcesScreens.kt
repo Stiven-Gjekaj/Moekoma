@@ -37,6 +37,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -75,6 +76,7 @@ import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
 import io.github.stivengjekaj.moekoma.AppContainer
+import io.github.stivengjekaj.moekoma.core.InstalledSource
 import io.github.stivengjekaj.moekoma.core.NotAFeedException
 import io.github.stivengjekaj.moekoma.core.Opds
 import io.github.stivengjekaj.moekoma.core.OpdsFeed
@@ -96,6 +98,9 @@ sealed interface SettingsRoute {
     data class Feed(val source: SourceLink, val url: String, val title: String) : SettingsRoute
     data class Publication(val source: SourceLink, val publication: OpdsPublication) : SettingsRoute
     data class Detect(val source: SourceLink) : SettingsRoute
+    data class SourceList(val link: SourceLink) : SettingsRoute
+    data class Source(val source: InstalledSource) : SettingsRoute
+    data class Title(val route: TitleRoute) : SettingsRoute
 }
 
 /** The pages of a book that Moekoma reads from the network and does not keep. */
@@ -123,14 +128,29 @@ private val SourceKind?.icon: ImageVector
 fun SourcesHomeScreen(container: AppContainer, open: (SettingsRoute) -> Unit, onBack: () -> Unit) {
     val library by container.model.library.collectAsState()
     val prefs by container.settings.preferences.collectAsState()
+    val setup by container.sources.setup.collectAsState()
     val palette = LocalPalette.current
     SubScreen("Sources", onBack) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = Gutter, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
             Section(
                 null,
-                footer = "Paste the URLs of your catalogs and source lists. Moekoma reads OPDS catalogs now. Search, Discover, and the other kinds of source come in the next versions.",
+                footer = "Paste the URLs of your catalogs and source lists. Moekoma installs the English sources of each list, and Search and Discover ask them. Moekoma runs Mihon extensions and reads OPDS catalogs now. The other kinds of source come in the next versions.",
             ) {
                 LinkRow(if (library.sources.isEmpty()) "Add sources" else "Edit the source list", bold = true, color = palette.accent) { open(SettingsRoute.EditSources) }
+            }
+            setup?.let { (done, total) ->
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Installing sources: $done of $total", style = MaterialTheme.typography.bodyMedium)
+                    LinearProgressIndicator(progress = { done.toFloat() / maxOf(total, 1) }, color = palette.accent, trackColor = palette.surfaceHigh, modifier = Modifier.fillMaxWidth())
+                }
+            }
+            if (library.installed.isNotEmpty()) {
+                Section("Installed (${library.installed.size})", footer = "Open a source to see its popular titles and to search it alone.") {
+                    library.installed.sortedBy { it.info.name.lowercase() }.forEachIndexed { index, source ->
+                        if (index > 0) Divider()
+                        InstalledRow(source) { open(SettingsRoute.Source(source)) }
+                    }
+                }
             }
             val kinds: List<SourceKind?> = SourceKind.entries + listOf(null)
             for (kind in kinds) {
@@ -143,13 +163,16 @@ fun SourcesHomeScreen(container: AppContainer, open: (SettingsRoute) -> Unit, on
                             open(
                                 when (link.kind) {
                                     SourceKind.Opds -> SettingsRoute.Feed(link, link.url, link.name ?: link.host ?: "Catalog")
-                                    null -> SettingsRoute.Detect(link)
+                                    SourceKind.Mihon -> SettingsRoute.SourceList(link)
                                     else -> SettingsRoute.Detect(link)
                                 },
                             )
                         }
                     }
                 }
+            }
+            Section(null, footer = "A list marks some sources for adults. Moekoma does not install them and hides them until you turn this on.") {
+                Toggle("Show sources for adults", prefs.adult) { on -> container.settings.update { it.copy(adult = on) } }
             }
         }
     }
@@ -192,6 +215,7 @@ fun EditSourcesScreen(container: AppContainer, onBack: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 listOf(
+                    "A repository of Mihon extensions, such as Keiyoushi" to "https://.../index.min.json or repo.json",
                     "An OPDS catalog: Komga, Kavita, Calibre-web" to "https://.../opds/v1.2/catalog",
                     "LNReader plugins, for web novels" to "https://.../plugins.min.json",
                     "Aidoku sources" to "https://.../index.min.json",

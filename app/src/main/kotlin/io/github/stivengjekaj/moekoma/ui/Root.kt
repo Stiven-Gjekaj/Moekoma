@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CollectionsBookmark
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
@@ -27,6 +29,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -42,9 +45,11 @@ import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import io.github.stivengjekaj.moekoma.ui.theme.MoekomaTheme
 import java.util.UUID
 
-/** The tabs of the app. Browse comes with the sources. */
+/** The tabs of the app, as in Asabunko: Library, Discover, Search, and Settings. */
 private enum class Tab(val label: String, val icon: ImageVector) {
     Library("Library", Icons.Outlined.CollectionsBookmark),
+    Discover("Discover", Icons.Outlined.AutoAwesome),
+    Search("Search", Icons.Outlined.Search),
     Settings("Settings", Icons.Outlined.Settings),
 }
 
@@ -60,19 +65,30 @@ fun MoekomaRoot(container: AppContainer) {
         val fault by container.model.fault.collectAsState()
         val palette = LocalPalette.current
 
+        val scope = rememberCoroutineScope()
+        val search = remember { SearchModel(container, scope) }
+        // The title pages that Discover and Search opened, the newest last.
+        var discoverStack by remember { mutableStateOf(listOf<TitleRoute>()) }
+        var searchStack by remember { mutableStateOf(listOf<TitleRoute>()) }
+        var settingsStack by remember { mutableStateOf(listOf<SettingsRoute>()) }
+        val read: (UUID) -> Unit = { reading = it.toString() }
+        val openSources = { tab = Tab.Settings; settingsStack = listOf(SettingsRoute.Sources) }
+
+        // The readers cover the tabs, so that each tab keeps its open screens.
         val book = reading?.let { id -> container.model.library.collectAsState().value.book(UUID.fromString(id)) }
-        if (book != null) {
-            when (book.format) {
-                BookFormat.Novel -> NovelReaderScreen(container.model, container.settings, book.id) { reading = null }
-                else -> ReaderScreen(container.model, book.id, prefs) { reading = null }
-            }
-        } else {
+        Box(Modifier.fillMaxSize()) {
             // A phone shows the tabs at the bottom. A tablet or an unfolded phone shows them at the side.
             BoxWithConstraints(Modifier.fillMaxSize().background(palette.background)) {
                 val content: @Composable () -> Unit = {
                     when (tab) {
                         Tab.Library -> LibraryScreen(container.model, container.settings) { reading = it.id.toString() }
-                        Tab.Settings -> SettingsScreen(container, newer) { remote = it }
+                        Tab.Discover -> TitleStack(container, discoverStack, { discoverStack = it }, read) {
+                            DiscoverScreen(container, { discoverStack = discoverStack + it }, openSources)
+                        }
+                        Tab.Search -> TitleStack(container, searchStack, { searchStack = it }, read) {
+                            SearchScreen(container, search, { searchStack = searchStack + it }, openSources)
+                        }
+                        Tab.Settings -> SettingsScreen(container, newer, settingsStack, { settingsStack = it }, read) { remote = it }
                     }
                 }
                 if (maxWidth >= 600.dp) {
@@ -112,9 +128,16 @@ fun MoekomaRoot(container: AppContainer) {
                     }
                 }
             }
+            if (book != null) {
+                when (book.format) {
+                    BookFormat.Novel -> NovelReaderScreen(container.model, container.settings, book.id) { reading = null }
+                    BookFormat.Series -> SeriesReaderScreen(container, book.id) { reading = null }
+                    else -> ReaderScreen(container.model, book.id, prefs) { reading = null }
+                }
+            }
         }
 
-        // The reader of a remote book covers the tabs, so that Settings keeps its open screens.
+        // The reader of a remote book covers the tabs too.
         remote?.let { open ->
             PageReader(open.title, open.pages, 0, remoteMode, prefs, onPage = {}, onMode = { remoteMode = it }, onClose = { remote = null })
         }
@@ -138,6 +161,17 @@ fun MoekomaRoot(container: AppContainer) {
                 dismissButton = { TextButton(onClick = { container.settings.update { it.copy(askedEInk = true) } }) { Text("Not now") } },
             )
         }
+    }
+}
+
+/** A tab with its title pages over it. Back closes the last one. */
+@Composable
+private fun TitleStack(
+    container: AppContainer, stack: List<TitleRoute>, setStack: (List<TitleRoute>) -> Unit, read: (UUID) -> Unit, root: @Composable () -> Unit,
+) {
+    val top = stack.lastOrNull()
+    if (top == null) root() else androidx.compose.runtime.key(stack.size, top) {
+        OnlineSeriesScreen(container, top, read) { setStack(stack.dropLast(1)) }
     }
 }
 

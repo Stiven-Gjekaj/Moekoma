@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.stivengjekaj.moekoma.AppContainer
+import java.util.UUID
 import io.github.stivengjekaj.moekoma.BuildConfig
 import io.github.stivengjekaj.moekoma.R
 import io.github.stivengjekaj.moekoma.core.ReadingMode
@@ -59,15 +60,20 @@ import io.github.stivengjekaj.moekoma.update.UpdateState
 
 /** The look, the reader, and the facts about the app. */
 @Composable
-fun SettingsScreen(container: AppContainer, newer: String?, onRead: (RemoteBook) -> Unit) {
-    var stack by remember { mutableStateOf(listOf<SettingsRoute>()) }
-    val open: (SettingsRoute) -> Unit = { stack = stack + it }
-    val back: () -> Unit = { stack = stack.dropLast(1) }
+fun SettingsScreen(
+    container: AppContainer, newer: String?, stack: List<SettingsRoute>, setStack: (List<SettingsRoute>) -> Unit,
+    read: (UUID) -> Unit, onRead: (RemoteBook) -> Unit,
+) {
+    val open: (SettingsRoute) -> Unit = { setStack(stack + it) }
+    val back: () -> Unit = { setStack(stack.dropLast(1)) }
     when (val route = stack.lastOrNull()) {
         null -> SettingsRoot(container, newer, open)
         SettingsRoute.Sources -> SourcesHomeScreen(container, open, back)
         SettingsRoute.EditSources -> EditSourcesScreen(container, back)
-        is SettingsRoute.Detect -> DetectScreen(container, route.source, { stack = stack.dropLast(1) + it }, back)
+        is SettingsRoute.Detect -> DetectScreen(container, route.source, { setStack(stack.dropLast(1) + it) }, back)
+        is SettingsRoute.SourceList -> SourceListScreen(container, route.link, back)
+        is SettingsRoute.Source -> key(route) { OnlineSourceScreen(container, route.source, { open(SettingsRoute.Title(it)) }, back) }
+        is SettingsRoute.Title -> key(stack.size, route) { OnlineSeriesScreen(container, route.route, read, back) }
         is SettingsRoute.Feed -> key(route) { OpdsFeedScreen(container, route.source, route.url, route.title, open, back) }
         is SettingsRoute.Publication -> PublicationScreen(container, route.source, route.publication, onRead, back)
     }
@@ -104,7 +110,7 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
             }
         }
 
-        Section("Sources", footer = "OPDS catalogs, such as Komga, Kavita, and Calibre-web.") {
+        Section("Sources", footer = "Mihon extensions, and OPDS catalogs such as Komga, Kavita, and Calibre-web.") {
             LinkRow(if (library.sources.isEmpty()) "Add sources" else "${library.sources.size} source" + (if (library.sources.size == 1) "" else "s")) { open(SettingsRoute.Sources) }
         }
 
@@ -246,7 +252,7 @@ private fun Choice(label: String, selected: Boolean, onSelect: () -> Unit) {
 }
 
 @Composable
-private fun Toggle(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun Toggle(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     val palette = LocalPalette.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
