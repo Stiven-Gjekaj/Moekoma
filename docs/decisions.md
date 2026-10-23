@@ -68,8 +68,9 @@ the form of a function before you write it again here. Do not guess it.
     pages, to clear the ghost image.
   - Large touch targets and thick outlines.
 - The app proposes the E-ink look at the first start when the maker of the
-  device is an e-ink maker, such as Onyx (Boox), Bigme, Meebook, Hisense, or
-  PocketBook. The user can change it at each time in Settings.
+  device is an e-ink maker, such as Onyx (Boox), Bigme, Meebook, or
+  PocketBook. The user can change it at each time in Settings. Hisense is not
+  in the list, because it also makes phones with a normal screen.
 - Reason: API level 26 covers almost all phones that are in use, and Mihon
   extensions need it too. Onyx Boox readers run Android 11 or newer. An
   e-ink screen shows a smear with each animation, and a smooth scroll redraws
