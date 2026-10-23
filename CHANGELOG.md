@@ -7,6 +7,14 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.4.0 (2026-10-23)
+
+- Adds PDF. Import a PDF, or open it with Moekoma from another app. The title
+  and the author come from the PDF, and the cover from its first page.
+- Read a PDF page by page from the left or from the right, or in one
+  vertical column. Pinch or double tap to zoom. The page stays.
+- A PDF with a password does not import, and the app tells you why.
+
 ## 0.3.0 (2026-10-23)
 
 - Adds novels. Import EPUB 2 and EPUB 3 books, TXT files, FB2 books, and

@@ -365,3 +365,21 @@ the form of a function before you write it again here. Do not guess it.
 - On an e-ink screen, a tap at the bottom or at the top moves one screen with
   no animation, and a tap in the middle shows the bars.
 - Reason: the same reader as Asabunko, safe from the scripts of a book.
+
+## 2026-10-23: The PDF
+
+- The import copies the PDF into the folder of the book as `book.pdf`. The
+  cover is its first page, drawn on white, as in Asabunko.
+- The PdfRenderer of Android opens the PDF. A PDF with a password fails with
+  a message, and so does a file that is not a PDF.
+- PdfRenderer gives no title and no author. The core reads them from the
+  Info dictionary of the bytes: a literal string or a hex string, in
+  PDFDocEncoding or UTF-16. The last Info of the file wins, because an
+  update adds a new one at the end. A PDF that keeps its Info in a
+  compressed object stream gives nothing, and the title comes from the name
+  of the file.
+- A PDF opens in the reader of comics. Coil draws each page with a fetcher
+  of the app, at the size that the reader asks for. The renderer draws one
+  page at a time. The mode of a PDF is left to right at the start.
+- Reason: the same function as Asabunko, with no second reader. PDFKit of
+  iOS has its own view, and Android has none.
