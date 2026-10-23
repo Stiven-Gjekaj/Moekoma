@@ -9,6 +9,7 @@ import io.github.stivengjekaj.moekoma.core.FolderScan
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import io.github.stivengjekaj.moekoma.core.Book
+import io.github.stivengjekaj.moekoma.core.BrowserCheck
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.BookImporter
 import io.github.stivengjekaj.moekoma.core.ImportSource
@@ -246,7 +247,13 @@ class AppModel(
             .apply { headers(url, source).forEach { (key, value) -> header(key, value) } }
             .build()
         http.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw java.io.IOException("The server answered ${response.code}.")
+            if (!response.isSuccessful) {
+                val check = BrowserCheck.isChallenge(response.code, response.headers.associate { (k, v) -> k to v }, response.peekBody(16_384).bytes())
+                throw java.io.IOException(
+                    if (check) "${request.url.host} asks for a browser check. Open it from the banner and pass the check once."
+                    else "The server answered ${response.code}.",
+                )
+            }
             response.body.bytes()
         }
     }
