@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -53,6 +54,8 @@ fun MoekomaRoot(container: AppContainer) {
     MoekomaTheme(prefs.appearance) {
         var tab by rememberSaveable { mutableStateOf(Tab.Library) }
         var reading by rememberSaveable { mutableStateOf<String?>(null) }
+        var remote by remember { mutableStateOf<RemoteBook?>(null) }
+        var remoteMode by remember { mutableStateOf(container.model.library.value.defaultMode) }
         val newer by produceState<String?>(null) { value = container.updates.newerVersion(BuildConfig.VERSION_NAME) }
         val fault by container.model.fault.collectAsState()
         val palette = LocalPalette.current
@@ -69,7 +72,7 @@ fun MoekomaRoot(container: AppContainer) {
                 val content: @Composable () -> Unit = {
                     when (tab) {
                         Tab.Library -> LibraryScreen(container.model, container.settings) { reading = it.id.toString() }
-                        Tab.Settings -> SettingsScreen(container, newer)
+                        Tab.Settings -> SettingsScreen(container, newer) { remote = it }
                     }
                 }
                 if (maxWidth >= 600.dp) {
@@ -109,6 +112,11 @@ fun MoekomaRoot(container: AppContainer) {
                     }
                 }
             }
+        }
+
+        // The reader of a remote book covers the tabs, so that Settings keeps its open screens.
+        remote?.let { open ->
+            PageReader(open.title, open.pages, 0, remoteMode, prefs, onPage = {}, onMode = { remoteMode = it }, onClose = { remote = null })
         }
 
         fault?.let { message ->

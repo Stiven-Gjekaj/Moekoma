@@ -30,6 +30,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,7 +59,22 @@ import io.github.stivengjekaj.moekoma.update.UpdateState
 
 /** The look, the reader, and the facts about the app. */
 @Composable
-fun SettingsScreen(container: AppContainer, newer: String?) {
+fun SettingsScreen(container: AppContainer, newer: String?, onRead: (RemoteBook) -> Unit) {
+    var stack by remember { mutableStateOf(listOf<SettingsRoute>()) }
+    val open: (SettingsRoute) -> Unit = { stack = stack + it }
+    val back: () -> Unit = { stack = stack.dropLast(1) }
+    when (val route = stack.lastOrNull()) {
+        null -> SettingsRoot(container, newer, open)
+        SettingsRoute.Sources -> SourcesHomeScreen(container, open, back)
+        SettingsRoute.EditSources -> EditSourcesScreen(container, back)
+        is SettingsRoute.Detect -> DetectScreen(container, route.source, { stack = stack.dropLast(1) + it }, back)
+        is SettingsRoute.Feed -> key(route) { OpdsFeedScreen(container, route.source, route.url, route.title, open, back) }
+        is SettingsRoute.Publication -> PublicationScreen(container, route.source, route.publication, onRead, back)
+    }
+}
+
+@Composable
+private fun SettingsRoot(container: AppContainer, newer: String?, open: (SettingsRoute) -> Unit) {
     val prefs by container.settings.preferences.collectAsState()
     val library by container.model.library.collectAsState()
     val update by container.installer.updates.collectAsState()
@@ -86,6 +102,10 @@ fun SettingsScreen(container: AppContainer, newer: String?) {
             Section("The library did not load", footer = "Moekoma does not save while the library file cannot be read, so the file stays as it is. Start a new, empty library. A copy of the old file stays next to it.") {
                 LinkRow("Start a new library", bold = true, color = palette.danger) { startingOver = true }
             }
+        }
+
+        Section("Sources", footer = "OPDS catalogs, such as Komga, Kavita, and Calibre-web.") {
+            LinkRow(if (library.sources.isEmpty()) "Add sources" else "${library.sources.size} source" + (if (library.sources.size == 1) "" else "s")) { open(SettingsRoute.Sources) }
         }
 
         Section(
@@ -198,17 +218,17 @@ fun SettingsScreen(container: AppContainer, newer: String?) {
 }
 
 @Composable
-private fun Section(title: String, footer: String? = null, content: @Composable () -> Unit) {
+internal fun Section(title: String?, footer: String? = null, content: @Composable () -> Unit) {
     val palette = LocalPalette.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 4.dp).semantics { heading() })
+        if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 4.dp).semantics { heading() })
         Card(padding = androidx.compose.foundation.layout.PaddingValues(0.dp)) { content() }
         if (footer != null) Text(footer, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, modifier = Modifier.padding(horizontal = 4.dp))
     }
 }
 
 @Composable
-private fun Divider() {
+internal fun Divider() {
     val palette = LocalPalette.current
     HorizontalDivider(thickness = palette.outlineWidth, color = palette.outline, modifier = Modifier.padding(start = 16.dp))
 }
@@ -244,7 +264,7 @@ private fun Toggle(label: String, checked: Boolean, onChange: (Boolean) -> Unit)
 }
 
 @Composable
-private fun LinkRow(label: String, bold: Boolean = false, color: androidx.compose.ui.graphics.Color? = null, onClick: () -> Unit) {
+internal fun LinkRow(label: String, bold: Boolean = false, color: androidx.compose.ui.graphics.Color? = null, onClick: () -> Unit) {
     val palette = LocalPalette.current
     Text(
         label,
