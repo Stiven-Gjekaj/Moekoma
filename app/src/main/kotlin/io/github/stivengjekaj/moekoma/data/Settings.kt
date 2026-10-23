@@ -1,6 +1,7 @@
 package io.github.stivengjekaj.moekoma.data
 
 import android.content.Context
+import io.github.stivengjekaj.moekoma.core.ReadListOrder
 import io.github.stivengjekaj.moekoma.ui.theme.Appearance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +16,10 @@ data class Preferences(
     val volumeKeys: Boolean = true,
     /** Volume down goes back, and volume up goes forward. */
     val volumeReversed: Boolean = false,
+    /** The screen does not go dark while a book is open. */
+    val keepScreenOn: Boolean = true,
+    /** The order of the read list. */
+    val readListOrder: ReadListOrder = ReadListOrder.Added,
     /** The app asked one time if it can use the E-ink look on this device. */
     val askedEInk: Boolean = false,
 )
@@ -31,6 +36,8 @@ class Settings(context: Context) {
         volumeKeys = prefs.getBoolean("volumeKeys", true),
         volumeReversed = prefs.getBoolean("volumeReversed", false),
         askedEInk = prefs.getBoolean("askedEInk", false),
+        keepScreenOn = prefs.getBoolean("keepScreenOn", true),
+        readListOrder = prefs.getString("readListOrder", null)?.let { name -> ReadListOrder.entries.firstOrNull { it.name == name } } ?: ReadListOrder.Added,
     )
 
     fun update(change: (Preferences) -> Preferences) {
@@ -41,6 +48,8 @@ class Settings(context: Context) {
             .putBoolean("volumeKeys", next.volumeKeys)
             .putBoolean("volumeReversed", next.volumeReversed)
             .putBoolean("askedEInk", next.askedEInk)
+            .putBoolean("keepScreenOn", next.keepScreenOn)
+            .putString("readListOrder", next.readListOrder.name)
             .apply()
         state.value = next
     }

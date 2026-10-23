@@ -131,6 +131,7 @@ fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () 
 
     BackHandler(onBack = onClose)
     SystemBars(visible = bars)
+    KeepScreenOn(prefs.keepScreenOn)
 
     LaunchedEffect(page) {
         if (pages.isNotEmpty()) model.update(bookId) { it.read(page) }
@@ -381,6 +382,16 @@ private fun VolumeHandler(onKey: (forward: Boolean) -> Unit) {
         val handler: (Boolean) -> Unit = { current(it) }
         VolumeKeys.handler = handler
         onDispose { if (VolumeKeys.handler === handler) VolumeKeys.handler = null }
+    }
+}
+
+/** The screen does not go dark while a book is open, when the user asks for it in Settings. */
+@Composable
+fun KeepScreenOn(on: Boolean) {
+    val view = LocalView.current
+    DisposableEffect(on) {
+        view.keepScreenOn = on
+        onDispose { view.keepScreenOn = false }
     }
 }
 
