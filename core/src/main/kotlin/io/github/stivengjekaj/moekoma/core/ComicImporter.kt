@@ -25,7 +25,7 @@ class FolderFiles(private val root: File) : ComicFiles {
 data class ImportedComic(val title: String, val pageCount: Int, val info: ComicInfo?)
 
 /** The import failed. */
-sealed class ImportException(message: String) : Exception(message) {
+open class ImportException(message: String) : Exception(message) {
     /** The file is not a kind that the app can read. */
     class Unsupported(val extension: String) : ImportException("Moekoma cannot read .$extension files yet.")
 
