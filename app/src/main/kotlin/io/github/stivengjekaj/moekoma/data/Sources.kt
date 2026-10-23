@@ -48,6 +48,12 @@ class Sources(
     private val scope: CoroutineScope,
 ) {
     private val mihon by lazy { MihonHost(context, http) }
+    private val kotatsu by lazy { KotatsuHost(context, http) }
+
+    init {
+        // The Kotatsu parsers use the network helper of the Mihon extensions, so Injekt is ready before each kind.
+        MihonHost.setUpInjekt(context.applicationContext as android.app.Application)
+    }
 
     private val setupState = MutableStateFlow<SourceSetup?>(null)
     val setup: StateFlow<SourceSetup?> = setupState.asStateFlow()
@@ -94,7 +100,7 @@ class Sources(
                 model.learn(link.id, kind, null)
                 link = link.copy(kind = kind)
             }
-            if (link.kind != SourceKind.Mihon) continue
+            if (link.kind != SourceKind.Mihon && link.kind != SourceKind.Kotatsu) continue
             val infos = try {
                 sources(link)
             } catch (e: Exception) {
@@ -115,6 +121,12 @@ class Sources(
             val store = store(link)
             model.learn(link.id, null, store.name)
             MihonRepo.sourceInfos(store)
+        }
+        SourceKind.Kotatsu -> {
+            val jar = kotatsu.jar(link.url) { url -> model.fetch(url, null) }
+            // The list has no name, so it takes the name of the owner of the repository, such as "Gekkoushi".
+            if (link.name == null) model.learn(link.id, null, java.net.URI(link.url).path.split('/').firstOrNull { it.isNotEmpty() })
+            kotatsu.sources(jar)
         }
         else -> emptyList()
     }
@@ -165,6 +177,7 @@ class Sources(
                 val key = synchronized(keys) { keys[link.id] } ?: store(link).signingKey
                 mihon.install(info, key)
             }
+            SourceKind.Kotatsu -> kotatsu.sources(io.github.stivengjekaj.moekoma.core.KotatsuPlugin.Jar(info.code, info.version))
             else -> throw MihonException("Moekoma cannot install this kind of source yet.")
         }
         val made = InstalledSource(link.id, info)
@@ -179,7 +192,12 @@ class Sources(
 
     private fun removeCode(source: InstalledSource) {
         LoadedSources.remove(source.id)
-        if (kind(source) == SourceKind.Mihon || kind(source) == null) mihon.uninstall(source.info, installed.filter { it.id != source.id }.map { it.info })
+        val others = installed.filter { it.id != source.id }.map { it.info }
+        when (kind(source)) {
+            SourceKind.Kotatsu -> kotatsu.uninstall(source.info, others)
+            SourceKind.Mihon, null -> mihon.uninstall(source.info, others)
+            else -> {}
+        }
     }
 
     fun kind(source: InstalledSource): SourceKind? = model.library.value.sources.firstOrNull { it.id == source.list }?.kind
@@ -206,6 +224,7 @@ class Sources(
 
     private suspend fun make(source: InstalledSource): OnlineSource = when (kind(source)) {
         SourceKind.Mihon -> mihon.load(source)
+        SourceKind.Kotatsu -> kotatsu.load(source)
         else -> throw MihonException("Moekoma cannot run this kind of source yet.")
     }
 
