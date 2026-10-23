@@ -20,6 +20,12 @@ import io.github.stivengjekaj.moekoma.core.Library
 import io.github.stivengjekaj.moekoma.core.LibraryStore
 import io.github.stivengjekaj.moekoma.core.NewerFormException
 import io.github.stivengjekaj.moekoma.core.ReadingMode
+import io.github.stivengjekaj.moekoma.core.SourceKind
+import io.github.stivengjekaj.moekoma.core.SourceLink
+import io.github.stivengjekaj.moekoma.core.SourceList
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -39,7 +45,13 @@ import java.util.UUID
 data class ImportProgress(val done: Int, val total: Int)
 
 /** The state of the app: the library and the files of each book. */
-class AppModel(private val context: Context, private val scope: CoroutineScope, val root: File = File(context.filesDir, "Moekoma")) {
+class AppModel(
+    private val context: Context,
+    private val scope: CoroutineScope,
+    val root: File = File(context.filesDir, "Moekoma"),
+    private val http: OkHttpClient = OkHttpClient(),
+    private val secrets: Secrets = Secrets(context),
+) {
     private val libraryFile = File(root, "library.json")
     private val booksFolder = File(root, "Books")
     private val state = MutableStateFlow(Library())
@@ -191,6 +203,77 @@ class AppModel(private val context: Context, private val scope: CoroutineScope, 
         }
         withContext(Dispatchers.Main) { result.onSuccess { book -> change { it.copy(books = it.books + book) } } }
         result
+    }
+
+    // Sources
+
+    /**
+     * Replaces the source list with the text of the paste box. A password goes to the encrypted store.
+     * A line with a user name and no password keeps the password that the store has.
+     */
+    fun saveSources(text: String): List<SourceLink> {
+        val old = state.value.sources
+        val lines = SourceList.parse(text, old)
+        val kept = lines.map { it.link.id }.toSet()
+        for (link in old) if (link.id !in kept) secrets.setPassword(link.id, null)
+        for (line in lines) line.password?.let { secrets.setPassword(line.link.id, it) }
+        change { library -> library.copy(sources = lines.map { it.link }, installed = library.installed.filter { it.list in kept }) }
+        return lines.map { it.link }
+    }
+
+    /** Keeps the kind and the name that the app found when it read a source. */
+    fun learn(id: UUID, kind: SourceKind?, name: String?) = change { library ->
+        library.copy(sources = library.sources.map { link ->
+            if (link.id != id) link else link.copy(kind = kind ?: link.kind, name = name?.ifEmpty { null } ?: link.name)
+        })
+    }
+
+    /**
+     * The headers of a request to a source: the user name and the password of its line.
+     * The password goes only to the host of the source. A link to another host gets no password.
+     */
+    fun headers(url: String, source: SourceLink?): Map<String, String> {
+        val user = source?.username?.ifEmpty { null } ?: return emptyMap()
+        val host = runCatching { java.net.URI(url).host }.getOrNull()
+        if (host == null || host != source.host) return emptyMap()
+        return mapOf("Authorization" to Credentials.basic(user, secrets.password(source.id) ?: ""))
+    }
+
+    /** The bytes of a URL of a source, with its password. */
+    suspend fun fetch(url: String, source: SourceLink?): ByteArray = withContext(Dispatchers.IO) {
+        val request = Request.Builder().url(url)
+            .header("Accept", "application/atom+xml, application/opds+json, application/json;q=0.9, */*;q=0.8")
+            .apply { headers(url, source).forEach { (key, value) -> header(key, value) } }
+            .build()
+        http.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw java.io.IOException("The server answered ${response.code}.")
+            response.body.bytes()
+        }
+    }
+
+    /** Downloads a book from a source and imports it into the library. */
+    suspend fun download(url: String, source: SourceLink?, title: String, fileExtension: String): Boolean {
+        val bytes = try {
+            fetch(url, source)
+        } catch (e: Exception) {
+            fault.value = "The book was not downloaded: ${e.message}"
+            return false
+        }
+        val safe = title.replace('/', '-').replace(':', '-').ifEmpty { "Book" }
+        val name = "$safe.$fileExtension"
+        val file = File(context.cacheDir, "download-${UUID.randomUUID()}.$fileExtension").apply { writeBytes(bytes) }
+        val result = withContext(Dispatchers.IO) {
+            runCatching {
+                importBook(object : ImportSource {
+                    override val fileName = name
+                    override fun files() = ArchiveFiles { ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY) }
+                    override fun bytes() = file.readBytes()
+                })
+            }.also { file.delete() }
+        }
+        result.onSuccess { book -> change { it.copy(books = it.books + book) } }
+            .onFailure { fault.value = "$name: ${describe(it)}" }
+        return result.isSuccess
     }
 
     /** The chapters of a novel, or null when its file does not load. */
