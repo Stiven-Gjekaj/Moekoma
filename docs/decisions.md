@@ -161,7 +161,7 @@ the form of a function before you write it again here. Do not guess it.
   it runs the same bundle. Jsoup is the library that the Aidoku sources
   expect.
 
-## 2026-10-23: The Cloudflare challenge (moved after 1.0.0 on 2026-10-23, see "Parity with Asabunko first")
+## 2026-10-23: The Cloudflare challenge (back before 1.0.0 on 2026-10-23, see "Parity with Asabunko 2.2.0")
 
 - When a site gives a Cloudflare challenge, the app opens it in a web view.
   The user passes the challenge, and the web view closes.
@@ -172,7 +172,7 @@ the form of a function before you write it again here. Do not guess it.
 - Reason: the owner asked for each Android extra. Android has a full web
   view with its cookie store, and the same solution serves each source.
 
-## 2026-10-23: Downloads in the background (moved after 1.0.0 on 2026-10-23, see "Parity with Asabunko first")
+## 2026-10-23: Downloads in the background (back before 1.0.0 on 2026-10-23, see "Parity with Asabunko 2.2.0")
 
 - The user downloads the chapters of an online book to read with no network.
 - The downloads run in WorkManager, with a notification that shows the
@@ -225,7 +225,7 @@ the form of a function before you write it again here. Do not guess it.
   AGENTS.md, docs/decisions.md, TODO.md, CHANGELOG.md, and README.md.
 - Reason: the owner asked for the same form.
 
-## 2026-10-23: Parity with Asabunko first
+## 2026-10-23: Parity with Asabunko first (replaced on 2026-10-23, see "Parity with Asabunko 2.2.0")
 
 - 1.0.0 has each function of Asabunko 1.0.1 and the functions that only
   Android permits:
@@ -292,7 +292,7 @@ the form of a function before you write it again here. Do not guess it.
   vertical mode moves one screen at each tap at the top or the bottom.
 - Reason: the same reader as Asabunko, with the Android extras of the owner.
 
-## 2026-10-23: The new library and search of Asabunko
+## 2026-10-23: The new library and search of Asabunko (replaced on 2026-10-23, see "Parity with Asabunko 2.2.0")
 
 - The owner changes Asabunko now: the library holds the books on a reading
   list and the books to continue. Browse becomes a search, as in
@@ -302,3 +302,19 @@ the form of a function before you write it again here. Do not guess it.
 - Moekoma waits for this work, and ports it from Asabunko. It does not
   design it here.
 - Reason: the owner asked to see how the agent of Asabunko does it first.
+
+## 2026-10-23: Parity with Asabunko 2.2.0
+
+- Asabunko 2.2.0 has the functions that "Parity with Asabunko first" kept
+  for later: the Cloudflare check, MOBI and AZW3, the chapter downloads, the
+  filters and the settings of the sources, the canvas and js modules of
+  Aidoku, and the settings forms of Paperback. It also has the new design:
+  the read list, Search, Discover, and the sources in Settings.
+- Moekoma 1.0.0 has each function and the design of Asabunko 2.2.0, and the
+  functions that only Android permits. This replaces "Parity with Asabunko
+  first" and "The new library and search of Asabunko".
+- Each release ports the form of Asabunko, its screens, its words, and its
+  tests. A newer release of Asabunko goes into the roadmap when it is out.
+- The order of the releases is in [TODO.md](../TODO.md).
+- Reason: the owner asked to port Asabunko with its new design, and to add
+  the Android functions over it.

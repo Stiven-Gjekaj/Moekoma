@@ -5,43 +5,35 @@ release is out. The reason for each choice is in
 [docs/decisions.md](docs/decisions.md).
 
 Each release adds one large function. Read the same function in Asabunko
-before you write it here.
+before you write it here, and port its design, its words, and its tests.
+Moekoma 1.0.0 has the functions of Asabunko 2.2.0 and the Android extras.
 
 ## Releases up to 1.0.0
 
-- 0.1.0 The library and the comic archives, with the comic reader, the
-  three looks with E-ink, the volume keys, and the updates inside the app.
-- 0.2.0 EPUB, TXT, FB2, and HTML novels, with the reader of novels.
-- 0.3.0 PDF.
-- 0.4.0 The folders of the device, which the app watches.
-- 0.5.0 The source list and the OPDS catalogs.
-- 0.6.0 Mihon extensions on the device.
-- 0.7.0 The Kotatsu parsers as a plugin.
-- 0.8.0 LNReader plugins.
-- 0.9.0 Suwayomi servers.
-- 0.10.0 Aidoku sources.
-- 0.11.0 Paperback 0.9 extensions.
-- 1.0.0 All of these functions, with the backup of Asabunko, the import of a
-  Mihon backup, and the check for new chapters.
+- 0.2.0 The library of Asabunko 2: Continue reading and the read list with
+  its order, the art of the empty screens, a library file that does not load
+  stays safe, the save after a short time, and the screen that stays on.
+- 0.3.0 EPUB, TXT, FB2, and HTML novels, with the reader of novels.
+- 0.4.0 PDF.
+- 0.5.0 MOBI and AZW3 books with no DRM.
+- 0.6.0 The folders of the device, which the app watches.
+- 0.7.0 The sources in Settings, which install with no tap, the OPDS
+  catalogs, Search, Discover, and the page of a title that compares its
+  sources.
+- 0.8.0 Mihon extensions on the device.
+- 0.9.0 The browser check of Cloudflare in a web view, for each source.
+- 0.10.0 The Kotatsu parsers as a plugin.
+- 0.11.0 LNReader plugins, with their filters, their settings, and gRPC.
+- 0.12.0 Suwayomi servers.
+- 0.13.0 Aidoku sources, with their filters, their settings, and the canvas
+  and js modules.
+- 0.14.0 Paperback 0.9 extensions, with their filters and their settings
+  forms.
+- 0.15.0 Chapter downloads in the background.
+- 1.0.0 The backup of Asabunko, the import of a Mihon backup, the check for
+  new chapters, the move of a book to another source, and the comforts of
+  the review of Asabunko 2.0.0.
 
-## Changes that come from Asabunko now
+## After 1.0.0
 
-The owner makes these changes in Asabunko now. Port them when they are out,
-and change the order of the releases if they need it.
-
-- The library holds the books on a reading list and the books to continue.
-- Browse is a search, as in ZettaStream. It chooses the best source, or the
-  user chooses a source from a list.
-- The sources move to Settings and install with no tap.
-- A Discover page after the library, with recommended manga.
-
-## After 1.0.0, when Asabunko has them
-
-Port each one from Asabunko. Do not design it again here.
-
-- The Cloudflare challenge in a web view, for each source, with
-  executeInWebView of Paperback.
-- MOBI and AZW3 books with no DRM.
-- The downloads of chapters in the background.
-- The filters and the settings of the sources.
-- The canvas and js imports of Aidoku.
+- Each new release of Asabunko after 2.2.0.
