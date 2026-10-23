@@ -1,6 +1,11 @@
 package io.github.stivengjekaj.moekoma
 
 import android.app.Application
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import io.github.stivengjekaj.moekoma.data.PdfPageFetcher
+import io.github.stivengjekaj.moekoma.data.PdfPageKeyer
 import io.github.stivengjekaj.moekoma.data.AppModel
 import io.github.stivengjekaj.moekoma.data.Settings
 import io.github.stivengjekaj.moekoma.update.UpdateChecker
@@ -12,7 +17,7 @@ import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-class MoekomaApp : Application() {
+class MoekomaApp : Application(), SingletonImageLoader.Factory {
     lateinit var container: AppContainer
         private set
 
@@ -20,6 +25,15 @@ class MoekomaApp : Application() {
         super.onCreate()
         container = AppContainer(this)
     }
+
+    /** The image loader of the app also draws the pages of a PDF. */
+    override fun newImageLoader(context: PlatformContext): ImageLoader =
+        ImageLoader.Builder(context)
+            .components {
+                add(PdfPageFetcher.Factory())
+                add(PdfPageKeyer())
+            }
+            .build()
 }
 
 /** The parts of the app that live as long as the app. A UI test gives an empty folder in [root]. */

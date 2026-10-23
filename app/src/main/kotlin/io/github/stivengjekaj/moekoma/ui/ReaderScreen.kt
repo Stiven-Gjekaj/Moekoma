@@ -87,7 +87,10 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import io.github.stivengjekaj.moekoma.VolumeKeys
+import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.ReadingMode
+import io.github.stivengjekaj.moekoma.data.PdfDocument
+import io.github.stivengjekaj.moekoma.data.PdfPage
 import io.github.stivengjekaj.moekoma.data.AppModel
 import io.github.stivengjekaj.moekoma.data.Preferences
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
@@ -115,12 +118,15 @@ private val ReadingMode.icon: ImageVector
         ReadingMode.Vertical -> Icons.Outlined.ArrowDownward
     }
 
-/** Reads one comic of the library. A tap in the middle shows or hides the bars. A tap at an edge turns the page. */
+/** Reads one comic or one PDF of the library. A tap in the middle shows or hides the bars. A tap at an edge turns the page. */
 @Composable
 fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () -> Unit) {
     val library by model.library.collectAsState()
     val book = library.book(bookId) ?: return
-    val pages = remember(bookId) { model.pages(book) }
+    // A page is the file of an image, or a page of a PDF that the image loader draws.
+    val pdf = remember(bookId) { if (book.format == BookFormat.Pdf) runCatching { PdfDocument(model.pdf(book)) }.getOrNull() else null }
+    DisposableEffect(pdf) { onDispose { pdf?.close() } }
+    val pages: List<Any> = remember(bookId) { pdf?.let { doc -> List(doc.pageCount) { PdfPage(doc, it) } } ?: model.pages(book) }
     val mode = library.mode(book)
     val palette = LocalPalette.current
     val eInk = palette.isEInk
@@ -184,7 +190,7 @@ fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () 
 /** One page at a time, with a swipe or a tap at the edge. Each page zooms with a pinch or a double tap. */
 @Composable
 private fun PagedReader(
-    pages: List<File>, rightToLeft: Boolean, page: Int, eInk: Boolean,
+    pages: List<Any>, rightToLeft: Boolean, page: Int, eInk: Boolean,
     onPage: (Int) -> Unit, onTap: (TapZone) -> Unit,
 ) {
     val pager = rememberPagerState(initialPage = page) { pages.size }
@@ -229,7 +235,7 @@ private fun PagedReader(
 
 /** A page that zooms with a pinch and a double tap. While it is zoomed, a drag moves the page and not the pager. */
 @Composable
-private fun ZoomablePage(file: File, index: Int, onTap: (TapZone) -> Unit, onZoom: (Boolean) -> Unit) {
+private fun ZoomablePage(file: Any, index: Int, onTap: (TapZone) -> Unit, onZoom: (Boolean) -> Unit) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var size by remember { mutableStateOf(IntSize.Zero) }
@@ -309,7 +315,7 @@ private fun ZoomablePage(file: File, index: Int, onTap: (TapZone) -> Unit, onZoo
  */
 @Composable
 private fun VerticalReader(
-    pages: List<File>, page: Int, eInk: Boolean,
+    pages: List<Any>, page: Int, eInk: Boolean,
     onPage: (Int) -> Unit, onTurn: () -> Unit, onTap: () -> Unit,
 ) {
     val list = rememberLazyListState(initialFirstVisibleItemIndex = page)
@@ -365,7 +371,7 @@ private fun VerticalReader(
 
 /** The image of a page at two times the long side of the screen, for the zoom. A large page keeps the memory low. */
 @Composable
-private fun pageRequest(file: File, half: Boolean = false): ImageRequest {
+private fun pageRequest(file: Any, half: Boolean = false): ImageRequest {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
