@@ -1,0 +1,4 @@
+<resources>
+    <!-- The background of the adaptive icon: the black of the icon of Asabunko. -->
+    <color name="ic_launcher_background">#FF000000</color>
+</resources>
