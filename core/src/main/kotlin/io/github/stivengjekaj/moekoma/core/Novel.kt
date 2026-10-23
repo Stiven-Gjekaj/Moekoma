@@ -29,6 +29,21 @@ data class Novel(
         val remote: String? = null,
     )
 
+    /**
+     * Adds the chapters of the source that the novel does not have yet, in the order of the source.
+     * A chapter that the source removed stays, so that its file and the place in it do not go.
+     * It gives the new novel and the number of new chapters.
+     */
+    fun merge(online: List<OnlineChapter>, fileExtension: String = "html"): Pair<Novel, Int> {
+        val known = chapters.mapNotNull { it.remote }.toMutableSet()
+        val all = chapters.toMutableList()
+        for (chapter in online) {
+            if (!known.add(chapter.id)) continue
+            all += Chapter(chapter.title, "chapters/%05d.%s".format(all.size + 1, fileExtension), chapter.id)
+        }
+        return copy(chapters = all) to (all.size - chapters.size)
+    }
+
     fun save(folder: File) {
         File(folder, FILE_NAME).writeText(json.encodeToString(serializer(), this))
     }
