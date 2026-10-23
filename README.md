@@ -60,10 +60,13 @@ Moekoma has no sources in it. Your books stay on your device.
 - "Open with" and "Share" from another app import the file
 - Folders that Moekoma watches: each new book in them comes into the
   library, also when the app is closed
+- OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
+  read a comic at once, or download a book. A password stays encrypted on
+  the device
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 
-The next functions are in [TODO.md](TODO.md): OPDS catalogs, Mihon extensions on the device, the Kotatsu
+The next functions are in [TODO.md](TODO.md): Mihon extensions on the device, the Kotatsu
 parsers, LNReader, Suwayomi, Aidoku, and Paperback.
 
 ## Install
@@ -92,6 +95,7 @@ app/src/main/kotlin/io/github/stivengjekaj/moekoma/
 core/        the parts that do not need a screen, with their tests
 assets/brand/   the icon, the banner, and the scripts that make them from the logo of Asabunko
 docs/        the reason behind each choice
+scripts/     a test server for the sources
 ```
 
 ## Building

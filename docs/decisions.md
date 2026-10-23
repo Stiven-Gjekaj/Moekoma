@@ -417,3 +417,33 @@ the form of a function before you write it again here. Do not guess it.
 - The rules of the scan are in the core, with tests on a folder of the disk.
 - Reason: the owner asked for each Android extra. Android lets an app keep
   the access to a folder, and iOS does not let an app watch a folder.
+
+## 2026-10-23: The sources and the OPDS catalogs
+
+- The sources are in Settings, Sources, as in Asabunko 2.2.0. The user
+  pastes one URL on each line. Save replaces the full list. The library file
+  keeps the list in `sources`, in the same form as Asabunko, so that a
+  backup goes both ways.
+- The app finds the kind of each URL from its form. When the form does not
+  tell, the app reads the URL and finds the kind from what it gives.
+- A URL with `user:password@` keeps only the user name in the list. The
+  password goes to a file of the app, encrypted with AES-GCM. The key is in
+  the Android Keystore, so the key does not leave the device. The app sends
+  the password only to the host of the source.
+- An OPDS catalog shows its links, its groups, and its books, with a search
+  through OpenSearch and "Load more" for the next page. A book with the Page
+  Streaming Extension reads at once, page by page, and the app keeps nothing.
+  "Download" imports the file into the library.
+- Java resolves a link that is only a query, such as `?page=2`, with no last
+  part of the path. RFC 3986 keeps it. The core does this case itself.
+- The reader of a remote book covers the tabs, so that Settings keeps its
+  open screens when the reader closes.
+- Release 0.7.0 has the sources and OPDS only. Search, Discover, and the
+  page of a title move to 0.8.0 with the Mihon extensions. Reason: in
+  Asabunko, Search and Discover ask only the installed online sources, and
+  an OPDS catalog is not one. With no online source, the two screens are
+  empty.
+- The checks: the core tests of the source list and of OPDS 1.2 and 2.0,
+  and a test on the emulator with `scripts/test-server.py` of Asabunko at
+  `http://10.0.2.2:8765/opds/catalog`. The password, the covers, the search,
+  the stream reader, and the download work.

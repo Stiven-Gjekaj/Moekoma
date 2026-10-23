@@ -7,6 +7,16 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.7.0 (2026-10-23)
+
+- Add your sources in Settings, Sources. Paste one URL on each line.
+- Browse OPDS catalogs, such as Komga, Kavita, and Calibre-web: their
+  sections, their books, and their search.
+- Read a comic of a catalog at once, page by page, with no download.
+- Download a book of a catalog into the library.
+- For a server with an account, write the user name and the password in the
+  URL. The password goes to the encrypted store of the device.
+
 ## 0.6.0 (2026-10-23)
 
 - Watch the folders of your device. Open Settings, Folders, and add a
