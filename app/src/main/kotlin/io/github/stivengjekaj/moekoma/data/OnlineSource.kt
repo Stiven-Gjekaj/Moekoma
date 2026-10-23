@@ -12,6 +12,8 @@ import io.github.stivengjekaj.moekoma.core.OnlineChapter
 import io.github.stivengjekaj.moekoma.core.OnlineDetails
 import io.github.stivengjekaj.moekoma.core.OnlinePage
 import io.github.stivengjekaj.moekoma.core.OnlineSeries
+import io.github.stivengjekaj.moekoma.core.OptionValue
+import io.github.stivengjekaj.moekoma.core.SourceOption
 import io.github.stivengjekaj.moekoma.core.SourceInfo
 import okhttp3.Response
 import okio.FileSystem
@@ -36,6 +38,22 @@ interface OnlineSource {
 
     /** Gets an image of the source, such as a cover or a page, with the client and the headers that the source needs. */
     suspend fun image(image: RemoteImage): Response
+
+    /** The filters of the list of the source. Empty when the source has none. */
+    suspend fun filterOptions(): List<SourceOption> = emptyList()
+
+    /** A page of the list with filters. With a query, the list is a search. */
+    suspend fun browse(page: Int, query: String, filters: Map<String, OptionValue>): OnlinePage =
+        if (query.isEmpty()) popular(page) else search(query, page)
+
+    /** The settings of the source. Empty when the source has none. */
+    suspend fun settingOptions(): List<SourceOption> = emptyList()
+
+    /** The value of each setting now. */
+    suspend fun settingValues(): Map<String, OptionValue> = emptyMap()
+
+    /** Keeps a new value of a setting. */
+    suspend fun setSetting(id: String, value: OptionValue) {}
 }
 
 /**

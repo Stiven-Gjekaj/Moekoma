@@ -73,7 +73,10 @@ fun SettingsScreen(
         is SettingsRoute.Detect -> DetectScreen(container, route.source, { setStack(stack.dropLast(1) + it) }, back)
         is SettingsRoute.SourceList -> SourceListScreen(container, route.link, back)
         SettingsRoute.Installed -> InstalledSourcesScreen(container, open, back)
-        is SettingsRoute.Source -> key(route) { OnlineSourceScreen(container, route.source, { open(SettingsRoute.Title(it)) }, back) }
+        is SettingsRoute.Source -> key(route) {
+            OnlineSourceScreen(container, route.source, { open(SettingsRoute.Title(it)) }, { open(SettingsRoute.SourceSettings(route.source)) }, back)
+        }
+        is SettingsRoute.SourceSettings -> SourceSettingsScreen(container, route.source, back)
         is SettingsRoute.Title -> key(stack.size, route) { OnlineSeriesScreen(container, route.route, read, back) }
         is SettingsRoute.Feed -> key(route) { OpdsFeedScreen(container, route.source, route.url, route.title, open, back) }
         is SettingsRoute.Publication -> PublicationScreen(container, route.source, route.publication, onRead, back)

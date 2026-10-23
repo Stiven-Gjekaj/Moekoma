@@ -101,6 +101,7 @@ sealed interface SettingsRoute {
     data class Detect(val source: SourceLink) : SettingsRoute
     data class SourceList(val link: SourceLink) : SettingsRoute
     data object Installed : SettingsRoute
+    data class SourceSettings(val source: InstalledSource) : SettingsRoute
     data class Source(val source: InstalledSource) : SettingsRoute
     data class Title(val route: TitleRoute) : SettingsRoute
 }
@@ -110,13 +111,14 @@ data class RemoteBook(val title: String, val pages: List<RemotePage>)
 
 /** The bar of a screen below the root, with its title and a back button. */
 @Composable
-fun SubScreen(title: String, onBack: () -> Unit, content: @Composable () -> Unit) {
+fun SubScreen(title: String, onBack: () -> Unit, actions: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
     val palette = LocalPalette.current
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().background(palette.background).statusBarsPadding()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back") }
-            Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.semantics { heading() })
+            Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).semantics { heading() })
+            actions()
         }
         Box(Modifier.fillMaxSize()) { content() }
     }

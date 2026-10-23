@@ -34,6 +34,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Search
@@ -44,6 +47,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButton
@@ -83,10 +87,12 @@ import io.github.stivengjekaj.moekoma.core.ChapterGroups
 import io.github.stivengjekaj.moekoma.core.InstalledSource
 import io.github.stivengjekaj.moekoma.core.OnlineDetails
 import io.github.stivengjekaj.moekoma.core.OnlineSeries
+import io.github.stivengjekaj.moekoma.core.OptionValue
 import io.github.stivengjekaj.moekoma.core.SearchHit
 import io.github.stivengjekaj.moekoma.core.SourceChoice
 import io.github.stivengjekaj.moekoma.core.SourceInfo
 import io.github.stivengjekaj.moekoma.core.SourceLink
+import io.github.stivengjekaj.moekoma.core.SourceOption
 import io.github.stivengjekaj.moekoma.core.TitleMatch
 import io.github.stivengjekaj.moekoma.data.RemoteImage
 import io.github.stivengjekaj.moekoma.ui.theme.Corner
@@ -467,9 +473,12 @@ private fun VolumeCard(
     }
 }
 
-/** One installed source: its popular and latest lists, and its search. */
+/** One installed source: its popular and latest lists, its search, its filters, and its settings. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun OnlineSourceScreen(container: AppContainer, installed: InstalledSource, openTitle: (TitleRoute) -> Unit, onBack: () -> Unit) {
+fun OnlineSourceScreen(
+    container: AppContainer, installed: InstalledSource, openTitle: (TitleRoute) -> Unit, openSettings: () -> Unit, onBack: () -> Unit,
+) {
     val palette = LocalPalette.current
     val scope = rememberCoroutineScope()
     var latest by rememberSaveable { mutableStateOf(false) }
@@ -482,6 +491,16 @@ fun OnlineSourceScreen(container: AppContainer, installed: InstalledSource, open
     var query by rememberSaveable { mutableStateOf("") }
     var searching by rememberSaveable { mutableStateOf("") }
     var generation by remember { mutableStateOf(0) }
+    var filters by remember { mutableStateOf<List<SourceOption>>(emptyList()) }
+    /** The values of the filters that the user applied. Empty means the list of the source with no filters. */
+    var applied by remember { mutableStateOf<Map<String, OptionValue>>(emptyMap()) }
+    var showFilters by remember { mutableStateOf(false) }
+    var hasSettings by remember { mutableStateOf(false) }
+    LaunchedEffect(installed.id) {
+        val source = runCatching { container.sources.load(installed) }.getOrNull() ?: return@LaunchedEffect
+        filters = runCatching { source.filterOptions() }.getOrDefault(emptyList())
+        hasSettings = runCatching { source.settingOptions().isNotEmpty() }.getOrDefault(false)
+    }
 
     fun loadPage(number: Int) {
         // A new search or list makes the answer of an older load old, so it must not go into the list.
@@ -493,6 +512,7 @@ fun OnlineSourceScreen(container: AppContainer, installed: InstalledSource, open
                 val source = container.sources.load(installed)
                 canLatest = source.canShowLatest
                 val result = when {
+                    applied.isNotEmpty() -> source.browse(number, searching, applied)
                     searching.isNotEmpty() -> source.search(searching, number)
                     latest && source.canShowLatest -> source.latest(number)
                     else -> source.popular(number)
@@ -510,12 +530,22 @@ fun OnlineSourceScreen(container: AppContainer, installed: InstalledSource, open
             }
         }
     }
-    LaunchedEffect(latest, searching) { loadPage(1) }
+    LaunchedEffect(latest, searching, applied) { loadPage(1) }
     // A passed browser check loads a list with a fault again.
     val passes by BrowserChecks.passes.collectAsState()
     LaunchedEffect(passes) { if (fault != null) loadPage(1) }
 
-    SubScreen(installed.info.name, onBack) {
+    SubScreen(installed.info.name, onBack, actions = {
+        if (filters.isNotEmpty()) IconButton(onClick = { showFilters = true }) {
+            Icon(if (applied.isEmpty()) Icons.Outlined.FilterList else Icons.Filled.FilterList, contentDescription = "Filters, " + if (applied.isEmpty()) "off" else "on", tint = palette.accent)
+        }
+        if (hasSettings) IconButton(onClick = openSettings) { Icon(Icons.Outlined.Settings, contentDescription = "Source settings") }
+    }) {
+        if (showFilters) {
+            ModalBottomSheet(onDismissRequest = { showFilters = false }, containerColor = palette.surface) {
+                FilterSheet(filters, applied) { values -> applied = values; showFilters = false }
+            }
+        }
         LazyVerticalGrid(
             columns = GridCells.Adaptive(108.dp),
             contentPadding = PaddingValues(start = Gutter, end = Gutter, bottom = 32.dp),
@@ -532,7 +562,7 @@ fun OnlineSourceScreen(container: AppContainer, installed: InstalledSource, open
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 )
             }
-            if (searching.isEmpty() && canLatest) item(span = { GridItemSpan(maxLineSpan) }) {
+            if (searching.isEmpty() && applied.isEmpty() && canLatest) item(span = { GridItemSpan(maxLineSpan) }) {
                 Chips(listOf("Popular", "Latest"), if (latest) 1 else 0, { latest = it == 1 })
             }
             fault?.let { text ->
