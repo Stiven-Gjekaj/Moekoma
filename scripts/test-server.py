@@ -21,6 +21,8 @@ name and password as /opds/.
 
 Under /cf/, each path of the server is behind a browser check, as a site
 behind Cloudflare. The page of the check sets the cookie of a passed check.
+Under /cfm/, the check also sends the header cf-mitigated. Under /cfi/, the
+check also needs a tap on a button.
 
 /control/offline makes the server refuse the pages, and /control/online
 gives them again.
@@ -308,14 +310,31 @@ class Handler(BaseHTTPRequestHandler):
         host = self.headers.get("Host")
         # Under /cf/, the server acts as a site behind the browser check of Cloudflare. The page of the
         # check sets the cookie of a passed check and loads again. With the cookie, the path works.
+        # Under /cfm/, the check also sends the header cf-mitigated, as Cloudflare does now. The interceptor of
+        # Mihon passes this check in a web view with no window.
+        mitigated = path.startswith("/cfm/") or path.startswith("/cfi/")
+        # Under /cfi/, the check needs a tap on a button, so a web view with no window cannot pass it.
+        interactive = path.startswith("/cfi/")
+        if mitigated:
+            self.path = "/cf/" + self.path[5:]
+            path = "/cf/" + path[5:]
         if path.startswith("/cf/"):
             if "cf_clearance=passed" not in (self.headers.get("Cookie") or ""):
-                challenge = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>"
-                        b"<p>Checking your browser.</p><script src=\"/cdn-cgi/challenge-platform/h/b/orchestrate\"></script>"
-                        b"<script>document.cookie = 'cf_clearance=passed; path=/'; setTimeout(function () { location.reload(); }, 300);</script>"
-                        b"</body></html>")
+                if interactive:
+                    challenge = (b"<!DOCTYPE html><html><head><title>Just a moment...</title>"
+                            b"<meta name=\"viewport\" content=\"width=device-width\"></head><body>"
+                            b"<p>Verify that you are a person.</p>"
+                            b"<button style=\"font-size:24px;padding:16px\" onclick=\"document.cookie = 'cf_clearance=passed; path=/'; location.reload();\">Verify</button>"
+                            b"</body></html>")
+                else:
+                    challenge = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>"
+                            b"<p>Checking your browser.</p><script src=\"/cdn-cgi/challenge-platform/h/b/orchestrate\"></script>"
+                            b"<script>document.cookie = 'cf_clearance=passed; path=/'; setTimeout(function () { location.reload(); }, 300);</script>"
+                            b"</body></html>")
                 self.send_response_only(503)
                 self.send_header("Server", "cloudflare")
+                if mitigated:
+                    self.send_header("cf-mitigated", "challenge")
                 self.send_header("Content-Type", "text/html")
                 self.send_header("Content-Length", str(len(challenge)))
                 self.end_headers()
