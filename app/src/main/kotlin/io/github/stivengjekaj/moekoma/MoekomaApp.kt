@@ -8,6 +8,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import io.github.stivengjekaj.moekoma.data.PdfPageFetcher
 import io.github.stivengjekaj.moekoma.data.PdfPageKeyer
 import io.github.stivengjekaj.moekoma.data.AppModel
+import io.github.stivengjekaj.moekoma.data.DiscoverFeed
 import io.github.stivengjekaj.moekoma.data.Folders
 import io.github.stivengjekaj.moekoma.data.RemoteImageFetcher
 import io.github.stivengjekaj.moekoma.data.RemoteImageKeyer
@@ -45,7 +46,7 @@ class MoekomaApp : Application(), SingletonImageLoader.Factory {
 }
 
 /** The parts of the app that live as long as the app. A UI test gives an empty folder in [root]. */
-class AppContainer(app: Application, root: File = File(app.filesDir, "Moekoma")) {
+class AppContainer(val app: Application, root: File = File(app.filesDir, "Moekoma")) {
     /** Work that continues when the user leaves a screen, such as an import or an update. */
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val http: OkHttpClient = OkHttpClient.Builder()
@@ -56,6 +57,7 @@ class AppContainer(app: Application, root: File = File(app.filesDir, "Moekoma"))
     val folders = Folders(app, model, root, scope)
     val settings = Settings(app)
     val sources = Sources(app, model, settings, http, scope)
+    val discover = DiscoverFeed(sources, { model.library.value.installed }, scope)
     val updates = UpdateChecker(http)
     val installer = UpdateInstaller(app, http, scope)
 }
