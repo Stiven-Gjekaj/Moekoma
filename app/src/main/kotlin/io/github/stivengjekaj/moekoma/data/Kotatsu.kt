@@ -68,7 +68,12 @@ class KotatsuHost(private val context: Context, private val http: OkHttpClient) 
         private val factory = Class.forName("tsuki.MangaParserFactoryKt", true, loader).getMethod("newParser", sourceClass, MangaLoaderContext::class.java)
         val parserContext = ParserContext(this::make)
 
-        fun make(source: MangaSource): MangaParser = factory.invoke(null, source, parserContext) as MangaParser
+        fun make(source: MangaSource): MangaParser = try {
+            factory.invoke(null, source, parserContext) as MangaParser
+        } catch (e: java.lang.reflect.InvocationTargetException) {
+            // The fault of the parser is the cause. The reflection only wraps it.
+            throw IOException("${source.title} did not start: ${e.cause?.let { it.message ?: it.javaClass.name }}", e.cause)
+        }
     }
 
     private fun jarFile(url: String): File = File(folder, url.substringBefore('?').substringAfterLast('/').ifEmpty { "plugin.jar" }.let { name ->
