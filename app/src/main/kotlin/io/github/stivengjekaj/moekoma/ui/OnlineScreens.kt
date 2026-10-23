@@ -629,7 +629,7 @@ fun SourceListScreen(container: AppContainer, link: SourceLink, onBack: () -> Un
 
 /** A row of an installed source, which opens its lists. */
 @Composable
-fun InstalledRow(source: InstalledSource, onClick: () -> Unit) {
+fun InstalledRow(source: InstalledSource, list: String? = null, onClick: () -> Unit) {
     val palette = LocalPalette.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -637,7 +637,8 @@ fun InstalledRow(source: InstalledSource, onClick: () -> Unit) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(source.info.name, style = MaterialTheme.typography.bodyLarge)
-            Text(source.info.language, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+            // Two lists can have a source with the same name, so the row names its list.
+            Text(listOfNotNull(source.info.language, list).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
         }
         Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = palette.textSecondary)
     }

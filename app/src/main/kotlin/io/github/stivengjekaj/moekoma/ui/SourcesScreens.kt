@@ -136,7 +136,7 @@ fun SourcesHomeScreen(container: AppContainer, open: (SettingsRoute) -> Unit, on
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = Gutter, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
             Section(
                 null,
-                footer = "Paste the URLs of your catalogs and source lists. Moekoma installs the English sources of each list, and Search and Discover ask them. Moekoma runs Mihon extensions and reads OPDS catalogs now. The other kinds of source come in the next versions.",
+                footer = "Paste the URLs of your catalogs and source lists. Moekoma installs the English sources of each list, and Search and Discover ask them. Moekoma runs Mihon extensions and Kotatsu parsers, and reads OPDS catalogs now. The other kinds of source come in the next versions.",
             ) {
                 LinkRow(if (library.sources.isEmpty()) "Add sources" else "Edit the source list", bold = true, color = palette.accent) { open(SettingsRoute.EditSources) }
             }
@@ -162,7 +162,7 @@ fun SourcesHomeScreen(container: AppContainer, open: (SettingsRoute) -> Unit, on
                             open(
                                 when (link.kind) {
                                     SourceKind.Opds -> SettingsRoute.Feed(link, link.url, link.name ?: link.host ?: "Catalog")
-                                    SourceKind.Mihon -> SettingsRoute.SourceList(link)
+                                    SourceKind.Mihon, SourceKind.Kotatsu -> SettingsRoute.SourceList(link)
                                     else -> SettingsRoute.Detect(link)
                                 },
                             )
@@ -215,6 +215,7 @@ fun EditSourcesScreen(container: AppContainer, onBack: () -> Unit) {
             ) {
                 listOf(
                     "A repository of Mihon extensions, such as Keiyoushi" to "https://.../index.min.json or repo.json",
+                    "A plugin of the Kotatsu parsers, such as Gekkoushi" to "https://github.com/Gekkoushi/plugin",
                     "An OPDS catalog: Komga, Kavita, Calibre-web" to "https://.../opds/v1.2/catalog",
                     "LNReader plugins, for web novels" to "https://.../plugins.min.json",
                     "Aidoku sources" to "https://.../index.min.json",
@@ -482,7 +483,8 @@ fun InstalledSourcesScreen(container: AppContainer, open: (SettingsRoute) -> Uni
                 )
             }
             items(shown.size, key = { shown[it].id }) { index -> val source = shown[index]
-                Card(padding = PaddingValues(0.dp)) { InstalledRow(source) { open(SettingsRoute.Source(source)) } }
+                val link = library.sources.firstOrNull { it.id == source.list }
+                Card(padding = PaddingValues(0.dp)) { InstalledRow(source, link?.name ?: link?.kind?.label) { open(SettingsRoute.Source(source)) } }
             }
         }
     }
