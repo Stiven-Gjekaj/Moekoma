@@ -1,5 +1,7 @@
 package io.github.stivengjekaj.moekoma.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +32,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +67,13 @@ fun SettingsScreen(container: AppContainer, newer: String?) {
     var fontLicense by remember { mutableStateOf(false) }
     var startingOver by remember { mutableStateOf(false) }
     val locked by container.model.libraryLocked.collectAsState()
+    val folders by container.folders.folders.collectAsState()
+    val scan by container.folders.lastResult.collectAsState()
+    val scanning by container.folders.busy.collectAsState()
+    val scope = rememberCoroutineScope()
+    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        uri?.let { container.folders.add(it) }
+    }
 
     Column(
         Modifier.fillMaxSize().background(palette.background).statusBarsPadding().verticalScroll(rememberScrollState())
@@ -74,6 +85,36 @@ fun SettingsScreen(container: AppContainer, newer: String?) {
         if (locked) {
             Section("The library did not load", footer = "Moekoma does not save while the library file cannot be read, so the file stays as it is. Start a new, empty library. A copy of the old file stays next to it.") {
                 LinkRow("Start a new library", bold = true, color = palette.danger) { startingOver = true }
+            }
+        }
+
+        Section(
+            "Folders",
+            footer = "Moekoma imports each new book of these folders: EPUB, PDF, comic archives, Kindle books, text, and folders of images. " +
+                "It looks when the app opens and two times a day. A book that you delete does not come back.",
+        ) {
+            folders.folders.forEach { folder ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(start = 16.dp)) {
+                    Text(folder.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { container.folders.remove(folder) }) { Text("Remove", color = palette.danger) }
+                }
+                Divider()
+            }
+            LinkRow("Add a folder", bold = true, color = palette.accent) { pickFolder.launch(null) }
+            if (folders.folders.isNotEmpty()) {
+                Divider()
+                val status = when {
+                    scanning -> "Looking for new books"
+                    scan == null -> "Look for new books now"
+                    else -> scan!!.let { result ->
+                        listOfNotNull(
+                            if (result.added == 0) "No new books" else "${result.added} new book${if (result.added == 1) "" else "s"}",
+                            result.failed.size.takeIf { it > 0 }?.let { "$it did not import" },
+                            result.missing.takeIf { it.isNotEmpty() }?.let { "Moekoma cannot open ${it.joinToString(", ")}" },
+                        ).joinToString(". ") + ". Look again"
+                    }
+                }
+                LinkRow(status) { if (!scanning) scope.launch { container.folders.scan() } }
             }
         }
 
