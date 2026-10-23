@@ -54,8 +54,13 @@ class MihonException(message: String) : Exception(message)
 class MihonHost(private val context: Context, private val http: OkHttpClient) {
     private val folder = File(context.filesDir, "Mihon")
 
-    /** The sources of each APK that loaded, by the path of the APK. One APK can hold many sources. */
-    private val loaded = mutableMapOf<String, List<Source>>()
+    /**
+     * The sources of each APK that loaded, by the path of the APK. One APK can hold many sources. A list can install
+     * hundreds of APKs, so only the APKs that the user used last stay in the memory.
+     */
+    private val loaded = object : LinkedHashMap<String, List<Source>>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<Source>>) = size > 24
+    }
 
     init {
         setUpInjekt(context.applicationContext as Application)
@@ -153,7 +158,13 @@ class MihonHost(private val context: Context, private val http: OkHttpClient) {
         MihonSource(installed, source)
     }
 
-    private fun loadApk(file: File): List<Source> {
+    private fun loadApk(file: File): List<Source> = try {
+        loadClasses(file)
+    } catch (e: LinkageError) {
+        throw MihonException("The extension did not start: ${e.message ?: e.javaClass.simpleName}")
+    }
+
+    private fun loadClasses(file: File): List<Source> {
         if (file.canWrite()) file.setReadOnly()
         val info = packageInfo(file)
         val classes = info.applicationInfo?.metaData?.getString("tachiyomi.extension.class")
@@ -176,10 +187,11 @@ class MihonHost(private val context: Context, private val http: OkHttpClient) {
         fun setUpInjekt(app: Application) = synchronized(this) {
             if (injektReady) return
             val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
-            Injekt.addSingleton(app)
+            Injekt.addSingleton<Application>(app)
             Injekt.addSingleton<Context>(app)
-            Injekt.addSingleton(json)
-            Injekt.addSingleton(ProtoBuf)
+            Injekt.addSingleton<Json>(json)
+            // The type must be ProtoBuf. The object ProtoBuf alone has the type of its companion.
+            Injekt.addSingleton<ProtoBuf>(ProtoBuf)
             Injekt.addSingletonFactory { NetworkHelper(app) { userAgent(app) } }
             injektReady = true
         }
@@ -293,7 +305,14 @@ class MihonSource(private val installed: InstalledSource, private val source: Ca
         }
     }
 
-    private suspend fun <T> io(block: suspend () -> T): T = withContext(Dispatchers.IO) { block() }
+    /** Runs the code of the extension. An error of the extension, such as a missing class, becomes a fault of this source. */
+    private suspend fun <T> io(block: suspend () -> T): T = withContext(Dispatchers.IO) {
+        try {
+            block()
+        } catch (e: LinkageError) {
+            throw MihonException("${info.name} failed: ${e.cause?.message ?: e.message ?: e.javaClass.simpleName}")
+        }
+    }
 
     companion object {
         private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)

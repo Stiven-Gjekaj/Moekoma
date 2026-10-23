@@ -13,6 +13,8 @@ Moekoma changed these files:
   web view for Cloudflare, no DNS over HTTPS, and no logs. Its public parts are the same.
 - network/interceptor/CloudflareInterceptor.kt: written again. It finds the
   browser check of Cloudflare and gives a fault. It does not open a web view.
+- network/interceptor/UncaughtExceptionInterceptor.kt: it also catches a
+  LinkageError, such as an error in the start of a class of an extension.
 - AppInfo.kt: written again. It gives the version of Moekoma.
 
 The other files are as in Mihon.

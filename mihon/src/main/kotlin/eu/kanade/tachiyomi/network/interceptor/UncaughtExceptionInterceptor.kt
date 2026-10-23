@@ -23,6 +23,9 @@ class UncaughtExceptionInterceptor : Interceptor {
             } else {
                 throw IOException(e)
             }
+        } catch (e: LinkageError) {
+            // An extension that cannot find or start a class stops only its own request, not the app.
+            throw IOException(e)
         }
     }
 }
