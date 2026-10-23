@@ -85,6 +85,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
 import coil3.request.ImageRequest
 import io.github.stivengjekaj.moekoma.VolumeKeys
 import io.github.stivengjekaj.moekoma.core.BookFormat
@@ -118,7 +120,7 @@ private val ReadingMode.icon: ImageVector
         ReadingMode.Vertical -> Icons.Outlined.ArrowDownward
     }
 
-/** Reads one comic or one PDF of the library. A tap in the middle shows or hides the bars. A tap at an edge turns the page. */
+/** Reads one comic or one PDF of the library. */
 @Composable
 fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () -> Unit) {
     val library by model.library.collectAsState()
@@ -127,10 +129,26 @@ fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () 
     val pdf = remember(bookId) { if (book.format == BookFormat.Pdf) runCatching { PdfDocument(model.pdf(book)) }.getOrNull() else null }
     DisposableEffect(pdf) { onDispose { pdf?.close() } }
     val pages: List<Any> = remember(bookId) { pdf?.let { doc -> List(doc.pageCount) { PdfPage(doc, it) } } ?: model.pages(book) }
-    val mode = library.mode(book)
+    PageReader(
+        title = book.title, pages = pages, start = book.page, mode = library.mode(book), prefs = prefs,
+        onPage = { page -> model.update(bookId) { it.read(page) } },
+        onMode = { m -> model.update(bookId) { it.copy(mode = m) } },
+        onClose = onClose,
+    )
+}
+
+/**
+ * Pages with the bars of the reader: the files of a book, the pages of a PDF, or the pages of a catalog.
+ * A tap in the middle shows or hides the bars. A tap at an edge turns the page.
+ */
+@Composable
+fun PageReader(
+    title: String, pages: List<Any>, start: Int, mode: ReadingMode, prefs: Preferences,
+    onPage: (Int) -> Unit, onMode: (ReadingMode) -> Unit, onClose: () -> Unit,
+) {
     val palette = LocalPalette.current
     val eInk = palette.isEInk
-    var page by rememberSaveable(bookId) { mutableIntStateOf(book.page.coerceIn(0, maxOf(pages.size - 1, 0))) }
+    var page by rememberSaveable { mutableIntStateOf(start.coerceIn(0, maxOf(pages.size - 1, 0))) }
     var bars by rememberSaveable { mutableStateOf(true) }
     var turns by remember { mutableIntStateOf(0) }
     var flash by remember { mutableStateOf(false) }
@@ -140,7 +158,7 @@ fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () 
     KeepScreenOn(prefs.keepScreenOn)
 
     LaunchedEffect(page) {
-        if (pages.isNotEmpty()) model.update(bookId) { it.read(page) }
+        if (pages.isNotEmpty()) onPage(page)
     }
     // On an e-ink screen, a black frame clears the ghost image of the last pages.
     LaunchedEffect(turns) {
@@ -177,15 +195,18 @@ fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () 
         }
 
         if (eInk) {
-            if (bars) Chrome(book.title, page, pages.size, mode, onClose, onMode = { m -> model.update(bookId) { it.copy(mode = m) } }, onPage = ::go)
+            if (bars) Chrome(title, page, pages.size, mode, onClose, onMode = onMode, onPage = ::go)
         } else {
             AnimatedVisibility(bars, enter = fadeIn(), exit = fadeOut()) {
-                Chrome(book.title, page, pages.size, mode, onClose, onMode = { m -> model.update(bookId) { it.copy(mode = m) } }, onPage = ::go)
+                Chrome(title, page, pages.size, mode, onClose, onMode = onMode, onPage = ::go)
             }
         }
         if (flash) Box(Modifier.fillMaxSize().background(Color.Black))
     }
 }
+
+/** A page from the network, with the headers that its server asks for, such as the password of a catalog. */
+data class RemotePage(val url: String, val headers: Map<String, String> = emptyMap())
 
 /** One page at a time, with a swipe or a tap at the edge. Each page zooms with a pinch or a double tap. */
 @Composable
@@ -377,7 +398,15 @@ private fun pageRequest(file: Any, half: Boolean = false): ImageRequest {
     val density = LocalDensity.current
     val longSide = with(density) { maxOf(configuration.screenWidthDp, configuration.screenHeightDp).dp.roundToPx() }
     val pixels = (longSide * if (half) 1 else 2).coerceAtMost(4096)
-    return remember(file, pixels) { ImageRequest.Builder(context).data(file).size(pixels, pixels).build() }
+    return remember(file, pixels) {
+        val builder = ImageRequest.Builder(context).size(pixels, pixels)
+        if (file is RemotePage) {
+            builder.data(file.url).httpHeaders(NetworkHeaders.Builder().apply { file.headers.forEach { (key, value) -> set(key, value) } }.build())
+        } else {
+            builder.data(file)
+        }
+        builder.build()
+    }
 }
 
 /** The reader gets the volume keys and the page keys while it is open. */

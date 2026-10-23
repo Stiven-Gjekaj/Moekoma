@@ -64,6 +64,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
     implementation(libs.coil.compose)
+    // The covers and the pages of the sources come with the network client of the app.
+    implementation(libs.coil.network.okhttp)
     // libarchive reads ZIP, RAR, RAR5, 7z, and TAR. Apache License 2.0, with libarchive under the BSD License.
     implementation(libs.libarchive)
     // Scans the folders that the app watches, also when the app is closed.
