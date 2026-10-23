@@ -1,0 +1,18 @@
+Moekoma: the source API of Mihon
+
+The code in this folder comes from Mihon (https://github.com/mihonapp/mihon),
+at the commit d001e6f of 2026-10-21. Mihon is under the Apache License 2.0,
+which is in LICENSE.
+
+Moekoma changed these files:
+
+- source/model/SMangaImpl.kt and source/model/SChapterImpl.kt: an empty
+  JsonObject replaces JsonObject.EMPTY of mihon.core.common.
+- source/model/FilterList.kt: the Compose annotation @Stable is removed.
+- network/NetworkHelper.kt: written again for Moekoma. It has no Cloudflare
+  web view for Cloudflare, no DNS over HTTPS, and no logs. Its public parts are the same.
+- network/interceptor/CloudflareInterceptor.kt: written again. It finds the
+  browser check of Cloudflare and gives a fault. It does not open a web view.
+- AppInfo.kt: written again. It gives the version of Moekoma.
+
+The other files are as in Mihon.
