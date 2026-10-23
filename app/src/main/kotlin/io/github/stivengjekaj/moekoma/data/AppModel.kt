@@ -1,0 +1,183 @@
+package io.github.stivengjekaj.moekoma.data
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.provider.OpenableColumns
+import io.github.stivengjekaj.moekoma.core.Book
+import io.github.stivengjekaj.moekoma.core.BookFormat
+import io.github.stivengjekaj.moekoma.core.ComicFiles
+import io.github.stivengjekaj.moekoma.core.ComicImporter
+import io.github.stivengjekaj.moekoma.core.ImportException
+import io.github.stivengjekaj.moekoma.core.Library
+import io.github.stivengjekaj.moekoma.core.LibraryStore
+import io.github.stivengjekaj.moekoma.core.NewerFormException
+import io.github.stivengjekaj.moekoma.core.ReadingMode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import me.zhanghai.android.libarchive.ArchiveException
+import java.io.File
+import java.util.UUID
+
+/** The number of the file that the app imports now, and the number of all files. */
+data class ImportProgress(val done: Int, val total: Int)
+
+/** The state of the app: the library and the files of each book. */
+class AppModel(private val context: Context, private val scope: CoroutineScope, val root: File = File(context.filesDir, "Moekoma")) {
+    private val libraryFile = File(root, "library.json")
+    private val booksFolder = File(root, "Books")
+    private val state = MutableStateFlow(Library())
+    private val saving = Mutex()
+
+    val library: StateFlow<Library> = state.asStateFlow()
+
+    /** The fault of the last load or import, for an alert. */
+    val fault = MutableStateFlow<String?>(null)
+
+    private val importState = MutableStateFlow<ImportProgress?>(null)
+    val importing: StateFlow<ImportProgress?> = importState.asStateFlow()
+
+    init {
+        try {
+            state.value = LibraryStore.load(libraryFile)
+        } catch (e: NewerFormException) {
+            fault.value = "A newer version of Moekoma wrote this library. Update the app to open it."
+        } catch (e: Exception) {
+            fault.value = "The library file cannot be read."
+        }
+    }
+
+    // Books
+
+    fun folder(book: Book) = File(booksFolder, book.id.toString().uppercase())
+
+    fun cover(book: Book) = File(folder(book), "cover.jpg")
+
+    fun pages(book: Book): List<File> = ComicImporter.pages(folder(book))
+
+    fun update(id: UUID, change: (Book) -> Book) = change { it.update(id, change) }
+
+    fun setDefaultMode(mode: ReadingMode) = change { it.copy(defaultMode = mode) }
+
+    fun delete(book: Book) {
+        change { library -> library.copy(books = library.books.filter { it.id != book.id }) }
+        scope.launch(Dispatchers.IO) { folder(book).deleteRecursively() }
+    }
+
+    // Import
+
+    /** Imports each file. A fault stops only its own file. */
+    fun importDocuments(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        importAll(uris.map { uri -> { importDocument(uri) } })
+    }
+
+    /** Imports a folder of images that the user chose. */
+    fun importFolder(tree: Uri) {
+        importAll(listOf {
+            val files = DocumentTreeFiles(context.contentResolver, tree)
+            val name = files.name()
+            name to runCatching { importComic(files, name) }
+        })
+    }
+
+    private fun importAll(jobs: List<suspend () -> Pair<String, Result<Book>>>) = scope.launch {
+        importState.value = ImportProgress(0, jobs.size)
+        val failed = mutableListOf<String>()
+        jobs.forEachIndexed { index, job ->
+            val (name, result) = withContext(Dispatchers.IO) { job() }
+            result.onSuccess { book -> change { it.copy(books = it.books + book) } }
+                .onFailure { failed += "$name: ${describe(it)}" }
+            importState.value = ImportProgress(index + 1, jobs.size)
+        }
+        importState.value = null
+        if (failed.isNotEmpty()) fault.value = "Some files were not imported.\n\n" + failed.joinToString("\n")
+    }
+
+    private fun importDocument(uri: Uri): Pair<String, Result<Book>> {
+        val name = displayName(uri)
+        val ext = name.substringAfterLast('.', "").lowercase()
+        return name to runCatching {
+            if (ext !in ComicImporter.archiveExtensions) throw ImportException.Unsupported(ext.ifEmpty { "?" })
+            val resolver = context.contentResolver
+            try {
+                importComic(ArchiveFiles { resolver.openFileDescriptor(uri, "r") ?: throw java.io.IOException("$name cannot be opened.") }, name)
+            } catch (e: ArchiveException) {
+                // A file that another app shares can come as a stream, which libarchive cannot seek.
+                // A copy in the cache can.
+                val copy = File(context.cacheDir, "import-${UUID.randomUUID()}.$ext")
+                try {
+                    resolver.openInputStream(uri)?.use { input -> copy.outputStream().use { input.copyTo(it) } } ?: throw e
+                    importComic(ArchiveFiles { android.os.ParcelFileDescriptor.open(copy, android.os.ParcelFileDescriptor.MODE_READ_ONLY) }, name)
+                } finally {
+                    copy.delete()
+                }
+            }
+        }
+    }
+
+    private fun importComic(files: ComicFiles, name: String): Book {
+        val id = UUID.randomUUID()
+        val folder = File(booksFolder, id.toString().uppercase())
+        val comic = ComicImporter.importComic(files, name, folder)
+        ComicImporter.pages(folder).firstOrNull()?.let { runCatching { makeCover(it, File(folder, "cover.jpg")) } }
+        return Book(
+            id = id, title = comic.title, author = comic.info?.writer, summary = comic.info?.summary,
+            format = BookFormat.Comic, fileName = name, pageCount = comic.pageCount, mode = comic.info?.readingMode,
+        )
+    }
+
+    private fun displayName(uri: Uri): String {
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0)?.let { return it }
+        }
+        return uri.lastPathSegment?.substringAfterLast('/') ?: "file"
+    }
+
+    private fun describe(error: Throwable): String = when (error) {
+        is ImportException -> error.message ?: "The file cannot be imported."
+        is ArchiveException -> "The archive is damaged or locked with a password."
+        is java.io.IOException -> "The archive is damaged or locked with a password."
+        else -> error.message ?: error.javaClass.simpleName
+    }
+
+    // Store
+
+    private fun change(change: (Library) -> Library) {
+        state.value = change(state.value)
+        val snapshot = state.value
+        scope.launch(Dispatchers.IO) {
+            saving.withLock {
+                // A newer change saves after this one, so an old state does not win.
+                if (snapshot !== state.value) return@withLock
+                try {
+                    LibraryStore.save(snapshot, libraryFile)
+                } catch (e: Exception) {
+                    fault.value = "The library was not saved: ${e.message}"
+                }
+            }
+        }
+    }
+
+    companion object {
+        /** Writes a JPEG of the first page with the long side at most [maxPixels]. */
+        fun makeCover(page: File, cover: File, maxPixels: Int = 600) {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(page.path, bounds)
+            var sample = 1
+            while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPixels) sample *= 2
+            val bitmap = BitmapFactory.decodeFile(page.path, BitmapFactory.Options().apply { inSampleSize = sample }) ?: return
+            val scale = maxPixels.toFloat() / maxOf(bitmap.width, bitmap.height)
+            val small = if (scale < 1) Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true) else bitmap
+            cover.outputStream().use { small.compress(Bitmap.CompressFormat.JPEG, 80, it) }
+        }
+    }
+}
