@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import io.github.stivengjekaj.moekoma.AppContainer
 import io.github.stivengjekaj.moekoma.BuildConfig
+import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.EInk
 import io.github.stivengjekaj.moekoma.ui.theme.Appearance
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
@@ -56,9 +57,12 @@ fun MoekomaRoot(container: AppContainer) {
         val fault by container.model.fault.collectAsState()
         val palette = LocalPalette.current
 
-        val book = reading
+        val book = reading?.let { id -> container.model.library.collectAsState().value.book(UUID.fromString(id)) }
         if (book != null) {
-            ReaderScreen(container.model, UUID.fromString(book), prefs) { reading = null }
+            when (book.format) {
+                BookFormat.Novel -> NovelReaderScreen(container.model, container.settings, book.id) { reading = null }
+                else -> ReaderScreen(container.model, book.id, prefs) { reading = null }
+            }
         } else {
             // A phone shows the tabs at the bottom. A tablet or an unfolded phone shows them at the side.
             BoxWithConstraints(Modifier.fillMaxSize().background(palette.background)) {
