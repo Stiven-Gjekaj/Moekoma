@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CollectionsBookmark
@@ -33,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -41,6 +44,7 @@ import io.github.stivengjekaj.moekoma.AppContainer
 import io.github.stivengjekaj.moekoma.BuildConfig
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.EInk
+import io.github.stivengjekaj.moekoma.data.BrowserChecks
 import io.github.stivengjekaj.moekoma.ui.theme.Appearance
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import io.github.stivengjekaj.moekoma.ui.theme.MoekomaTheme
@@ -61,6 +65,8 @@ fun MoekomaRoot(container: AppContainer) {
         var tab by rememberSaveable { mutableStateOf(Tab.Library) }
         var reading by rememberSaveable { mutableStateOf<String?>(null) }
         var remote by remember { mutableStateOf<RemoteBook?>(null) }
+        // The site of a browser check that the user opened.
+        var checking by remember { mutableStateOf<String?>(null) }
         var remoteMode by remember { mutableStateOf(container.model.library.value.defaultMode) }
         val newer by produceState<String?>(null) { value = container.updates.newerVersion(BuildConfig.VERSION_NAME) }
         val fault by container.model.fault.collectAsState()
@@ -79,8 +85,8 @@ fun MoekomaRoot(container: AppContainer) {
         val book = reading?.let { id -> container.model.library.collectAsState().value.book(UUID.fromString(id)) }
         Box(Modifier.fillMaxSize()) {
             // A phone shows the tabs at the bottom. A tablet or an unfolded phone shows them at the side.
-            // A screen reader does not read the tabs under an open book.
-            val hidden = if (book != null || remote != null) Modifier.clearAndSetSemantics {} else Modifier
+            // A screen reader does not read the tabs under an open book or a check.
+            val hidden = if (book != null || remote != null || checking != null) Modifier.clearAndSetSemantics {} else Modifier
             BoxWithConstraints(Modifier.fillMaxSize().background(palette.background).then(hidden)) {
                 val content: @Composable () -> Unit = {
                     when (tab) {
@@ -137,6 +143,20 @@ fun MoekomaRoot(container: AppContainer) {
                     BookFormat.Series -> SeriesReaderScreen(container, book.id) { reading = null }
                     else -> ReaderScreen(container.model, book.id, prefs) { reading = null }
                 }
+            }
+        }
+
+        // A site that asks for a check that needs the user. The banner stays above the tabs.
+        val check by BrowserChecks.pending.collectAsState()
+        if (checking == null && book == null && remote == null) check?.let { url ->
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                BrowserCheckBanner(url, { checking = url }, Modifier.navigationBarsPadding().padding(bottom = 88.dp))
+            }
+        }
+        checking?.let { url ->
+            BrowserCheckScreen(url) { passed ->
+                if (passed) BrowserChecks.host(url)?.let(BrowserChecks::markPassed)
+                checking = null
             }
         }
 
