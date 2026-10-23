@@ -184,7 +184,8 @@ class MihonHost(private val context: Context, private val http: OkHttpClient) {
         @Volatile private var injektReady = false
 
         /** The objects that the extensions ask Injekt for. These are the bindings of Mihon. */
-        fun setUpInjekt(app: Application) = synchronized(this) {
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        fun setUpInjekt(app: Application): Unit = synchronized(this) {
             if (injektReady) return
             val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
             Injekt.addSingleton<Application>(app)

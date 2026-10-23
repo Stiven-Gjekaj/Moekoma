@@ -135,9 +135,9 @@ private fun DiscoverHero(items: List<DiscoverFeed.Featured>, open: (DiscoverFeed
             }) { _, amount -> moved += amount }
         },
     ) {
-        Crossfade(shown.item.id, label = "art") { _ ->
-            if (!palette.isEInk && shown.item.cover != null) {
-                val request = remember(shown.item.cover) { ImageRequest.Builder(context).data(shown.item.cover).size(600).build() }
+        Crossfade(shown.item.cover, label = "art") { cover ->
+            if (!palette.isEInk && cover != null) {
+                val request = remember(cover) { ImageRequest.Builder(context).data(cover).size(600).build() }
                 AsyncImage(request, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(24.dp))
             }
         }
