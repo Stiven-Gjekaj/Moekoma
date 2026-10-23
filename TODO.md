@@ -24,6 +24,17 @@ before you write it here.
 - 1.0.0 All of these functions, with the backup of Asabunko, the import of a
   Mihon backup, and the check for new chapters.
 
+## Changes that come from Asabunko now
+
+The owner makes these changes in Asabunko now. Port them when they are out,
+and change the order of the releases if they need it.
+
+- The library holds the books on a reading list and the books to continue.
+- Browse is a search, as in ZettaStream. It chooses the best source, or the
+  user chooses a source from a list.
+- The sources move to Settings and install with no tap.
+- A Discover page after the library, with recommended manga.
+
 ## After 1.0.0, when Asabunko has them
 
 Port each one from Asabunko. Do not design it again here.

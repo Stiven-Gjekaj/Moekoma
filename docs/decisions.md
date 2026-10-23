@@ -247,3 +247,58 @@ the form of a function before you write it again here. Do not guess it.
 - Reason: the owner builds these functions in Asabunko now. One design in
   each of the two apps keeps them the same and does not do the work two
   times.
+
+## 2026-10-23: The core module and the archives
+
+- `core` is a JVM module with no Android code, as `AsaCore` has no screen.
+- libarchive runs only on Android, so the core reads the files of a comic
+  through `ComicFiles`. The app gives `ArchiveFiles`, with libarchive, and
+  `DocumentTreeFiles`, with the Storage Access Framework. The tests of the
+  core use the ZIP reader of Java.
+- The tests of libarchive run on the emulator. They write ZIP, 7z, and TAR
+  archives with libarchive. No tool writes a RAR, as in Asabunko.
+- libarchive opens the file descriptor of the document. A file that another
+  app shares as a stream goes to the cache first, because libarchive must
+  seek in a 7z or a RAR.
+- libarchive stays at 1.1.6. Version 1.1.7 needs compileSdk 37.2.
+- Reason: the core tests run in seconds with no emulator, and the import
+  rules are the same for an archive and a folder.
+
+## 2026-10-23: The library file
+
+- The library is one JSON file, `library.json`, in the files folder of the
+  app. The pages are in `Books/<ID>/`, as in Asabunko.
+- The file has the field names and the form number of Asabunko. A UUID is in
+  capital letters, and a date is ISO 8601 with no part of a second, because
+  Swift writes and reads only these forms.
+- A field that Moekoma does not know yet, such as the sources of Asabunko, is
+  ignored when the app reads the file.
+- No file of the app goes to the backup of Android. The backup of the app
+  comes in 1.0.0.
+- Reason: one form lets the backup move between the two apps.
+
+## 2026-10-23: The comic reader
+
+- The paged modes use the pager of Compose. A right to left book reverses the
+  pager, so that its first page is at the right.
+- A pinch or a double tap zooms a page up to four times. While a page is
+  zoomed, a drag moves the page and not the pager.
+- A page loads at two times the long side of the screen, for the zoom. A
+  page of the vertical mode loads at one time.
+- The bars of the system hide with the bars of the reader.
+- The volume keys and the page keys turn the page in the paged modes, and
+  move one screen in the vertical mode.
+- On an e-ink screen, a swipe turns the page with no animation, and the
+  vertical mode moves one screen at each tap at the top or the bottom.
+- Reason: the same reader as Asabunko, with the Android extras of the owner.
+
+## 2026-10-23: The new library and search of Asabunko
+
+- The owner changes Asabunko now: the library holds the books on a reading
+  list and the books to continue. Browse becomes a search, as in
+  ZettaStream, that chooses the best source or shows a list of sources. The
+  sources move to Settings and install with no tap. A Discover page comes
+  after the library.
+- Moekoma waits for this work, and ports it from Asabunko. It does not
+  design it here.
+- Reason: the owner asked to see how the agent of Asabunko does it first.
