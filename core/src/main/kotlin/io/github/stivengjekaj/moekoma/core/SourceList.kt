@@ -37,10 +37,13 @@ enum class SourceKind(val label: String) {
      * A repository of Mihon extensions, which run on the device. Asabunko does not know this kind,
      * so the library file keeps it in a key of Moekoma. See [SourceLink].
      */
-    @SerialName("mihon") Mihon("Mihon extensions");
+    @SerialName("mihon") Mihon("Mihon extensions"),
+
+    /** A plugin of the Kotatsu parsers, in the releases of a GitHub repository or at the URL of its jar. Asabunko does not know this kind. */
+    @SerialName("kotatsu") Kotatsu("Kotatsu parsers");
 
     /** True when Asabunko knows this kind, so that the library file can keep it in "kind". */
-    val shared: Boolean get() = this != Mihon
+    val shared: Boolean get() = this != Mihon && this != Kotatsu
 
     companion object {
         /** The kind that the URL tells, or null when only its content can tell. */
@@ -48,6 +51,7 @@ enum class SourceKind(val label: String) {
             val uri = runCatching { URI(url) }.getOrNull() ?: return null
             val text = url.lowercase()
             val path = (uri.rawPath ?: "").lowercase()
+            if (path.endsWith(".jar") || "kotatsu" in text || "gekkoushi" in text) return Kotatsu
             if (path.endsWith("/repo.json") || path.endsWith("index.pb") || "keiyoushi" in text || "tachiyomi" in text || "mihon" in text) return Mihon
             if (path.endsWith("plugins.min.json") || path.endsWith("plugins.json") || "lnreader" in text) return LnReader
             if (path.endsWith("versioning.json") || "paperback" in text || "inkdex" in text) return Paperback
