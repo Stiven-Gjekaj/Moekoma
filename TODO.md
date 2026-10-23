@@ -10,10 +10,6 @@ Moekoma 1.0.0 has the functions of Asabunko 2.2.0 and the Android extras.
 
 ## Releases up to 1.0.0
 
-- 0.2.0 The library of Asabunko 2: Continue reading and the read list with
-  its order, the art of the empty screens, a library file that does not load
-  stays safe, the save after a short time, and the screen that stays on.
-- 0.3.0 EPUB, TXT, FB2, and HTML novels, with the reader of novels.
 - 0.4.0 PDF.
 - 0.5.0 MOBI and AZW3 books with no DRM.
 - 0.6.0 The folders of the device, which the app watches.

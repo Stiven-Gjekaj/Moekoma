@@ -337,3 +337,31 @@ the form of a function before you write it again here. Do not guess it.
 - The library saves 0.4 seconds after the last change, and at once in
   `onStop`, because Android can stop the app in the background.
 - Reason: the same library as Asabunko 2.
+
+## 2026-10-23: The novels
+
+- The importers of EPUB, TXT, FB2, and HTML are the importers of Asabunko,
+  in the core module. They write the same `novel.json` and the same
+  chapters. The XML tree uses the DOM parser of Java, with no external
+  entity and no external DTD.
+- A no-break space counts as a space in the text of the XML, as in Swift.
+- The core gives the image of the cover. The app makes `cover.jpg` of it,
+  because the thumbnail needs Android.
+
+## 2026-10-23: The reader of novels
+
+- A chapter shows in a web view, as in Asabunko. The web view gets each
+  file of the book from the app, at a host that is not real. A path that
+  points out of the folder of the book gets no file.
+- The scripts of the book do not run. Each file comes with the Content
+  Security Policy `script-src 'none'`. The scripts of the app run with
+  `evaluateJavascript`, which the policy does not stop. Android has no
+  second world for scripts, as iOS has.
+- The style, the place from 0 to 1, the taps, and the links work as in
+  Asabunko. The fonts are Noto Serif, Roboto, and Karla, the fonts of
+  Android and of the app.
+- The volume keys move one screen. At the end of a chapter, they go to the
+  next chapter.
+- On an e-ink screen, a tap at the bottom or at the top moves one screen with
+  no animation, and a tap in the middle shows the bars.
+- Reason: the same reader as Asabunko, safe from the scripts of a book.

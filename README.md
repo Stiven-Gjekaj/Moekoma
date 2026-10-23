@@ -39,6 +39,10 @@ Moekoma has no sources in it. Your books stay on your device.
 - Comics: CBZ, CBR, CB7, and CBT files, ZIP, RAR, RAR5, 7z, and TAR
   archives, and folders of images. The title, the writer, and the direction
   come from ComicInfo.xml
+- Novels: EPUB, TXT, FB2, and HTML files. The chapters and their titles come
+  from the book, or from the headings of a TXT file
+- A reader of novels with your font, size, spacing, and margins, and a list
+  of the chapters
 - A reader of pages from the right to the left, from the left to the right,
   or in one vertical column, with zoom
 - Continue reading: the books that you read now, with the page and the
@@ -56,7 +60,7 @@ Moekoma has no sources in it. Your books stay on your device.
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 
-The next functions are in [TODO.md](TODO.md): novels, PDF, folders that the
+The next functions are in [TODO.md](TODO.md): PDF, MOBI and AZW3, folders that the
 app watches, OPDS catalogs, Mihon extensions on the device, the Kotatsu
 parsers, LNReader, Suwayomi, Aidoku, and Paperback.
 

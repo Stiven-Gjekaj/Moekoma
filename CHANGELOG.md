@@ -7,6 +7,24 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.3.0 (2026-10-23)
+
+- Adds novels. Import EPUB 2 and EPUB 3 books, TXT files, FB2 books, and
+  HTML pages, or open them with Moekoma from another app.
+- The chapters come from the spine of an EPUB, with their titles from the
+  table of contents. A TXT file gets a chapter at each heading, such as
+  "Chapter 12" or "第十二章", and a long text with no headings gets parts.
+- A TXT file can be in UTF-8, UTF-16, Shift JIS, GB18030, or Windows-1252.
+- Read one chapter at a time, with a list of the chapters that you can
+  search, and buttons for the next and the previous chapter. The place in
+  each chapter stays.
+- Choose a serif font, a sans serif font, or Karla, and the size, the line
+  spacing, the margins, and justified text.
+- The volume keys move one screen, and go to the next chapter at the end.
+  On an e-ink screen, tap at the bottom or the top to move one screen.
+- The scripts of a book do not run.
+- An EPUB with DRM does not import, and the app tells you why.
+
 ## 0.2.0 (2026-10-23)
 
 - The library of Asabunko 2: Continue reading, and the read list. A book that
