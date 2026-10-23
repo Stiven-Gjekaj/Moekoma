@@ -193,7 +193,7 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
                 try {
                     answers[hit.source] = sources.load(source).details(hit.series)
                 } catch (e: Exception) {
-                    faults[hit.source] = e.message ?: "The source did not answer."
+                    faults[hit.source] = e.message ?: "The source did not answer. (${e.javaClass.simpleName})"
                 }
             }
         }.awaitAll()
@@ -504,7 +504,7 @@ fun OnlineSourceScreen(container: AppContainer, installed: InstalledSource, open
                 page = number
                 fault = null
             } catch (e: Exception) {
-                if (mine == generation) fault = e.message ?: "The source did not answer."
+                if (mine == generation) fault = e.message ?: "The source did not answer. (${e.javaClass.simpleName})"
             } finally {
                 if (mine == generation) loading = false
             }
@@ -571,7 +571,7 @@ fun SourceListScreen(container: AppContainer, link: SourceLink, onBack: () -> Un
         try {
             sources = container.sources.sources(link)
         } catch (e: Exception) {
-            fault = e.message ?: "The list did not load."
+            fault = e.message ?: "The list did not load. (${e.javaClass.simpleName})"
         }
     }
     val shown = sources.orEmpty().filter { info ->

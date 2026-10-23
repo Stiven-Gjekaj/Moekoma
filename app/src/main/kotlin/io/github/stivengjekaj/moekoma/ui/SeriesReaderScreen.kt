@@ -87,7 +87,7 @@ fun SeriesReaderScreen(container: AppContainer, bookId: UUID, onClose: () -> Uni
             page = start
             pages = got
         } catch (e: Exception) {
-            fault = e.message ?: "The chapter did not load."
+            fault = e.message ?: "The chapter did not load. (${e.javaClass.simpleName})"
         }
     }
 

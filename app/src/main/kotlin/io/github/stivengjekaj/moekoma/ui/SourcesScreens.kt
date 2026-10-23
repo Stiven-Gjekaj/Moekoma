@@ -270,7 +270,7 @@ fun DetectScreen(container: AppContainer, source: SourceLink, open: (SettingsRou
                 else fault = "This is a list of ${kind.label}. Moekoma reads it in a next version."
             }
         } catch (e: Exception) {
-            fault = e.message ?: "The source did not answer."
+            fault = e.message ?: "The source did not answer. (${e.javaClass.simpleName})"
         }
     }
     SubScreen(source.name ?: source.host ?: "Source", onBack) {
@@ -302,7 +302,7 @@ fun OpdsFeedScreen(container: AppContainer, source: SourceLink, url: String, tit
         } catch (e: NotAFeedException) {
             fault = e.message
         } catch (e: Exception) {
-            fault = e.message ?: "The catalog did not answer."
+            fault = e.message ?: "The catalog did not answer. (${e.javaClass.simpleName})"
         }
     }
 
