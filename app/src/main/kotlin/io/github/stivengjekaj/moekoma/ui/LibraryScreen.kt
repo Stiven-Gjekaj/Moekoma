@@ -33,6 +33,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.BookmarkAdd
+import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Undo
@@ -55,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -63,6 +66,8 @@ import androidx.compose.ui.unit.dp
 import io.github.stivengjekaj.moekoma.R
 import io.github.stivengjekaj.moekoma.core.Book
 import io.github.stivengjekaj.moekoma.core.BookFormat
+import io.github.stivengjekaj.moekoma.core.ReadListOrder
+import io.github.stivengjekaj.moekoma.data.Settings
 import io.github.stivengjekaj.moekoma.data.AppModel
 import io.github.stivengjekaj.moekoma.ui.theme.Corner
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
@@ -72,10 +77,12 @@ import java.time.LocalTime
 /** The kinds of file that the importer offers. Android does not know a type for each comic archive, so all files show. */
 private val importTypes = arrayOf("*/*")
 
-/** The shelf: the books that the user reads now, and every book in the library. */
+/** The shelf: the books that the user reads now, and the read list. */
 @Composable
-fun LibraryScreen(model: AppModel, onRead: (Book) -> Unit) {
+fun LibraryScreen(model: AppModel, settings: Settings, onRead: (Book) -> Unit) {
     val library by model.library.collectAsState()
+    val prefs by settings.preferences.collectAsState()
+    var orderMenu by remember { mutableStateOf(false) }
     val importing by model.importing.collectAsState()
     val palette = LocalPalette.current
     var deleting by remember { mutableStateOf<Book?>(null) }
@@ -107,10 +114,18 @@ fun LibraryScreen(model: AppModel, onRead: (Book) -> Unit) {
                     }
                 }
             }
-            if (library.books.isEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) { EmptyShelf { pickFiles.launch(importTypes) } }
+            val continuing = library.continueReading
+            val readList = library.readList(prefs.readListOrder)
+            if (continuing.isEmpty() && readList.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Card(padding = PaddingValues(0.dp)) {
+                        EmptyArt(
+                            title = "Your shelf is empty",
+                            text = "Import a comic archive, such as CBZ, CBR, CB7, or CBT, or a folder of images. Search and Discover come with the sources.",
+                        ) { PillButton("Import a book", { pickFiles.launch(importTypes) }) }
+                    }
+                }
             } else {
-                val continuing = library.continueReading
                 if (continuing.isNotEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -123,9 +138,40 @@ fun LibraryScreen(model: AppModel, onRead: (Book) -> Unit) {
                         }
                     }
                 }
-                item(span = { GridItemSpan(maxLineSpan) }) { SectionTitle("All books") }
-                items(library.recentlyAdded, key = { it.id }) { book ->
-                    BookMenu(book, model, onRead, onDelete = { deleting = it }) { BookTile(book, model) }
+                if (readList.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        EmptyArt(
+                            title = "Your read list is empty",
+                            text = "Tap the bookmark on the page of a title to keep it here. A book that you import goes here too.",
+                        )
+                    }
+                } else {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.weight(1f)) { SectionTitle("Read list") }
+                            Box {
+                                TextButton(
+                                    onClick = { orderMenu = true },
+                                    modifier = Modifier.semantics { contentDescription = "Order of the read list, ${prefs.readListOrder.label}" },
+                                ) {
+                                    Icon(Icons.Outlined.SwapVert, contentDescription = null, modifier = Modifier.size(18.dp), tint = palette.accent)
+                                    Text(prefs.readListOrder.label, style = MaterialTheme.typography.labelLarge, color = palette.accent, modifier = Modifier.padding(start = 4.dp))
+                                }
+                                DropdownMenu(expanded = orderMenu, onDismissRequest = { orderMenu = false }) {
+                                    ReadListOrder.entries.forEach { order ->
+                                        DropdownMenuItem(
+                                            text = { Text(order.label) },
+                                            trailingIcon = { if (order == prefs.readListOrder) Icon(Icons.Outlined.Check, contentDescription = "Chosen") },
+                                            onClick = { orderMenu = false; settings.update { it.copy(readListOrder = order) } },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    items(readList, key = { it.id }) { book ->
+                        BookMenu(book, model, onRead, onDelete = { deleting = it }) { BookTile(book, model) }
+                    }
                 }
             }
         }
@@ -173,25 +219,6 @@ private fun SectionTitle(text: String) {
     Text(text, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
 }
 
-@Composable
-private fun EmptyShelf(onImport: () -> Unit) {
-    val palette = LocalPalette.current
-    Card(padding = PaddingValues(horizontal = 16.dp, vertical = 36.dp)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-            Image(
-                painterResource(R.drawable.mark), contentDescription = null,
-                modifier = Modifier.size(120.dp).clip(RoundedCornerShape(27.dp)),
-            )
-            Text("Your shelf is empty", style = MaterialTheme.typography.titleLarge)
-            Text(
-                "Import a comic archive, such as CBZ, CBR, CB7, or CBT, or a folder of images.",
-                style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary, textAlign = TextAlign.Center,
-            )
-            PillButton("Import a book", onImport, Modifier.padding(top = 4.dp))
-        }
-    }
-}
-
 /** A long press opens the menu of a book. A tap reads it. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -209,6 +236,11 @@ private fun BookMenu(book: Book, model: AppModel, onRead: (Book) -> Unit, onDele
             if (!book.finished) {
                 DropdownMenuItem(text = { Text("Mark as read") }, leadingIcon = { Icon(Icons.Outlined.Check, null) }, onClick = {
                     open = false; model.update(book.id) { it.markRead() }
+                })
+            }
+            if (!book.listed) {
+                DropdownMenuItem(text = { Text("Add to the read list") }, leadingIcon = { Icon(Icons.Outlined.BookmarkAdd, null) }, onClick = {
+                    open = false; model.update(book.id) { it.copy(listed = true) }
                 })
             }
             DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { open = false; onDelete(book) })

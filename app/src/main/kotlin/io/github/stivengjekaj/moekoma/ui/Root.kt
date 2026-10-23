@@ -64,7 +64,7 @@ fun MoekomaRoot(container: AppContainer) {
             BoxWithConstraints(Modifier.fillMaxSize().background(palette.background)) {
                 val content: @Composable () -> Unit = {
                     when (tab) {
-                        Tab.Library -> LibraryScreen(container.model) { reading = it.id.toString() }
+                        Tab.Library -> LibraryScreen(container.model, container.settings) { reading = it.id.toString() }
                         Tab.Settings -> SettingsScreen(container, newer)
                     }
                 }
