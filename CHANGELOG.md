@@ -7,6 +7,17 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.9.0 (2026-10-23)
+
+- Pass the browser check of Cloudflare. Moekoma passes most checks with no
+  window, as Mihon does.
+- A check that needs you, such as a box to tick, shows a banner. Tap Open,
+  pass the check once, and the screen closes by itself. The page that did
+  not load loads again.
+- An OPDS catalog behind Cloudflare works after the check too.
+- The installed sources have a screen of their own, with a filter by name
+  or language.
+
 ## 0.8.0 (2026-10-23)
 
 - Run Mihon extensions on your device. Paste the URL of a repository, such

@@ -65,13 +65,16 @@ Moekoma has no sources in it. Your books stay on your device.
   same time, and Discover shows their popular and new titles
 - A title page that compares the sources of a title and chooses the source
   with the most chapters, with the chapters by volume or in parts of 50
+- The browser check of Cloudflare: Moekoma passes most checks with no
+  window. A check that needs you shows a banner, and you pass it once in a
+  web view
 - OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
   read a comic at once, or download a book. A password stays encrypted on
   the device
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 
-The next functions are in [TODO.md](TODO.md): the browser check of Cloudflare, the Kotatsu
+The next functions are in [TODO.md](TODO.md): the Kotatsu
 parsers, LNReader, Suwayomi, Aidoku, and Paperback.
 
 ## Install

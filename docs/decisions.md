@@ -161,7 +161,7 @@ the form of a function before you write it again here. Do not guess it.
   it runs the same bundle. Jsoup is the library that the Aidoku sources
   expect.
 
-## 2026-10-23: The Cloudflare challenge (back before 1.0.0 on 2026-10-23, see "Parity with Asabunko 2.2.0")
+## 2026-10-23: The Cloudflare challenge (back before 1.0.0 on 2026-10-23, see "Parity with Asabunko 2.2.0"; details on 2026-10-23, see "The browser check")
 
 - When a site gives a Cloudflare challenge, the app opens it in a web view.
   The user passes the challenge, and the web view closes.
@@ -500,3 +500,34 @@ the form of a function before you write it again here. Do not guess it.
   languages, the merge of chapters, the index, and the kinds; a live core
   test with the index of Keiyoushi; and a live device test that installs
   MangaDex and reads a page (`-Pandroid.testInstrumentationRunnerArguments.live=1`).
+
+## 2026-10-23: The browser check
+
+- The client of the Mihon extensions has the Cloudflare interceptor of
+  Mihon. It passes most checks in a web view with no window, as Mihon does.
+  Many extensions put their own interceptors before it, so the client must
+  have it with this name.
+- A check that needs the user, such as a box to tick, goes to the app after
+  the 30 seconds of Mihon. The app shows a banner, as in Asabunko 2.2.0. It
+  is a banner, and not a screen, so that the app does not open a page that
+  the user did not ask for.
+- "Open" shows the site in a web view. The screen closes when a new
+  `cf_clearance` cookie comes. An old cookie was refused, so only a new
+  value counts. "Done" closes the screen too.
+- The web view and the network clients share the cookie store of Android,
+  through the `AndroidCookieJar` of Mihon. The client of the app has it
+  too, so an OPDS catalog behind Cloudflare works after the check.
+- A check counts only for the user agent that passed it. Each client and
+  each web view sends the user agent of the web view of the device, with no
+  mark of a web view.
+- After a passed check, the screens with a fault load again: the title
+  page, the list of a source, Discover, the reader of a series, and an
+  OPDS catalog.
+- The checks: the core tests of `BrowserCheck`; two device tests with the
+  test server, a check that the web view with no window passes in 3.8
+  seconds, and a check with a button that goes to the app; and a test on
+  the emulator of the banner, the web view, a tap on the button, and the
+  catalog that loads again. No real site of Cloudflare was tested, because
+  a real check depends on the network and on Cloudflare.
+- The installed sources move to a screen of their own with a filter.
+  Reason: a repository such as Keiyoushi installs hundreds of sources.
