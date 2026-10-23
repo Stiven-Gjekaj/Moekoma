@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -52,10 +53,31 @@ class LibraryUiTest {
         compose.onNodeWithContentDescription("Close").performClick()
 
         compose.onNodeWithText("Continue reading").assertIsDisplayed()
+        compose.onNodeWithText("Read list").assertIsDisplayed()
         compose.onNodeWithText("Settings").performClick()
         compose.onNodeWithText("Paper").performClick()
         assertEquals("Paper", container.settings.preferences.value.appearance.label)
         container.settings.update { it.copy(appearance = io.github.stivengjekaj.moekoma.ui.theme.Appearance.System) }
+        root.deleteRecursively()
+    }
+
+    /** A library file that does not load stays as it is, until the user starts a new library. */
+    @Test fun keepsALibraryFileThatDoesNotLoad() {
+        root.mkdirs()
+        val file = File(root, "library.json").apply { writeText("{\"form\": 1, \"books\": [{\"title\": 5}]") }
+        val container = AppContainer(app, root)
+        compose.setContent { MoekomaRoot(container) }
+        compose.onNodeWithText("OK").performClick()
+        container.model.importDocuments(emptyList())
+        container.model.setDefaultMode(ReadingMode.Vertical)
+        Thread.sleep(800)
+        assertEquals("{\"form\": 1, \"books\": [{\"title\": 5}]", file.readText())
+        assertEquals(1, root.listFiles()!!.count { it.name.startsWith("library.broken-") })
+
+        compose.onNodeWithText("Settings").performClick()
+        compose.onNodeWithText("Start a new library").performClick()
+        compose.onAllNodesWithText("Start a new library")[1].performClick()
+        compose.waitUntil(3_000) { file.readText().startsWith("{\"form\":1") }
         root.deleteRecursively()
     }
 }

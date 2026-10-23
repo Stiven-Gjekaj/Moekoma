@@ -61,6 +61,8 @@ fun SettingsScreen(container: AppContainer, newer: String?) {
     val palette = LocalPalette.current
     val links = LocalUriHandler.current
     var fontLicense by remember { mutableStateOf(false) }
+    var startingOver by remember { mutableStateOf(false) }
+    val locked by container.model.libraryLocked.collectAsState()
 
     Column(
         Modifier.fillMaxSize().background(palette.background).statusBarsPadding().verticalScroll(rememberScrollState())
@@ -68,6 +70,12 @@ fun SettingsScreen(container: AppContainer, newer: String?) {
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
         Text("Settings", style = MaterialTheme.typography.displaySmall, modifier = Modifier.semantics { heading() })
+
+        if (locked) {
+            Section("The library did not load", footer = "Moekoma does not save while the library file cannot be read, so the file stays as it is. Start a new, empty library. A copy of the old file stays next to it.") {
+                LinkRow("Start a new library", bold = true, color = palette.danger) { startingOver = true }
+            }
+        }
 
         Section("Look", footer = if (prefs.appearance == Appearance.EInk) "The E-ink look is black on white, with no animation. The readers turn pages and do not scroll." else null) {
             Appearance.entries.forEach { option ->
@@ -83,10 +91,12 @@ fun SettingsScreen(container: AppContainer, newer: String?) {
             }
         }
 
-        Section("Reader", footer = "A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left.") {
+        Section("Reader", footer = "A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left. With \"Keep the screen on\", the screen does not go dark while a book is open.") {
             ReadingMode.entries.forEach { option ->
                 Choice(option.label, library.defaultMode == option) { container.model.setDefaultMode(option) }
             }
+            Divider()
+            Toggle("Keep the screen on", prefs.keepScreenOn) { on -> container.settings.update { it.copy(keepScreenOn = on) } }
         }
 
         Section("Keys", footer = "The volume keys turn the page while a book is open. The page keys of an e-ink reader always turn the page.") {
@@ -133,6 +143,16 @@ fun SettingsScreen(container: AppContainer, newer: String?) {
             }
         }
         Spacer(Modifier.width(1.dp))
+    }
+
+    if (startingOver) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { startingOver = false },
+            title = { Text("Start a new library?") },
+            text = { Text("The new library is empty. The copy of the old file stays.") },
+            confirmButton = { TextButton(onClick = { startingOver = false; container.model.startNewLibrary() }) { Text("Start a new library", color = palette.danger) } },
+            dismissButton = { TextButton(onClick = { startingOver = false }) { Text("Cancel") } },
+        )
     }
 }
 
