@@ -38,6 +38,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -315,18 +317,35 @@ private fun ZoomablePage(file: Any, index: Int, onTap: (TapZone) -> Unit, onZoom
                 stateDescription = if (loaded) "Loaded" else "Loading"
             },
     ) {
-        AsyncImage(
-            model = pageRequest(file),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            onState = { loaded = it is AsyncImagePainter.State.Success },
-            modifier = Modifier.fillMaxSize().graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                translationX = offset.x
-                translationY = offset.y
-            },
-        )
+        var failed by remember(file) { mutableStateOf(false) }
+        var attempt by remember(file) { mutableIntStateOf(0) }
+        key(attempt) {
+            AsyncImage(
+                model = pageRequest(file),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                onState = {
+                    loaded = it is AsyncImagePainter.State.Success
+                    failed = it is AsyncImagePainter.State.Error
+                },
+                modifier = Modifier.fillMaxSize().graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = offset.x
+                    translationY = offset.y
+                },
+            )
+        }
+        // A page of a source can take some seconds. A page of the device loads at once, so it shows no spinner.
+        val remote = file is RemotePage || file is io.github.stivengjekaj.moekoma.data.RemoteImage
+        if (remote && failed) {
+            Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("The page did not load", style = MaterialTheme.typography.titleMedium)
+                PillButton("Try again", { failed = false; attempt++ })
+            }
+        } else if (remote && !loaded) {
+            CircularProgressIndicator(color = LocalPalette.current.accent, modifier = Modifier.align(Alignment.Center))
+        }
     }
 }
 
