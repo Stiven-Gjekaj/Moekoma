@@ -17,7 +17,7 @@ one extension. Its interceptor adds a referer, which the pages need.
 
 Under /suwayomi/, it answers the GraphQL queries of a Suwayomi server with
 one source, one series, and one chapter of three pages, with the same user
-name and password as /opds/.
+name and password as /opds/. The source has filters and one preference.
 
 Under /cf/, each path of the server is behind a browser check, as a site
 behind Cloudflare. The page of the check sets the cookie of a passed check.
@@ -25,7 +25,7 @@ Under /cfm/, the check also sends the header cf-mitigated. Under /cfi/, the
 check also needs a tap on a button.
 
 /control/offline makes the server refuse the pages, and /control/online
-gives them again.
+gives them again. /control/reset sets the state of the server back.
 
 It makes each file in memory.
 
@@ -267,21 +267,45 @@ def aidoku_package(host):
     return buffer.getvalue()
 
 
-def suwayomi(query):
-    """The answer of the small Suwayomi server to a GraphQL query, by a word in it."""
+# The preference of the Suwayomi source: a switch that puts a star before each title.
+SUWAYOMI = {"stars": False}
+
+
+def suwayomi(query, variables=None):
+    """The answer of the small Suwayomi server to a GraphQL query, by a word in it. As a real server, it gives
+    each path from its own root, which is /suwayomi here."""
+    variables = variables or {}
+    if "filters {" in query:
+        return {"source": {"filters": [
+            {"__typename": "SortFilter", "name": "Sort", "values": ["Popular", "Latest"], "sortDefault": {"index": 0, "ascending": False}},
+            {"__typename": "GroupFilter", "name": "Genres", "filters": [{"__typename": "TriStateFilter", "name": "Comedy", "triDefault": "IGNORE"},
+                                                                       {"__typename": "TriStateFilter", "name": "Horror", "triDefault": "IGNORE"}]}]}}
+    if "preferences {" in query:
+        return {"source": {"preferences": [{"__typename": "SwitchPreference", "key": "stars", "title": "Show stars", "visible": True,
+                                            "on": SUWAYOMI["stars"], "onDefault": False}]}}
+    if "updateSourcePreference" in query:
+        change = variables.get("input", {}).get("change", {})
+        if change.get("position") == 0 and "switchState" in change:
+            SUWAYOMI["stars"] = change["switchState"]
+        return {"updateSourcePreference": {"clientMutationId": None}}
     if "sources {" in query:
         return {"sources": {"nodes": [{"id": "0", "name": "Local source", "lang": "localsourcelang"},
                                        {"id": "777", "name": "Test Comics", "displayName": "Test Comics (EN)", "lang": "en",
-                                        "iconUrl": "/pages/3", "isNsfw": False, "supportsLatest": True}]}}
+                                        "iconUrl": "/api/v1/page/3", "isNsfw": False, "supportsLatest": True}]}}
     if "fetchSourceManga" in query:
-        return {"fetchSourceManga": {"hasNextPage": False, "mangas": [{"id": 5, "title": "Morning Strip", "thumbnailUrl": "/pages/0"}]}}
+        star = "\u2605 " if SUWAYOMI["stars"] else ""
+        changes = variables.get("input", {}).get("filters") or []
+        # A filter of a genre that the list includes gives another title, so that a test sees the filter.
+        genres = [c["groupChange"] for c in changes if c.get("position") == 1 and "groupChange" in c]
+        title = "Comedy Strip" if any(g.get("position") == 0 and g.get("triState") == "INCLUDE" for g in genres) else "Morning Strip"
+        return {"fetchSourceManga": {"hasNextPage": False, "mangas": [{"id": 5, "title": star + title, "thumbnailUrl": "/api/v1/page/0"}]}}
     if "fetchManga" in query:
-        return {"fetchManga": {"manga": {"id": 5, "title": "Morning Strip", "thumbnailUrl": "/pages/0", "author": "Test Artist",
+        return {"fetchManga": {"manga": {"id": 5, "title": "Morning Strip", "thumbnailUrl": "/api/v1/page/0", "author": "Test Artist",
                                           "artist": "Test Artist", "description": "A strip from the server.", "genre": ["Comedy"], "status": "ONGOING"}},
                 "fetchChapters": {"chapters": [{"id": 51, "name": "Chapter 1", "chapterNumber": 1, "uploadDate": "1790000000000",
                                                 "scanlator": None, "sourceOrder": 0}]}}
     if "fetchChapterPages" in query:
-        return {"fetchChapterPages": {"pages": ["/suwayomi/api/v1/page/1", "/suwayomi/api/v1/page/2", "/suwayomi/api/v1/page/3"]}}
+        return {"fetchChapterPages": {"pages": ["/api/v1/page/1", "/api/v1/page/2", "/api/v1/page/3"]}}
     return None
 
 
@@ -301,7 +325,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
-        data = suwayomi(body.get("query", ""))
+        data = suwayomi(body.get("query", ""), body.get("variables"))
         reply = {"data": data} if data is not None else {"errors": [{"message": "unknown query"}]}
         self.reply(json.dumps(reply).encode(), "application/json")
 
@@ -343,6 +367,10 @@ class Handler(BaseHTTPRequestHandler):
             path = path[3:]
         if path in ("/control/offline", "/control/online"):
             OFFLINE["on"] = path.endswith("offline")
+            return self.reply(b"ok", "text/plain")
+        if path == "/control/reset":
+            OFFLINE["on"] = False
+            SUWAYOMI["stars"] = False
             return self.reply(b"ok", "text/plain")
         if OFFLINE["on"] and ("/page" in path or path.startswith("/pages/")):
             self.send_response(503)

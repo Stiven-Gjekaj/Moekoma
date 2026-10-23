@@ -17,6 +17,8 @@ import io.github.stivengjekaj.moekoma.core.OnlineSeries
 import io.github.stivengjekaj.moekoma.core.SourceInfo
 import io.github.stivengjekaj.moekoma.core.SourceKind
 import io.github.stivengjekaj.moekoma.core.SourceLanguages
+import io.github.stivengjekaj.moekoma.core.SuwayomiServer
+import io.github.stivengjekaj.moekoma.core.SuwayomiSource
 import io.github.stivengjekaj.moekoma.core.SourceLink
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -129,6 +131,7 @@ class Sources(
             MihonRepo.sourceInfos(store)
         }
         SourceKind.LnReader -> LnReaderIndex.parse(model.fetch(link.url, link))
+        SourceKind.Suwayomi -> server(link).sources()
         SourceKind.Kotatsu -> {
             val jar = kotatsu.jar(link.url) { url -> model.fetch(url, null) }
             // The list has no name, so it takes the name of the owner of the repository, such as "Gekkoushi".
@@ -137,6 +140,9 @@ class Sources(
         }
         else -> emptyList()
     }
+
+    /** A Suwayomi server. Each request to the host of the server gets its password. */
+    private fun server(link: SourceLink) = SuwayomiServer(link.url, networkFetcher(http).withHeaders { url -> model.headers(url, link) })
 
     private suspend fun store(link: SourceLink): MihonStore = withContext(Dispatchers.IO) {
         val store = MihonRepo.load(link.url) { url ->
@@ -186,6 +192,8 @@ class Sources(
             }
             SourceKind.Kotatsu -> kotatsu.sources(io.github.stivengjekaj.moekoma.core.KotatsuPlugin.Jar(info.code, info.version))
             SourceKind.LnReader -> code.install(InstalledSource(link.id, info), http)
+            // The server runs the source, so the app keeps no code for it.
+            SourceKind.Suwayomi -> {}
             else -> throw MihonException("Moekoma cannot install this kind of source yet.")
         }
         val made = InstalledSource(link.id, info)
@@ -238,6 +246,10 @@ class Sources(
             val file = code.file(source)
             if (!file.isFile) throw MihonException("The code of ${source.info.name} is not on this device. Save the source list again.")
             LnReaderSource(source, LnReaderPlugin.load(source.info, file.readText(), networkFetcher(), code.settings(source)), http)
+        }
+        SourceKind.Suwayomi -> {
+            val link = model.library.value.sources.firstOrNull { it.id == source.list } ?: throw MihonException("The server of ${source.info.name} is not in the source list.")
+            SuwayomiOnlineSource(source, SuwayomiSource(source.info, server(link)), http) { url -> model.headers(url, link) }
         }
         else -> throw MihonException("Moekoma cannot run this kind of source yet.")
     }
