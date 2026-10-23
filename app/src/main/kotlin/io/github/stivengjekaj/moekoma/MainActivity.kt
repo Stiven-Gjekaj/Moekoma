@@ -8,6 +8,7 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import kotlinx.coroutines.launch
 import io.github.stivengjekaj.moekoma.ui.MoekomaRoot
 
 class MainActivity : ComponentActivity() {
@@ -23,6 +24,12 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         importShared(intent)
+    }
+
+    /** Each start of the app scans the folders that it watches. */
+    override fun onStart() {
+        super.onStart()
+        container.scope.launch { container.folders.scanSoon() }
     }
 
     /** The library writes at once when the app goes to the background, because Android can stop it there. */

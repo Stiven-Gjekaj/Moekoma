@@ -7,6 +7,7 @@ import coil3.SingletonImageLoader
 import io.github.stivengjekaj.moekoma.data.PdfPageFetcher
 import io.github.stivengjekaj.moekoma.data.PdfPageKeyer
 import io.github.stivengjekaj.moekoma.data.AppModel
+import io.github.stivengjekaj.moekoma.data.Folders
 import io.github.stivengjekaj.moekoma.data.Settings
 import io.github.stivengjekaj.moekoma.update.UpdateChecker
 import io.github.stivengjekaj.moekoma.update.UpdateInstaller
@@ -45,6 +46,7 @@ class AppContainer(app: Application, root: File = File(app.filesDir, "Moekoma"))
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
     val model = AppModel(app, scope, root)
+    val folders = Folders(app, model, root, scope)
     val settings = Settings(app)
     val updates = UpdateChecker(http)
     val installer = UpdateInstaller(app, http, scope)

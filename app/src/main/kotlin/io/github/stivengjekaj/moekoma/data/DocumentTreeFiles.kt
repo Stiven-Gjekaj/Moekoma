@@ -7,9 +7,14 @@ import io.github.stivengjekaj.moekoma.core.ComicFiles
 import java.io.InputStream
 
 /** A folder of the device that the user chose with the Storage Access Framework. */
-class DocumentTreeFiles(private val resolver: ContentResolver, private val tree: Uri) : ComicFiles {
+class DocumentTreeFiles(
+    private val resolver: ContentResolver,
+    private val tree: Uri,
+    /** The folder in the tree. With null, it is the root of the tree. */
+    private val document: String? = null,
+) : ComicFiles {
     override fun forEach(body: (path: String, open: () -> InputStream) -> Unit) {
-        walk(DocumentsContract.getTreeDocumentId(tree), "", body)
+        walk(document ?: DocumentsContract.getTreeDocumentId(tree), "", body)
     }
 
     private fun walk(parent: String, prefix: String, body: (path: String, open: () -> InputStream) -> Unit) {

@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.stivengjekaj.moekoma"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.6.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -66,6 +66,8 @@ dependencies {
     implementation(libs.coil.compose)
     // libarchive reads ZIP, RAR, RAR5, 7z, and TAR. Apache License 2.0, with libarchive under the BSD License.
     implementation(libs.libarchive)
+    // Scans the folders that the app watches, also when the app is closed.
+    implementation(libs.work.runtime)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 

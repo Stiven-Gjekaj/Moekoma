@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.DocumentsContract
+import io.github.stivengjekaj.moekoma.core.FolderScan
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import io.github.stivengjekaj.moekoma.core.Book
@@ -178,6 +180,17 @@ class AppModel(private val context: Context, private val scope: CoroutineScope, 
             id = id, title = imported.title, author = imported.author, summary = imported.summary,
             format = imported.format, fileName = source.fileName, pageCount = imported.pageCount, mode = imported.mode,
         )
+    }
+
+    /** Imports a book that a scan of a watched folder found. The book goes into the library at once. */
+    suspend fun importFound(found: FolderScan.Found, tree: Uri): Result<Book> = withContext(Dispatchers.IO) {
+        val node = found.node as SafNode
+        val result = when (found) {
+            is FolderScan.Found.Book -> importDocument(DocumentsContract.buildDocumentUriUsingTree(tree, node.document)).second
+            is FolderScan.Found.Images -> runCatching { importComic(DocumentTreeFiles(context.contentResolver, tree, node.document), node.name) }
+        }
+        withContext(Dispatchers.Main) { result.onSuccess { book -> change { it.copy(books = it.books + book) } } }
+        result
     }
 
     /** The chapters of a novel, or null when its file does not load. */
