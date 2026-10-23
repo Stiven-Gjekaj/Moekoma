@@ -20,6 +20,8 @@ data class Preferences(
     val keepScreenOn: Boolean = true,
     /** The order of the read list. */
     val readListOrder: ReadListOrder = ReadListOrder.Added,
+    /** The look of the text of a novel. */
+    val text: TextStyle = TextStyle(),
     /** The app asked one time if it can use the E-ink look on this device. */
     val askedEInk: Boolean = false,
 )
@@ -38,6 +40,13 @@ class Settings(context: Context) {
         askedEInk = prefs.getBoolean("askedEInk", false),
         keepScreenOn = prefs.getBoolean("keepScreenOn", true),
         readListOrder = prefs.getString("readListOrder", null)?.let { name -> ReadListOrder.entries.firstOrNull { it.name == name } } ?: ReadListOrder.Added,
+        text = TextStyle(
+            family = prefs.getString("text.family", null)?.let { name -> TextStyle.Family.entries.firstOrNull { it.name == name } } ?: TextStyle.Family.Serif,
+            size = prefs.getInt("text.size", 19),
+            lineHeight = prefs.getFloat("text.lineHeight", 1.6f),
+            margin = prefs.getInt("text.margin", 22),
+            justify = prefs.getBoolean("text.justify", false),
+        ),
     )
 
     fun update(change: (Preferences) -> Preferences) {
@@ -50,7 +59,52 @@ class Settings(context: Context) {
             .putBoolean("askedEInk", next.askedEInk)
             .putBoolean("keepScreenOn", next.keepScreenOn)
             .putString("readListOrder", next.readListOrder.name)
+            .putString("text.family", next.text.family.name)
+            .putInt("text.size", next.text.size)
+            .putFloat("text.lineHeight", next.text.lineHeight)
+            .putInt("text.margin", next.text.margin)
+            .putBoolean("text.justify", next.text.justify)
             .apply()
         state.value = next
+    }
+}
+
+/** The look of the text of a novel, which the user chooses in the reader. */
+data class TextStyle(
+    val family: Family = Family.Serif,
+    val size: Int = 19,
+    val lineHeight: Float = 1.6f,
+    val margin: Int = 22,
+    val justify: Boolean = false,
+) {
+    enum class Family(val label: String) { Serif("Serif"), Sans("Sans serif"), Karla("Karla") }
+
+    /**
+     * The CSS that goes over the CSS of the book. The colours come from the palette of the app.
+     * The top and the bottom leave space for the bars of the reader.
+     */
+    fun css(background: String, text: String, link: String, eInk: Boolean): String {
+        val font = when (family) {
+            Family.Serif -> "'Noto Serif', serif"
+            Family.Sans -> "'Roboto', sans-serif"
+            Family.Karla -> "'Karla', sans-serif"
+        }
+        val karla = if (family == Family.Karla) "@font-face { font-family: 'Karla'; src: url('/__app/karla.ttf') format('truetype'); font-weight: 200 800; }" else ""
+        return """
+            $karla
+            html { background: $background !important; -webkit-text-size-adjust: none; }
+            body {
+              background: $background !important; color: $text !important;
+              font-family: $font !important; font-size: ${size}px !important;
+              line-height: $lineHeight !important; text-align: ${if (justify) "justify" else "start"} !important;
+              margin: 0 auto !important; padding: 96px ${margin}px 120px !important; max-width: 40em !important;
+              hyphens: auto; overflow-wrap: break-word;
+            }
+            body * { color: inherit !important; background-color: transparent !important; font-family: inherit !important; line-height: inherit !important; }
+            p { margin: 0 0 0.9em 0 !important; }
+            h1, h2, h3 { line-height: 1.3 !important; text-align: start !important; }
+            img, svg, video { max-width: 100% !important; height: auto !important; }
+            a { color: $link !important; text-decoration: ${if (eInk) "underline" else "none"} !important; }
+        """.trimIndent()
     }
 }
