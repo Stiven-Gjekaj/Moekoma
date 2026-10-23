@@ -58,11 +58,12 @@ Moekoma has no sources in it. Your books stay on your device.
 - The volume keys and the page keys of an e-ink reader turn the page
 - The screen stays on while a book is open
 - "Open with" and "Share" from another app import the file
+- Folders that Moekoma watches: each new book in them comes into the
+  library, also when the app is closed
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 
-The next functions are in [TODO.md](TODO.md): folders that the
-app watches, OPDS catalogs, Mihon extensions on the device, the Kotatsu
+The next functions are in [TODO.md](TODO.md): OPDS catalogs, Mihon extensions on the device, the Kotatsu
 parsers, LNReader, Suwayomi, Aidoku, and Paperback.
 
 ## Install

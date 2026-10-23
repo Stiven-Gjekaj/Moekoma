@@ -7,6 +7,16 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.6.0 (2026-10-23)
+
+- Watch the folders of your device. Open Settings, Folders, and add a
+  folder. Moekoma imports each book in it and in its subfolders: EPUB, PDF,
+  comic archives, Kindle books, text, and folders of images.
+- Moekoma looks for new books when the app opens and two times a day, also
+  when the app is closed. "Look again" looks now.
+- A book that you delete does not come back. Remove a folder to stop the
+  watch. Its books stay in the library.
+
 ## 0.5.0 (2026-10-23)
 
 - Import MOBI, AZW, and AZW3 books with no DRM. A KF8 book, such as an AZW3,

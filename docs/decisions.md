@@ -396,3 +396,24 @@ the form of a function before you write it again here. Do not guess it.
 - The checks: the unit tests of Asabunko, a test of the SVG, and a live
   test with the AZW3 and the MOBI of Project Gutenberg with
   `MOEKOMA_LIVE=1`.
+
+## 2026-10-23: The folders that the app watches
+
+- Asabunko has no such function, so this is the design of Moekoma.
+- The user adds a folder in Settings, Folders. The app keeps the permission
+  of the Storage Access Framework to read it after a restart.
+- A scan imports each book file of the folder and of its subfolders, with
+  the kinds of file that the app imports. A folder with images and with no
+  book file and no subfolder imports as one comic. A name with a dot first
+  is hidden. The images at the top of the folder are not a book.
+- `folders.json` keeps each document that a scan saw, also when its import
+  failed. So a book that the user deletes does not come back, and a damaged
+  file does not fail at each scan. The user can import it by hand.
+- A scan runs when the folder is added, when the app opens, at most one time
+  in ten minutes, and in WorkManager two times a day. The first scan of the
+  worker waits 12 hours too, because the app scans when it opens.
+- A scan that the user did not start shows its result only when it found
+  something, so that it does not hide the result of the user.
+- The rules of the scan are in the core, with tests on a folder of the disk.
+- Reason: the owner asked for each Android extra. Android lets an app keep
+  the access to a folder, and iOS does not let an app watch a folder.
