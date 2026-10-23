@@ -26,7 +26,7 @@ interface ImportSource {
 
 /** Chooses the importer from the kind of the file. */
 object BookImporter {
-    val novelExtensions = setOf("epub", "txt", "text", "fb2", "html", "htm", "xhtml")
+    val novelExtensions = setOf("epub", "txt", "text", "fb2", "html", "htm", "xhtml", "mobi", "azw", "azw3", "prc")
 
     /** The app opens a PDF with the renderer of Android, so the core only names it. */
     const val PDF = "pdf"
@@ -43,6 +43,7 @@ object BookImporter {
             "txt", "text" -> novel(TextImporter.importText(source.bytes(), name, folder))
             "html", "htm", "xhtml" -> novel(TextImporter.importHtml(source.bytes(), name, folder))
             "fb2" -> novel(Fb2Importer.importBook(source.bytes(), name, folder))
+            "mobi", "azw", "azw3", "prc" -> novel(MobiImporter.importBook(source.bytes(), name, folder))
             in ComicImporter.archiveExtensions -> {
                 val comic = ComicImporter.importComic(source.files(), name, folder)
                 ImportedBook(
