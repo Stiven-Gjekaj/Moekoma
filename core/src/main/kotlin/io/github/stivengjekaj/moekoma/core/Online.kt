@@ -59,3 +59,18 @@ data class OnlineChapter(
     val date: String? = null,
     val group: String? = null,
 )
+
+/** The page of a series or a novel, with its chapters from the first to the last. */
+data class OnlineDetails(
+    val series: OnlineSeries,
+    val author: String? = null,
+    val summary: String? = null,
+    val status: String? = null,
+    val genres: List<String> = emptyList(),
+    val chapters: List<OnlineChapter> = emptyList(),
+    /** True when the source says that the series is a novel, null when it does not say. */
+    val isNovel: Boolean? = null,
+)
+
+/** One page of the results of a list or a search. */
+data class OnlinePage(val items: List<OnlineSeries>, val hasMore: Boolean)
