@@ -164,7 +164,7 @@ fun SourcesHomeScreen(container: AppContainer, open: (SettingsRoute) -> Unit, on
                             open(
                                 when (link.kind) {
                                     SourceKind.Opds -> SettingsRoute.Feed(link, link.url, link.name ?: link.host ?: "Catalog")
-                                    SourceKind.Mihon, SourceKind.Kotatsu -> SettingsRoute.SourceList(link)
+                                    SourceKind.Mihon, SourceKind.Kotatsu, SourceKind.LnReader, SourceKind.Suwayomi -> SettingsRoute.SourceList(link)
                                     else -> SettingsRoute.Detect(link)
                                 },
                             )
