@@ -19,6 +19,8 @@ java {
 
 dependencies {
     implementation(libs.kotlinx.serialization.json)
+    // The index of a repository of Mihon extensions is in Protocol Buffers.
+    implementation(libs.kotlinx.serialization.protobuf)
     testImplementation(libs.junit)
 }
 
