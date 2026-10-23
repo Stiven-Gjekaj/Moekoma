@@ -65,6 +65,7 @@ Moekoma has no sources in it. Your books stay on your device.
   same time, and Discover shows their popular and new titles
 - The Kotatsu parsers as a plugin: paste a repository of the parsers, such
   as Gekkoushi, and Moekoma adds its English sources
+- LNReader plugins for novels, with their filters and their settings
 - A title page that compares the sources of a title and chooses the source
   with the most chapters, with the chapters by volume or in parts of 50
 - The browser check of Cloudflare: Moekoma passes most checks with no
@@ -76,7 +77,7 @@ Moekoma has no sources in it. Your books stay on your device.
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 
-The next functions are in [TODO.md](TODO.md): LNReader, Suwayomi, Aidoku, and Paperback.
+The next functions are in [TODO.md](TODO.md): Suwayomi, Aidoku, and Paperback.
 
 ## Install
 
@@ -107,6 +108,7 @@ docs/        the reason behind each choice
 scripts/     a test server for the sources
 mihon/       the source API of Mihon, so that the Mihon extensions run
 tsuki/       Tsuki, the API of the Kotatsu parsers
+js/          the JavaScript libraries of the sources, which scripts/build-js.sh bundles
 ```
 
 ## Building

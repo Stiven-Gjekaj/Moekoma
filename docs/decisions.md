@@ -573,3 +573,33 @@ the form of a function before you write it again here. Do not guess it.
 - The emulator stopped two times in a long session: the system server did
   not answer, and a test waited. A new start of the emulator fixed it. The
   checks run on a new emulator before each release.
+
+## 2026-10-24: The LNReader plugins in QuickJS
+
+- The LNReader plugins run in QuickJS through quickjs-kt 1.0.15 by dokar3,
+  under the Apache License 2.0. The same library runs in the JVM tests of
+  the core module and on Android.
+- The JavaScript is the JavaScript of Asabunko: `libraries.js`, `host.js`,
+  and `lnreader.js`. A small shim gives the native functions of Asabunko
+  (fetch, decode, timer, and log) with the functions of quickjs-kt.
+  Reason: one copy of the plugin host is easier to keep than two. The
+  bundle builds again from `js/` with `scripts/build-js.sh`.
+- Each plugin has its own context. One call runs at a time in a context.
+- Only one context starts at a time. quickjs-kt keeps the classes of the JVM
+  in global references, and each new context replaces them with no lock.
+  Two contexts that started at the same time stopped the app with a JNI
+  fault. A device test starts 16 contexts at the same time. It failed in 1
+  of 3 runs with no lock, and passed in 5 of 5 runs with the lock.
+- A Map of Kotlin becomes a Map of JavaScript in quickjs-kt, so the host
+  gives a JsObject for a plain object. The bytes go as an Int8Array.
+- The app keeps the code of a plugin in `Sources/<list>/<id>.code`, and its
+  settings in `<id>.settings.json`, as Asabunko does.
+- A chapter of a novel downloads when the reader opens it. The reader shows
+  a spinner, or the fault and "Try again".
+- The filters and the settings of a source have one model, SourceOption,
+  for the plugins of the next releases too: text, toggle, select, a list
+  with include and exclude, sort, and range.
+- The checks: core tests of the runtime, of a plugin with fixed answers, of
+  gRPC, and a live test of AllNovelFull; the device suite; on the emulator,
+  the save of the list (184 English plugins), the filters of AllNovel, and
+  two chapters of a novel in the debug and the release builds.

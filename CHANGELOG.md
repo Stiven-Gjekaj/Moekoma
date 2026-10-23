@@ -7,6 +7,17 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.11.0 (2026-10-24)
+
+- Run the LNReader plugins. Paste the URL of a list of plugins, such as
+  https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json,
+  in Settings, Sources. Moekoma adds its English novel sources.
+- Read a novel of a plugin. The reader downloads each chapter when you open
+  it.
+- Filter the list of a source. A source with filters shows a filter button.
+- Change the settings of a source. A source with settings shows a settings
+  button.
+
 ## 0.10.0 (2026-10-24)
 
 - Run the Kotatsu parsers. Paste the URL of a repository of the parsers,
