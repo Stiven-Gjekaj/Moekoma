@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/brand/icon-512.png" alt="Moekoma" width="200">
+<img src="assets/brand/logo-full.png" alt="Moekoma" width="320">
 
 ### A calm reader for manga, comics, and light novels on Android
 
@@ -43,10 +43,15 @@ Moekoma has no sources in it. Your books stay on your device.
   or in one vertical column, with zoom
 - Continue reading: the books that you read now, with the page and the
   progress
+- The read list, in the order that you choose: date added, last read,
+  title, or unread first
+- A library file that does not load stays safe, and Moekoma saves nothing
+  over it
 - Warm dark, paper, E-ink, or the look of the device
 - The E-ink look: black on white, no animation, pages that turn and do not
   scroll, and a black frame that clears the ghost image
 - The volume keys and the page keys of an e-ink reader turn the page
+- The screen stays on while a book is open
 - "Open with" and "Share" from another app import the file
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
@@ -79,7 +84,7 @@ app/src/main/kotlin/io/github/stivengjekaj/moekoma/
   ui/        the library, the reader, the settings, and the theme
   update/    the updates inside the app
 core/        the parts that do not need a screen, with their tests
-assets/brand/   the icon, and the script that makes it from the logo of Asabunko
+assets/brand/   the icon, the banner, and the scripts that make them from the logo of Asabunko
 docs/        the reason behind each choice
 ```
 

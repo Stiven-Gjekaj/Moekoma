@@ -318,3 +318,22 @@ the form of a function before you write it again here. Do not guess it.
 - The order of the releases is in [TODO.md](../TODO.md).
 - Reason: the owner asked to port Asabunko with its new design, and to add
   the Android functions over it.
+
+## 2026-10-23: The banner
+
+- `assets/brand/banner.swift` makes `logo-full.png` from the logo of
+  Asabunko. The mark stays. The word "moekoma" is made from the letters of
+  "asabunko", so that it has the same style: the m is two arches of the n,
+  the e is the o with a bar and an opening, and the second o keeps the star.
+- The red becomes the green of Moekoma, as in `render.swift`.
+- Reason: the owner asked for the banner of Asabunko with the new name.
+
+## 2026-10-23: The read list
+
+- The library has the `listed` mark of Asabunko. A book of an older file is
+  listed. A book from a file is listed when it imports.
+- The order of the read list is a preference of the device, not a part of
+  the library, as in Asabunko.
+- The library saves 0.4 seconds after the last change, and at once in
+  `onStop`, because Android can stop the app in the background.
+- Reason: the same library as Asabunko 2.

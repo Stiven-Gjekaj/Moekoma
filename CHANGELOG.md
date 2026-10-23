@@ -7,6 +7,21 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.2.0 (2026-10-23)
+
+- The library of Asabunko 2: Continue reading, and the read list. A book that
+  you import goes into the read list. The menu of a book can add it again.
+- Sort the read list by date added, last read, title, or unread first.
+- An empty library and an empty read list show art: the mark on a soft
+  glow.
+- A library file that does not load stays as it is. Moekoma keeps a copy,
+  saves nothing over it, and lets you start a new library in Settings.
+- The library saves a short time after the last change, and at once when the
+  app goes to the background.
+- The screen stays on while a book is open. Settings, Reader turns it off.
+- The splash screen has the warm dark of the app.
+- The README has a banner with the name Moekoma.
+
 ## 0.1.0 (2026-10-23)
 
 - The first release: the library and the comic reader.
