@@ -21,3 +21,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
 }
+
+// The live tests read real sources from the web. They run only with MOEKOMA_LIVE=1.
+tasks.test {
+    environment("MOEKOMA_LIVE", System.getenv("MOEKOMA_LIVE") ?: "0")
+    testLogging { showStandardStreams = true }
+}
