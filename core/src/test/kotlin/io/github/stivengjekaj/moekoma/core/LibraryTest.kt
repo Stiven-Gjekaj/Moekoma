@@ -81,4 +81,36 @@ class LibraryTest {
         assertTrue(text, "\"2026-10-23T09:30:00Z\"" in text)
         assertTrue(text, "\"0F5B5E1C-2C4E-4D4B-9C8A-5B0E8E1F2A3B\"" in text)
     }
+
+    @Test fun keepsOnlyTheListedBooksInTheReadList() {
+        val old = Book(title = "Old", fileName = "o", pageCount = 1, added = Instant.ofEpochSecond(100))
+        val new = Book(title = "New", fileName = "n", pageCount = 1, added = Instant.ofEpochSecond(200))
+        val opened = Book(title = "Opened", fileName = "p", pageCount = 1, added = Instant.ofEpochSecond(300), listed = false)
+        assertEquals(listOf("New", "Old"), Library(books = listOf(old, opened, new)).readList.map { it.title })
+    }
+
+    @Test fun putsABookOfAnOlderVersionInTheReadList() {
+        val text = """{"books":[{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","title":"A","format":"comic","fileName":"a","pageCount":1,"added":"2026-01-01T00:00:00Z","page":0,"finished":false}],"defaultMode":"rightToLeft","form":1}"""
+        val file = File(temporaryFolder(), "library.json").apply { writeText(text) }
+        assertTrue(LibraryStore.load(file).books.single().listed)
+    }
+
+    @Test fun sortsTheReadListInEachOrder() {
+        val a = Book(title = "Volume 10", fileName = "a", pageCount = 5, added = Instant.ofEpochSecond(100), lastRead = Instant.ofEpochSecond(900), page = 4, finished = true)
+        val b = Book(title = "Volume 2", fileName = "b", pageCount = 5, added = Instant.ofEpochSecond(200), lastRead = Instant.ofEpochSecond(500), page = 2)
+        val c = Book(title = "Another", fileName = "c", pageCount = 5, added = Instant.ofEpochSecond(300))
+        val library = Library(books = listOf(a, b, c))
+        assertEquals(listOf("Another", "Volume 2", "Volume 10"), library.readList(ReadListOrder.Added).map { it.title })
+        assertEquals(listOf("Volume 10", "Volume 2", "Another"), library.readList(ReadListOrder.LastRead).map { it.title })
+        assertEquals(listOf("Another", "Volume 2", "Volume 10"), library.readList(ReadListOrder.Title).map { it.title })
+        assertEquals(listOf("Another", "Volume 2", "Volume 10"), library.readList(ReadListOrder.Unread).map { it.title })
+    }
+
+    @Test fun keepsACopyOfAFileThatDoesNotLoad() {
+        val file = File(temporaryFolder(), "library.json").apply { writeText("{not json") }
+        val copy = LibraryStore.keepBroken(file, Instant.parse("2026-10-23T09:30:00Z"))
+        assertEquals("library.broken-2026-10-23T09-30-00.json", copy.name)
+        assertEquals("{not json", copy.readText())
+        assertEquals("{not json", file.readText())
+    }
 }

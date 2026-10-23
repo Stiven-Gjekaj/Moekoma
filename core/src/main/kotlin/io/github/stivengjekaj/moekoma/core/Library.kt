@@ -65,6 +65,11 @@ data class Book(
     val finished: Boolean = false,
     /** The mode of this book. With null, the book uses the mode of the library. */
     val mode: ReadingMode? = null,
+    /**
+     * True when the book is in the read list. A series that the user only opened is not.
+     * Before the read list, the user added each book on purpose, so a book with no value is listed.
+     */
+    val listed: Boolean = true,
 ) {
     /** The part of the book that the user read, from 0 to 1. */
     val progress: Double
@@ -100,6 +105,14 @@ data class Book(
     fun markUnread(): Book = copy(finished = false, page = 0, position = 0.0, lastRead = null)
 }
 
+/** The orders of the read list. */
+enum class ReadListOrder(val label: String) {
+    Added("Date added"),
+    LastRead("Last read"),
+    Title("Title"),
+    Unread("Unread first"),
+}
+
 /** All data of the library, in one JSON file. */
 @Serializable
 data class Library(
@@ -119,6 +132,22 @@ data class Library(
     val recentlyAdded: List<Book>
         get() = books.sortedByDescending { it.added }
 
+    /** The books of the read list, the newest first. */
+    val readList: List<Book>
+        get() = recentlyAdded.filter { it.listed }
+
+    /** The books of the read list in an order that the user chooses. */
+    fun readList(order: ReadListOrder): List<Book> {
+        val list = readList
+        return when (order) {
+            ReadListOrder.Added -> list
+            ReadListOrder.LastRead -> list.sortedByDescending { it.lastRead ?: Instant.MIN }
+            ReadListOrder.Title -> list.sortedWith { a, b -> NaturalOrder.compare(a.title, b.title) }
+            // The books that the user did not finish come first, the least read first.
+            ReadListOrder.Unread -> list.sortedBy { if (it.finished) 2.0 else it.progress }
+        }
+    }
+
     fun book(id: UUID): Book? = books.firstOrNull { it.id == id }
 
     fun update(id: UUID, change: (Book) -> Book): Library =
@@ -136,7 +165,6 @@ class NewerFormException(val form: Int) : Exception("The library has the form $f
 object LibraryStore {
     val json = Json {
         ignoreUnknownKeys = true
-        prettyPrint = true
         encodeDefaults = true
         explicitNulls = false
     }
@@ -149,7 +177,21 @@ object LibraryStore {
         return json.decodeFromString(Library.serializer(), text)
     }
 
-    /** Writes a new file next to the old one, then puts it in the place of the old one. */
+    /**
+     * Copies a library file that the app cannot read next to it, as library.broken-<date>.json,
+     * so that no save can write over it. It gives the copy.
+     */
+    fun keepBroken(file: File, at: Instant = now()): File {
+        val stamp = at.toString().removeSuffix("Z").replace(':', '-')
+        val copy = File(file.parentFile, "library.broken-$stamp.json")
+        file.copyTo(copy, overwrite = true)
+        return copy
+    }
+
+    /**
+     * Writes a new file next to the old one, then puts it in the place of the old one.
+     * The app writes the file after each page, so the file has no spaces. A large library writes faster.
+     */
     fun save(library: Library, file: File) {
         file.parentFile?.mkdirs()
         val temporary = File(file.parentFile, file.name + ".new")
