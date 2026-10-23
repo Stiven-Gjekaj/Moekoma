@@ -21,6 +21,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     // The index of a repository of Mihon extensions is in Protocol Buffers.
     implementation(libs.kotlinx.serialization.protobuf)
+    // The JavaScript sources, such as the LNReader plugins, run in QuickJS. The JVM and Android each take their own build.
+    api(libs.quickjs.kt)
+    implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
 }
 

@@ -25,6 +25,8 @@ webkit = "1.17.1"
 collection = "1.6.0"
 annotation = "1.9.1"
 
+quickjs = "1.0.15"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -48,6 +50,7 @@ androidx-collection = { group = "androidx.collection", name = "collection", vers
 androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
 androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 androidx-preference = { group = "androidx.preference", name = "preference-ktx", version.ref = "preference" }
+quickjs-kt = { group = "io.github.dokar3", name = "quickjs-kt", version.ref = "quickjs" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-brotli = { group = "com.squareup.okhttp3", name = "okhttp-brotli", version.ref = "okhttp" }
 okhttp-zstd = { group = "com.squareup.okhttp3", name = "okhttp-zstd", version.ref = "okhttp" }
