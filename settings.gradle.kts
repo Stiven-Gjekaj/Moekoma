@@ -18,3 +18,4 @@ rootProject.name = "Moekoma"
 include(":app")
 include(":core")
 include(":mihon")
+include(":tsuki")

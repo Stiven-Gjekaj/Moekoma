@@ -1,0 +1,9 @@
+Moekoma: Tsuki, the API of the Kotatsu parsers
+
+The code in this folder comes from Tsuki (https://github.com/UsagiApp/Tsuki),
+at the tag 1.0.5 (commit 6baf1c0 of 2026-07-28). Tsuki is under the GNU General
+Public License, version 3, which is in LICENSE. Moekoma is under the same license.
+
+Tsuki is the API of the parsers of Gekkoushi/plugin-source, a maintained fork
+of the Kotatsu parsers. The parser plugin of Gekkoushi was built against this
+version. Moekoma did not change the files.

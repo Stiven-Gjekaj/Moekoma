@@ -22,6 +22,8 @@ rxjava = "1.3.8"
 jsoup = "1.23.2"
 preference = "1.2.1"
 webkit = "1.17.1"
+collection = "1.6.0"
+annotation = "1.9.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -42,6 +44,8 @@ kotlinx-serialization-protobuf = { group = "org.jetbrains.kotlinx", name = "kotl
 injekt = { group = "uy.kohesive.injekt", name = "injekt-core", version.ref = "injekt" }
 rxjava = { group = "io.reactivex", name = "rxjava", version.ref = "rxjava" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+androidx-collection = { group = "androidx.collection", name = "collection", version.ref = "collection" }
+androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
 androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 androidx-preference = { group = "androidx.preference", name = "preference-ktx", version.ref = "preference" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
