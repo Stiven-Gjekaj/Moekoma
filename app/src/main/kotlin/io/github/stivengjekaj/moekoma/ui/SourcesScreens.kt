@@ -100,6 +100,7 @@ sealed interface SettingsRoute {
     data class Publication(val source: SourceLink, val publication: OpdsPublication) : SettingsRoute
     data class Detect(val source: SourceLink) : SettingsRoute
     data class SourceList(val link: SourceLink) : SettingsRoute
+    data object Installed : SettingsRoute
     data class Source(val source: InstalledSource) : SettingsRoute
     data class Title(val route: TitleRoute) : SettingsRoute
 }
@@ -146,11 +147,8 @@ fun SourcesHomeScreen(container: AppContainer, open: (SettingsRoute) -> Unit, on
                 }
             }
             if (library.installed.isNotEmpty()) {
-                Section("Installed (${library.installed.size})", footer = "Open a source to see its popular titles and to search it alone.") {
-                    library.installed.sortedBy { it.info.name.lowercase() }.forEachIndexed { index, source ->
-                        if (index > 0) Divider()
-                        InstalledRow(source) { open(SettingsRoute.Source(source)) }
-                    }
+                Section(null, footer = "Open a source to see its popular titles and to search it alone.") {
+                    LinkRow("Installed sources (${library.installed.size})") { open(SettingsRoute.Installed) }
                 }
             }
             val kinds: List<SourceKind?> = SourceKind.entries + listOf(null)
@@ -465,3 +463,27 @@ fun PublicationScreen(container: AppContainer, source: SourceLink, book: OpdsPub
     }
 }
 
+/** The installed sources, with a filter by name or language. */
+@Composable
+fun InstalledSourcesScreen(container: AppContainer, open: (SettingsRoute) -> Unit, onBack: () -> Unit) {
+    val palette = LocalPalette.current
+    val library by container.model.library.collectAsState()
+    var filter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    val shown = library.installed.filter { filter.isBlank() || it.info.name.contains(filter, true) || it.info.language.contains(filter, true) }
+        .sortedBy { it.info.name.lowercase() }
+    SubScreen("Installed sources", onBack) {
+        androidx.compose.foundation.lazy.LazyColumn(contentPadding = PaddingValues(start = Gutter, end = Gutter, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                OutlinedTextField(
+                    value = filter, onValueChange = { filter = it }, singleLine = true,
+                    placeholder = { Text("Name or language") }, leadingIcon = { Icon(Icons.Outlined.Search, null) },
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = palette.accent, cursorColor = palette.accent),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            items(shown.size, key = { shown[it].id }) { index -> val source = shown[index]
+                Card(padding = PaddingValues(0.dp)) { InstalledRow(source) { open(SettingsRoute.Source(source)) } }
+            }
+        }
+    }
+}
