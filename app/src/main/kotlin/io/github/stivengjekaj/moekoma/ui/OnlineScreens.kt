@@ -214,7 +214,11 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
             // The other sources of the same kind that have the same title join the source menu.
             val key = TitleMatch.key(chosen.series.title)
             val novels = installedOf(chosen)?.info?.novels
+            // A list can install hundreds of sources, so the page asks at most 24 of them: the sources of the books of
+            // the library first, then the others in their order.
+            val used = library.books.mapNotNull { it.origin }.map { it.list to it.source }.toSet()
             val others = library.installed.filter { other -> other.info.novels == novels && hits.none { it.source == other.id } }
+                .sortedByDescending { (it.list to it.info.id) in used }.take(24)
             val extra = mutableListOf<SearchHit>()
             sources.search(chosen.series.title, others, limit = 4) { id, items ->
                 items.firstOrNull { TitleMatch.key(it.title) == key }?.let { extra += SearchHit(id, it) }
