@@ -5,7 +5,11 @@ import io.github.stivengjekaj.moekoma.core.Book
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.BookOrigin
 import io.github.stivengjekaj.moekoma.core.InstalledSource
+import io.github.stivengjekaj.moekoma.core.LnReaderIndex
+import io.github.stivengjekaj.moekoma.core.LnReaderPlugin
 import io.github.stivengjekaj.moekoma.core.MihonRepo
+import io.github.stivengjekaj.moekoma.core.OnlineChapter
+import io.github.stivengjekaj.moekoma.core.Xhtml
 import io.github.stivengjekaj.moekoma.core.MihonStore
 import io.github.stivengjekaj.moekoma.core.Novel
 import io.github.stivengjekaj.moekoma.core.OnlineDetails
@@ -31,6 +35,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
+import java.io.IOException
 import java.util.UUID
 
 /** The install of the sources of the lists: the sources that installed, of all of them. */
@@ -49,6 +54,7 @@ class Sources(
 ) {
     private val mihon by lazy { MihonHost(context, http) }
     private val kotatsu by lazy { KotatsuHost(context, http) }
+    private val code = SourceCode(model.root)
 
     init {
         // The Kotatsu parsers use the network helper of the Mihon extensions, so Injekt is ready before each kind.
@@ -100,7 +106,7 @@ class Sources(
                 model.learn(link.id, kind, null)
                 link = link.copy(kind = kind)
             }
-            if (link.kind != SourceKind.Mihon && link.kind != SourceKind.Kotatsu) continue
+            if (link.kind == SourceKind.Opds || link.kind == null) continue
             val infos = try {
                 sources(link)
             } catch (e: Exception) {
@@ -122,6 +128,7 @@ class Sources(
             model.learn(link.id, null, store.name)
             MihonRepo.sourceInfos(store)
         }
+        SourceKind.LnReader -> LnReaderIndex.parse(model.fetch(link.url, link))
         SourceKind.Kotatsu -> {
             val jar = kotatsu.jar(link.url) { url -> model.fetch(url, null) }
             // The list has no name, so it takes the name of the owner of the repository, such as "Gekkoushi".
@@ -178,6 +185,7 @@ class Sources(
                 mihon.install(info, key)
             }
             SourceKind.Kotatsu -> kotatsu.sources(io.github.stivengjekaj.moekoma.core.KotatsuPlugin.Jar(info.code, info.version))
+            SourceKind.LnReader -> code.install(InstalledSource(link.id, info), http)
             else -> throw MihonException("Moekoma cannot install this kind of source yet.")
         }
         val made = InstalledSource(link.id, info)
@@ -195,6 +203,7 @@ class Sources(
         val others = installed.filter { it.id != source.id }.map { it.info }
         when (kind(source)) {
             SourceKind.Kotatsu -> kotatsu.uninstall(source.info, others)
+            SourceKind.LnReader -> code.remove(source)
             SourceKind.Mihon, null -> mihon.uninstall(source.info, others)
             else -> {}
         }
@@ -225,6 +234,11 @@ class Sources(
     private suspend fun make(source: InstalledSource): OnlineSource = when (kind(source)) {
         SourceKind.Mihon -> mihon.load(source)
         SourceKind.Kotatsu -> kotatsu.load(source)
+        SourceKind.LnReader -> {
+            val file = code.file(source)
+            if (!file.isFile) throw MihonException("The code of ${source.info.name} is not on this device. Save the source list again.")
+            LnReaderSource(source, LnReaderPlugin.load(source.info, file.readText(), networkFetcher(), code.settings(source)), http)
+        }
         else -> throw MihonException("Moekoma cannot run this kind of source yet.")
     }
 
@@ -302,6 +316,30 @@ class Sources(
             model.update(book.id) { it.copy(pageCount = novel.chapters.size, finished = false) }
         }
         added
+    }
+
+    /**
+     * The file of a chapter of an online novel. It downloads the chapter the first time, and keeps it in the folder of
+     * the book, as in Asabunko.
+     */
+    suspend fun chapterFile(book: Book, index: Int): File = withContext(Dispatchers.IO) {
+        val folder = model.folder(book)
+        val novel = Novel.load(folder)
+        val chapter = novel.chapters[index]
+        val file = File(folder, chapter.path)
+        if (file.isFile) return@withContext file
+        val remote = chapter.remote ?: throw IOException("The file of the chapter is not on this device.")
+        val origin = book.origin ?: throw IOException("The file of the chapter is not on this device.")
+        val source = installed(book) ?: throw IOException("The source of this book is not installed. Add its list again in Settings, Sources.")
+        val content = load(source).content(OnlineChapter(remote, chapter.title.orEmpty()), OnlineSeries(origin.series, book.title))
+        val html = (content as? ChapterContent.Html)?.html ?: throw IOException("The source gave images for this chapter, not text.")
+        val heading = chapter.title?.let { "<h2>${Xhtml.escape(it)}</h2>\n" }.orEmpty()
+        val page = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>${Xhtml.escape(chapter.title.orEmpty())}</title></head><body>\n$heading$html\n</body></html>"
+        file.parentFile?.mkdirs()
+        val part = File(file.path + ".part")
+        part.writeText(page)
+        part.renameTo(file)
+        file
     }
 
     // Search in all sources
