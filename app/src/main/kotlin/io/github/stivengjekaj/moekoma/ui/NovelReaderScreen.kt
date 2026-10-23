@@ -39,6 +39,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -89,7 +90,12 @@ private const val BOOK_HOST = "book.moekoma.invalid"
 /** Reads a novel one chapter at a time. A tap shows or hides the bars. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NovelReaderScreen(model: AppModel, settings: Settings, bookId: UUID, onClose: () -> Unit) {
+fun NovelReaderScreen(
+    model: AppModel, settings: Settings, bookId: UUID,
+    /** Downloads a chapter of an online novel, when the device does not have its file. */
+    fetchChapter: (suspend (Int) -> Unit)? = null,
+    onClose: () -> Unit,
+) {
     val library by model.library.collectAsState()
     val prefs by settings.preferences.collectAsState()
     val book = library.book(bookId) ?: return
@@ -114,6 +120,26 @@ fun NovelReaderScreen(model: AppModel, settings: Settings, bookId: UUID, onClose
         loaded = true
     }
 
+    // A chapter of an online novel downloads when it opens.
+    var ready by remember { mutableStateOf<Int?>(null) }
+    var fault by remember { mutableStateOf<String?>(null) }
+    var attempt by remember { mutableIntStateOf(0) }
+    LaunchedEffect(novel, chapter, attempt) {
+        val current = novel ?: return@LaunchedEffect
+        val item = current.chapters.getOrNull(chapter) ?: return@LaunchedEffect
+        fault = null
+        if (fetchChapter != null && item.remote != null && !File(folder, item.path).isFile) {
+            ready = null
+            try {
+                fetchChapter(chapter)
+            } catch (e: Exception) {
+                fault = e.message ?: "The chapter did not load. (${e.javaClass.simpleName})"
+                return@LaunchedEffect
+            }
+        }
+        ready = chapter
+    }
+
     fun go(index: Int, place: Double = 0.0) {
         val chapters = novel?.chapters ?: return
         if (index !in chapters.indices) return
@@ -130,6 +156,10 @@ fun NovelReaderScreen(model: AppModel, settings: Settings, bookId: UUID, onClose
             !loaded -> {}
             current == null -> EmptyArt("The book did not open", "The chapters of this book cannot be read. Import the book again.")
             current.chapters.isEmpty() -> EmptyArt("No chapters yet", "The book has no chapters.")
+            fault != null -> Column(Modifier.align(Alignment.Center)) {
+                EmptyArt("The chapter did not load", fault!!) { PillButton("Try again", { attempt++ }) }
+            }
+            ready != chapter -> CircularProgressIndicator(color = palette.accent, modifier = Modifier.align(Alignment.Center))
             else -> ChapterView(
                 folder = folder,
                 path = current.chapters[chapter.coerceIn(current.chapters.indices)].path,

@@ -139,7 +139,10 @@ fun MoekomaRoot(container: AppContainer) {
             }
             if (book != null) {
                 when (book.format) {
-                    BookFormat.Novel -> NovelReaderScreen(container.model, container.settings, book.id) { reading = null }
+                    BookFormat.Novel -> NovelReaderScreen(
+                        container.model, container.settings, book.id,
+                        fetchChapter = book.origin?.let { { index -> container.sources.chapterFile(book, index) } },
+                    ) { reading = null }
                     BookFormat.Series -> SeriesReaderScreen(container, book.id) { reading = null }
                     else -> ReaderScreen(container.model, book.id, prefs) { reading = null }
                 }
