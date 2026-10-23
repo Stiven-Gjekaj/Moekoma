@@ -65,6 +65,8 @@ data class Book(
     val finished: Boolean = false,
     /** The mode of this book. With null, the book uses the mode of the library. */
     val mode: ReadingMode? = null,
+    /** The online source of the book, or null for a book from a file. */
+    val origin: BookOrigin? = null,
     /**
      * True when the book is in the read list. A series that the user only opened is not.
      * Before the read list, the user added each book on purpose, so a book with no value is listed.
@@ -120,7 +122,14 @@ data class Library(
     val form: Int = CURRENT_FORM,
     val books: List<Book> = emptyList(),
     val defaultMode: ReadingMode = ReadingMode.RightToLeft,
+    /** The source list of the user. */
+    val sources: List<SourceLink> = emptyList(),
+    /** The sources that the user installed from the lists. */
+    val installed: List<InstalledSource> = emptyList(),
 ) {
+    /** The book of a series or a novel of a source, when the library has it. */
+    fun book(origin: BookOrigin): Book? = books.firstOrNull { it.origin == origin }
+
     /** The mode that the reader uses for a book. */
     fun mode(of: Book): ReadingMode = of.mode ?: defaultMode
 
