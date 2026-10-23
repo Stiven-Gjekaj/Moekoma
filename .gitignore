@@ -1,0 +1,25 @@
+# Local secrets
+.env
+local.properties
+*.jks
+*.keystore
+
+# Private notes that must not be public
+private/
+
+# Build output
+.gradle/
+build/
+.kotlin/
+captures/
+*.apk
+*.aab
+
+# Editors and the OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Local tool state
+.claude/
