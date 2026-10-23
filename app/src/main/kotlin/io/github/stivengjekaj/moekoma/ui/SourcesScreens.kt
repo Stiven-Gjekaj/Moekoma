@@ -138,7 +138,7 @@ fun SourcesHomeScreen(container: AppContainer, open: (SettingsRoute) -> Unit, on
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = Gutter, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
             Section(
                 null,
-                footer = "Paste the URLs of your catalogs and source lists. Moekoma installs the English sources of each list, and Search and Discover ask them. Moekoma runs Mihon extensions and Kotatsu parsers, and reads OPDS catalogs now. The other kinds of source come in the next versions.",
+                footer = "Paste the URLs of your catalogs and source lists. Moekoma installs the English sources of each list, and Search and Discover ask them. Moekoma runs Mihon extensions, Kotatsu parsers, LNReader plugins, and the sources of a Suwayomi server, and reads OPDS catalogs now. Aidoku and Paperback come in the next versions.",
             ) {
                 LinkRow(if (library.sources.isEmpty()) "Add sources" else "Edit the source list", bold = true, color = palette.accent) { open(SettingsRoute.EditSources) }
             }
