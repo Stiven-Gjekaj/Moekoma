@@ -603,3 +603,27 @@ the form of a function before you write it again here. Do not guess it.
   gRPC, and a live test of AllNovelFull; the device suite; on the emulator,
   the save of the list (184 English plugins), the filters of AllNovel, and
   two chapters of a novel in the debug and the release builds.
+
+## 2026-10-24: The Suwayomi servers
+
+- The client is the client of Asabunko. It sends GraphQL to `/api/graphql`.
+  The sources of the server are the sources of its extensions. The local
+  source of the server, "0", is not there.
+- The app keeps no code for a source of the server, because the server runs
+  it. The English sources install when the user saves the list, as with
+  the other lists.
+- The password of the line goes to each request and each image of the host
+  of the server, and not to another host.
+- The ID of a filter is its position, and "3.1" is the filter 1 in the
+  group 3. A group of checks is one choice of many values. Only a filter
+  that the user changed goes to the server, as Asabunko does. The ID of a
+  setting is the position of its preference.
+- A real server gives each path from its own root, such as
+  `/api/v1/manga/7/thumbnail`, and the app adds the URL of the line. The
+  test server of Asabunko gave paths that already held `/suwayomi`, so the
+  app asked for `/suwayomi/suwayomi/...` and the images did not load. The
+  test server of Moekoma gives paths from its root, as a real server.
+- The checks: core tests of the client with fixed answers; a device test
+  that reads the images of a chapter with the password, filters the list,
+  and changes a preference on the test server; on the emulator, the same
+  flow in the debug and the release builds.

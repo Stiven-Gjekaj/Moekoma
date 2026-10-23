@@ -7,6 +7,16 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.12.0 (2026-10-24)
+
+- Read the sources of a Suwayomi server. Paste the URL of the server, such
+  as http://user:password@192.168.1.5:4567, in Settings, Sources. Moekoma
+  adds its English sources. The server runs them.
+- The filters and the settings of a Mihon source on the server show, and a
+  change goes to the server.
+- An LNReader or a Suwayomi line in the source list opens its list of
+  sources.
+
 ## 0.11.0 (2026-10-24)
 
 - Run the LNReader plugins. Paste the URL of a list of plugins, such as
