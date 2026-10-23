@@ -196,7 +196,7 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
 
         Section("Licenses") {
             Text(
-                "The code is under the GNU General Public License, version 3. Karla, the font of the app, is under the SIL Open Font License, Version 1.1. The archives open with libarchive, under the BSD License, through the library of Hai Zhang, under the Apache License 2.0.",
+                "The code is under the GNU General Public License, version 3. Karla, the font of the app, is under the SIL Open Font License, Version 1.1. The archives open with libarchive, under the BSD License, through the library of Hai Zhang, under the Apache License 2.0. The source API for the Mihon extensions comes from Mihon, under the Apache License 2.0. OkHttp, Coil, RxJava, Injekt, and AndroidX are under the Apache License 2.0, and Jsoup is under the MIT License.",
                 style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary, modifier = Modifier.padding(16.dp),
             )
             Divider()
