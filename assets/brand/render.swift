@@ -82,8 +82,9 @@ func write(_ image: CGImage, _ path: URL) {
 let black = CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1)
 write(square(1024, fill: 1, background: black), root.appendingPathComponent("icon-1024.png"))
 write(square(512, fill: 1, background: black), root.appendingPathComponent("icon-512.png"))
-write(square(600, fill: 1, background: nil), root.appendingPathComponent("mark.png"))
-write(square(600, fill: 1, background: nil), res.appendingPathComponent("drawable-nodpi/mark.png"))
+write(square(600, fill: 1, background: black), root.appendingPathComponent("mark.png"))
+// The mark has dark lines, so it keeps the black of the icon on the paper look too.
+write(square(600, fill: 1, background: black), res.appendingPathComponent("drawable-nodpi/mark.png"))
 
 // An adaptive icon is 108 dp. The launcher shows the middle 72 dp, and a mask can cut to 66 dp.
 let densities = [("mdpi", 1.0), ("hdpi", 1.5), ("xhdpi", 2.0), ("xxhdpi", 3.0), ("xxxhdpi", 4.0)]
