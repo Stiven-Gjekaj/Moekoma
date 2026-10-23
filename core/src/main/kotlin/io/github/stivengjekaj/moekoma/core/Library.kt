@@ -174,6 +174,8 @@ class NewerFormException(val form: Int) : Exception("The library has the form $f
 object LibraryStore {
     val json = Json {
         ignoreUnknownKeys = true
+        // A kind of source of a newer Asabunko becomes null, and the app finds the kind again.
+        coerceInputValues = true
         encodeDefaults = true
         explicitNulls = false
     }

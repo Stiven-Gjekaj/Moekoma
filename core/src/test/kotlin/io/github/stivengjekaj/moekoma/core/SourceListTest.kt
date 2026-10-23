@@ -2,6 +2,10 @@ package io.github.stivengjekaj.moekoma.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
 import java.io.File
 
@@ -66,5 +70,32 @@ class SourceListTest {
         assertEquals("quiet", library.installed.single().info.id)
         assertEquals("novel/dawn", library.books.single().origin?.series)
         assertEquals(library.books.single(), library.book(library.books.single().origin!!))
+    }
+
+    @Test fun findsARepositoryOfMihonExtensions() {
+        assertEquals(SourceKind.Mihon, SourceKind.guess("https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json"))
+        assertEquals(SourceKind.Mihon, SourceKind.guess("https://example.org/repo/repo.json"))
+        assertEquals(SourceKind.Aidoku, SourceKind.guess("https://aidoku-community.github.io/sources/index.min.json"))
+        assertEquals(SourceKind.Mihon, SourceKind.detect("""[{"name":"Tachiyomi: A","pkg":"x.a","apk":"a.apk","lang":"en","code":1,"version":"1.4.1","nsfw":0}]""".toByteArray()))
+        assertEquals(SourceKind.Mihon, SourceKind.detect("""{"index_v2":"https://x/index.pb","meta":{"name":"X","website":"w","signingKeyFingerprint":"ab"}}""".toByteArray()))
+    }
+
+    /** Asabunko does not know the kind "mihon", so its file has no such kind. */
+    @Test fun keepsTheMihonKindOutOfTheKeyThatAsabunkoReads() {
+        val link = SourceLink(url = "https://x/repo/index.min.json", kind = SourceKind.Mihon)
+        val text = LibraryStore.json.encodeToString(Library.serializer(), Library(sources = listOf(link)))
+        val source = LibraryStore.json.parseToJsonElement(text).jsonObject["sources"]!!.jsonArray.single().jsonObject
+        assertNull(source["kind"])
+        assertEquals("mihon", source["moekomaKind"]!!.jsonPrimitive.content)
+        assertEquals(link, LibraryStore.json.decodeFromString(Library.serializer(), text).sources.single())
+        val opds = SourceLink(url = "https://x/opds", kind = SourceKind.Opds)
+        val shared = LibraryStore.json.encodeToString(Library.serializer(), Library(sources = listOf(opds)))
+        assertTrue(""""kind":"opds"""" in shared)
+    }
+
+    @Test fun aKindOfANewerAsabunkoReadsAsNoKind() {
+        val text = """{"books":[],"form":1,"sources":[{"id":"11111111-2222-3333-4444-555555555555","kind":"future","url":"https://x/list"}]}"""
+        val library = LibraryStore.load(File(temporaryFolder(), "library.json").apply { writeText(text) })
+        assertNull(library.sources.single().kind)
     }
 }

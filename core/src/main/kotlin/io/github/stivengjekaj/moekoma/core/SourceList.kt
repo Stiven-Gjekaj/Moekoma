@@ -1,6 +1,10 @@
 package io.github.stivengjekaj.moekoma.core
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -27,7 +31,16 @@ enum class SourceKind(val label: String) {
     @SerialName("paperback") Paperback("Paperback extensions"),
 
     /** A Suwayomi server, which runs the extensions of Mihon. */
-    @SerialName("suwayomi") Suwayomi("Suwayomi server");
+    @SerialName("suwayomi") Suwayomi("Suwayomi server"),
+
+    /**
+     * A repository of Mihon extensions, which run on the device. Asabunko does not know this kind,
+     * so the library file keeps it in a key of Moekoma. See [SourceLink].
+     */
+    @SerialName("mihon") Mihon("Mihon extensions");
+
+    /** True when Asabunko knows this kind, so that the library file can keep it in "kind". */
+    val shared: Boolean get() = this != Mihon
 
     companion object {
         /** The kind that the URL tells, or null when only its content can tell. */
@@ -35,6 +48,7 @@ enum class SourceKind(val label: String) {
             val uri = runCatching { URI(url) }.getOrNull() ?: return null
             val text = url.lowercase()
             val path = (uri.rawPath ?: "").lowercase()
+            if (path.endsWith("/repo.json") || path.endsWith("index.pb") || "keiyoushi" in text || "tachiyomi" in text || "mihon" in text) return Mihon
             if (path.endsWith("plugins.min.json") || path.endsWith("plugins.json") || "lnreader" in text) return LnReader
             if (path.endsWith("versioning.json") || "paperback" in text || "inkdex" in text) return Paperback
             if (path.endsWith("index.min.json") || "aidoku" in text) return Aidoku
@@ -49,12 +63,15 @@ enum class SourceKind(val label: String) {
             if ("<feed" in head || ("opds" in head && "\"metadata\"" in head)) return Opds
             val json = runCatching { Json.parseToJsonElement(String(data, Charsets.UTF_8)) }.getOrNull() ?: return null
             if (json is JsonObject) {
+                val meta = json["meta"] as? JsonObject
+                if ("index_v2" in json || (meta != null && "signingKeyFingerprint" in meta)) return Mihon
                 if ("builtWith" in json || ("repository" in json && "sources" in json)) return Paperback
                 if (json["sources"] is JsonArray) return Aidoku
                 if ("navigation" in json || "publications" in json) return Opds
             }
             val first = (json as? JsonArray)?.firstOrNull() as? JsonObject
             if (first != null) {
+                if ("pkg" in first && "apk" in first) return Mihon
                 val url = (first["url"] as? JsonPrimitive)?.contentOrNull
                 if ("site" in first || url?.endsWith(".js") == true) return LnReader
                 if ("file" in first || "downloadURL" in first) return Aidoku
@@ -64,8 +81,12 @@ enum class SourceKind(val label: String) {
     }
 }
 
-/** One line of the source list. A password is not here. It is in the encrypted store of the device. */
-@Serializable
+/**
+ * One line of the source list. A password is not here. It is in the encrypted store of the device.
+ * The library file keeps a kind that Asabunko does not know in "moekomaKind", and "kind" is empty. So Asabunko
+ * reads the library file of Moekoma, and a backup goes both ways.
+ */
+@Serializable(with = SourceLinkSerializer::class)
 data class SourceLink(
     @Serializable(with = UuidSerializer::class) val id: UUID = UUID.randomUUID(),
     /** The URL with no user name and no password. */
@@ -85,6 +106,32 @@ data class SourceLink(
         }
 
     val host: String? get() = runCatching { URI(url).host }.getOrNull()
+}
+
+/** The form of [SourceLink] in the library file. */
+@Serializable
+private class SourceLinkFile(
+    @Serializable(with = UuidSerializer::class) val id: UUID,
+    val url: String,
+    val username: String? = null,
+    val kind: SourceKind? = null,
+    val name: String? = null,
+    val moekomaKind: SourceKind? = null,
+)
+
+object SourceLinkSerializer : KSerializer<SourceLink> {
+    override val descriptor: SerialDescriptor = SourceLinkFile.serializer().descriptor
+
+    override fun serialize(encoder: Encoder, value: SourceLink) {
+        val shared = value.kind?.takeIf { it.shared }
+        val own = value.kind?.takeIf { !it.shared }
+        encoder.encodeSerializableValue(SourceLinkFile.serializer(), SourceLinkFile(value.id, value.url, value.username, shared, value.name, own))
+    }
+
+    override fun deserialize(decoder: Decoder): SourceLink {
+        val file = decoder.decodeSerializableValue(SourceLinkFile.serializer())
+        return SourceLink(file.id, file.url, file.username, file.moekomaKind ?: file.kind, file.name)
+    }
 }
 
 /** The source list as text, one URL on each line, as in ZettaStream. "https://user:password@host/opds" gives a user name and a password. */
