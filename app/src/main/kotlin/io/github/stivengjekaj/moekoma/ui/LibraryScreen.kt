@@ -1,8 +1,5 @@
 package io.github.stivengjekaj.moekoma.ui
 
-import io.github.stivengjekaj.moekoma.data.Downloads
-import androidx.compose.material.icons.outlined.FolderDelete
-import androidx.compose.material.icons.outlined.Download
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -37,24 +34,30 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.BookmarkAdd
-import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.FolderDelete
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.Undo
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,19 +73,23 @@ import io.github.stivengjekaj.moekoma.R
 import io.github.stivengjekaj.moekoma.core.Book
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.ReadListOrder
-import io.github.stivengjekaj.moekoma.data.Settings
 import io.github.stivengjekaj.moekoma.data.AppModel
+import io.github.stivengjekaj.moekoma.data.Downloads
+import io.github.stivengjekaj.moekoma.data.Settings
+import io.github.stivengjekaj.moekoma.data.Sources
 import io.github.stivengjekaj.moekoma.ui.theme.Corner
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import java.time.LocalTime
+import kotlinx.coroutines.launch
 
 /** The kinds of file that the importer offers. Android does not know a type for each comic archive, so all files show. */
 private val importTypes = arrayOf("*/*")
 
 /** The shelf: the books that the user reads now, and the read list. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(model: AppModel, settings: Settings, downloads: Downloads, onRead: (Book) -> Unit) {
+fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloads: Downloads, onRead: (Book) -> Unit) {
     val library by model.library.collectAsState()
     val prefs by settings.preferences.collectAsState()
     var orderMenu by remember { mutableStateOf(false) }
@@ -90,11 +97,31 @@ fun LibraryScreen(model: AppModel, settings: Settings, downloads: Downloads, onR
     val palette = LocalPalette.current
     var deleting by remember { mutableStateOf<Book?>(null) }
     var importMenu by remember { mutableStateOf(false) }
+    var checking by remember { mutableStateOf(false) }
+    // A pull shows its own circle, so the button shows one only when the button starts the check.
+    var pulled by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val hasOnline = library.books.any { it.origin != null }
+    fun check(quiet: Boolean) {
+        if (checking) return
+        checking = true
+        pulled = quiet
+        scope.launch {
+            val result = sources.refreshAll()
+            checking = false
+            result.message(quiet)?.let { model.fault.value = it }
+        }
+    }
 
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { model.importDocuments(it) }
     val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(model::importFolder) }
 
-    Box(Modifier.fillMaxSize().background(palette.background)) {
+    // A pull asks the sources for new chapters, as in Asabunko. A pull with no news says nothing.
+    PullToRefreshBox(
+        isRefreshing = checking && pulled,
+        onRefresh = { if (hasOnline) check(quiet = true) },
+        modifier = Modifier.fillMaxSize().background(palette.background),
+    ) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(112.dp),
             contentPadding = PaddingValues(start = Gutter, end = Gutter, bottom = 32.dp),
@@ -107,6 +134,12 @@ fun LibraryScreen(model: AppModel, settings: Settings, downloads: Downloads, onR
                     Column(Modifier.weight(1f).semantics(mergeDescendants = true) { heading() }) {
                         Text(greeting(LocalTime.now().hour), style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary)
                         Text("Your library", style = MaterialTheme.typography.displaySmall)
+                    }
+                    if (hasOnline) {
+                        IconButton(onClick = { check(quiet = false) }, enabled = !checking) {
+                            if (checking && !pulled) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = palette.accent)
+                            else Icon(Icons.Outlined.Refresh, contentDescription = "Check for new chapters")
+                        }
                     }
                     Box {
                         IconButton(onClick = { importMenu = true }) { Icon(Icons.Outlined.Add, contentDescription = "Import") }

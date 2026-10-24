@@ -33,6 +33,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -447,6 +448,30 @@ class Sources(
             model.update(book.id) { it.copy(pageCount = novel.chapters.size, finished = false) }
         }
         added
+    }
+
+    /** The result of a check for new chapters: the new chapters, the books whose source did not answer, and each book with new chapters. */
+    data class Check(val added: Int, val failed: Int, val found: List<Pair<Book, Int>>) {
+        /** The text for the user. With [quiet], a check with no news and no faults gives null. */
+        fun message(quiet: Boolean = false): String? = when {
+            added == 0 && failed == 0 -> if (quiet) null else "No new chapters."
+            else -> "$added new chapter${if (added == 1) "" else "s"}." + if (failed > 0) " $failed book${if (failed == 1) "" else "s"} did not update." else ""
+        }
+    }
+
+    /**
+     * Asks the source of each online book for new chapters. Four books ask their sources at the same time, so a large
+     * library does not take minutes. With [listedOnly], only the books of the read list ask.
+     */
+    suspend fun refreshAll(listedOnly: Boolean = false): Check = coroutineScope {
+        val books = model.library.value.books.filter { it.origin != null && (!listedOnly || it.listed) }
+        val gate = Semaphore(4)
+        val results = books.map { book -> async { gate.withPermit { book to runCatching { refresh(book) }.getOrNull() } } }.awaitAll()
+        Check(
+            added = results.sumOf { it.second ?: 0 },
+            failed = results.count { it.second == null },
+            found = results.mapNotNull { (book, added) -> if (added != null && added > 0) book to added else null },
+        )
     }
 
     /**
