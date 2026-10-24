@@ -11,11 +11,6 @@ Each release keeps the backup that Asabunko of the same functions reads.
 
 ## Releases from 1.0.0 to 2.0.0
 
-- 1.5.0 Moekoma fits into Android, as Asabunko 2.8.0: the app in Japanese, a
-  Home Screen widget of Continue reading, "Share the file" of a book (CBZ,
-  PDF, or EPUB), HTML files in "Open with", a light vibration at the end of a
-  chapter or a book, and a spread that stays in the middle after a turn of
-  the device.
 - 2.0.0 Quality, as Asabunko 3.0.0, and the review of all of Moekoma:
   - Speed: the start of the app with a baseline profile, the load of the
     library and the source list off the main thread, the memory of the page

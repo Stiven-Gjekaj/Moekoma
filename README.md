@@ -92,6 +92,9 @@ Moekoma has no sources in it. Your books stay on your device.
   Updates list, and the download of new chapters, on Wi-Fi only if you want
 - Categories of the read list, the search and the filters of the library,
   the History, private reading, the Storage page, and the move of many books
+- "Share the file" of a book, a Home Screen widget of Continue reading,
+  and a light tap at the end of a chapter
+- English and Japanese
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 

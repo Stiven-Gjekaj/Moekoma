@@ -7,6 +7,17 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 1.5.0 (2026-10-24)
+
+- The app is in Japanese when the device or the app uses Japanese. Android
+  13 and later let you choose the language of Moekoma alone.
+- A Home Screen widget shows the three books of Continue reading. A tap
+  opens the book.
+- "Share the file" in the menu of a book sends its file to another app: a
+  CBZ, a PDF, or an EPUB.
+- A light tap of the device tells you that a chapter or a book ends.
+- A spread stays at its pages after a turn of the device.
+
 ## 1.4.0 (2026-10-24)
 
 - Track your books on AniList and MyAnimeList. In Settings, Sources,
