@@ -102,6 +102,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import java.util.UUID
 
 /** A title page: the same title in some sources. With [findOthers], the page also looks for it in the other sources. */
@@ -192,12 +194,16 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
     val details = answers[chosen.source]
     val fault = faults[chosen.source]
 
+    // At most four sources read a title at the same time, so that a slow source, such as a WebAssembly source, does not
+    // keep the processor from the chosen source.
+    val gate = remember { Semaphore(4) }
+
     suspend fun ask(asked: List<SearchHit>) = coroutineScope {
         asked.map { hit ->
             async {
                 val source = installedOf(hit) ?: return@async
                 try {
-                    answers[hit.source] = sources.load(source).details(hit.series)
+                    answers[hit.source] = gate.withPermit { sources.load(source).details(hit.series) }
                 } catch (e: Exception) {
                     faults[hit.source] = e.message ?: "The source did not answer. (${e.javaClass.simpleName})"
                 }
