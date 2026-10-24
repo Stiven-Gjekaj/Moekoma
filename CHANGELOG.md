@@ -7,6 +7,25 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 2.0.0 (2026-10-24)
+
+The quality release. Each number is a measurement on the emulator. The
+memory, the web view, and the font size fixes have tests.
+
+- A search of 87 sources uses less memory. A source that leaves the cache of
+  loaded sources now leaves the memory at once. Before, it stayed for one
+  more minute. The peak Java heap of the same search went from 584 MB and
+  643 MB to 459 MB, 179 MB, and 399 MB in three runs.
+- A web view whose render process stops, for example with too little
+  memory, no longer stops the app.
+- At the largest font size, each tab label and the "Read list" heading stay
+  on one line, and a switch row has space around its label.
+- TalkBack reads the states of the filters, the pages, and the sentences in
+  the language of the app.
+- The undo and help icons turn in a language from right to left.
+- `scripts/device-suite.sh` runs the full device suite with the test server
+  and counts the tests. On the release commit, 47 of 47 tests passed.
+
 ## 1.5.0 (2026-10-24)
 
 - The app is in Japanese when the device or the app uses Japanese. Android

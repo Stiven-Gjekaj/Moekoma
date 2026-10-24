@@ -157,6 +157,15 @@ device. They write ZIP, 7z, and TAR archives with libarchive, read them,
 import a manga into an empty library, read it from the right to the left,
 and change the look.
 
+Before a release, run the full device suite on the release commit:
+
+```
+sh scripts/device-suite.sh
+```
+
+The script starts the test server, runs the device tests with the live
+sources, and prints the number of tests that passed and failed.
+
 ## Documentation
 
 - [docs/decisions.md](docs/decisions.md): each choice and its reason
