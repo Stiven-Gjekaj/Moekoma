@@ -68,4 +68,12 @@ class TitleSearchTest {
         assertEquals(4, SourceChoice.distinctChapters(chapters))
         assertEquals(0, SourceChoice.distinctChapters(emptyList()))
     }
+
+    @Test fun findsTheSameTitleInAnotherSource() {
+        val items = listOf(OnlineSeries("1", "Tide Walker Side Story"), OnlineSeries("2", "The Tide Walker"), OnlineSeries("3", "Tide Walker"))
+        assertEquals("3", TitleMatch.best(items, "Tide Walker")?.id)
+        assertEquals("1", TitleMatch.best(items.take(2), "Tide Walker")?.id)
+        // A title that only holds the search is not the same title.
+        assertEquals(null, TitleMatch.best(listOf(OnlineSeries("2", "The Tide Walker")), "Tide Walker"))
+    }
 }

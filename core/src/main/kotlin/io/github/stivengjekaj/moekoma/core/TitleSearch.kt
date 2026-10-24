@@ -28,6 +28,20 @@ object TitleMatch {
             else -> 0
         }
     }
+
+    /**
+     * The series of a search that is the same title as a book of another source: the same title, or a title that
+     * starts with it. The first of the best results wins. Null when no result is close enough.
+     */
+    fun best(items: List<OnlineSeries>, title: String): OnlineSeries? {
+        var best: OnlineSeries? = null
+        var top = 1
+        for (item in items) {
+            val score = score(item.title, title)
+            if (score > top) { best = item; top = score }
+        }
+        return best
+    }
 }
 
 /** One series in one source. */
