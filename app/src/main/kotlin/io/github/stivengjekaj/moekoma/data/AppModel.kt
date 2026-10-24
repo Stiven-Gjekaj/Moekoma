@@ -64,6 +64,8 @@ class AppModel(
 
     /** The fault of the last load or import, for an alert. */
     val fault = MutableStateFlow<String?>(null)
+    /** The book that a tap on a notification asks the app to open. */
+    val openRequest = MutableStateFlow<UUID?>(null)
 
     private val importState = MutableStateFlow<ImportProgress?>(null)
     val importing: StateFlow<ImportProgress?> = importState.asStateFlow()

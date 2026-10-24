@@ -5,6 +5,7 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import io.github.stivengjekaj.moekoma.data.ChapterChecks
 import io.github.stivengjekaj.moekoma.data.PdfPageFetcher
 import io.github.stivengjekaj.moekoma.data.PdfPageKeyer
 import eu.kanade.tachiyomi.network.AndroidCookieJar
@@ -33,6 +34,7 @@ class MoekomaApp : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        ChapterChecks.schedule(this, container.settings.preferences.value.backgroundChecks)
     }
 
     /** The image loader of the app also draws the pages of a PDF and the images of the sources. */

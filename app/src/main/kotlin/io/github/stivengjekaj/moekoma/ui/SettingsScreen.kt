@@ -1,5 +1,8 @@
 package io.github.stivengjekaj.moekoma.ui
 
+import android.Manifest
+import android.os.Build
+import io.github.stivengjekaj.moekoma.data.ChapterChecks
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import io.github.stivengjekaj.moekoma.core.Backup
@@ -135,6 +138,9 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
             ).joinToString("\n\n")
         }
     }
+    val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) container.model.fault.value = "Turn on the notifications of Moekoma in the settings of Android to know about new chapters."
+    }
     val readMihon = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         work("Mihon backup") {
@@ -166,6 +172,18 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
 
         Section("Sources", footer = "Mihon extensions, Kotatsu parsers, LNReader plugins, Aidoku sources, Paperback extensions, Suwayomi servers, and OPDS catalogs such as Komga, Kavita, and Calibre-web.") {
             LinkRow(if (library.sources.isEmpty()) "Add sources" else "${library.sources.size} source" + (if (library.sources.size == 1) "" else "s")) { open(SettingsRoute.Sources) }
+        }
+
+        Section(
+            "New chapters",
+            footer = "The books of your read list check for new chapters about every six hours, when the device has a network. " +
+                "A notification tells you about new chapters.",
+        ) {
+            Toggle("Check in the background", prefs.backgroundChecks) { on ->
+                container.settings.update { it.copy(backgroundChecks = on) }
+                ChapterChecks.schedule(context, on)
+                if (on && !ChapterChecks.mayNotify(context) && Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
 
         Section(

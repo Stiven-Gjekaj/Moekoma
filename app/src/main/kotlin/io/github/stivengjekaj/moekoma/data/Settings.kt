@@ -26,6 +26,8 @@ data class Preferences(
     val askedEInk: Boolean = false,
     /** The sources for adults install and show. */
     val adult: Boolean = false,
+    /** The books of the read list check for new chapters in the background. */
+    val backgroundChecks: Boolean = false,
 )
 
 /** Keeps the preferences in the shared preferences of Android. */
@@ -41,6 +43,7 @@ class Settings(context: Context) {
         volumeReversed = prefs.getBoolean("volumeReversed", false),
         askedEInk = prefs.getBoolean("askedEInk", false),
         adult = prefs.getBoolean("adult", false),
+        backgroundChecks = prefs.getBoolean("backgroundChecks", false),
         keepScreenOn = prefs.getBoolean("keepScreenOn", true),
         readListOrder = prefs.getString("readListOrder", null)?.let { name -> ReadListOrder.entries.firstOrNull { it.name == name } } ?: ReadListOrder.Added,
         text = TextStyle(
@@ -61,6 +64,7 @@ class Settings(context: Context) {
             .putBoolean("volumeReversed", next.volumeReversed)
             .putBoolean("askedEInk", next.askedEInk)
             .putBoolean("adult", next.adult)
+            .putBoolean("backgroundChecks", next.backgroundChecks)
             .putBoolean("keepScreenOn", next.keepScreenOn)
             .putString("readListOrder", next.readListOrder.name)
             .putString("text.family", next.text.family.name)

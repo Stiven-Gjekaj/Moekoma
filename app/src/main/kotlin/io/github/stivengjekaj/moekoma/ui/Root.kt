@@ -26,6 +26,7 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -82,6 +83,17 @@ fun MoekomaRoot(container: AppContainer) {
         val openSources = { tab = Tab.Settings; settingsStack = listOf(SettingsRoute.Sources) }
 
         // The readers cover the tabs, so that each tab keeps its open screens.
+        // A tap on the notification of new chapters opens the book.
+        val openRequest by container.model.openRequest.collectAsState()
+        LaunchedEffect(openRequest) {
+            openRequest?.let { id ->
+                if (container.model.library.value.book(id) != null) {
+                    tab = Tab.Library
+                    reading = id.toString()
+                }
+                container.model.openRequest.value = null
+            }
+        }
         val book = reading?.let { id -> container.model.library.collectAsState().value.book(UUID.fromString(id)) }
         Box(Modifier.fillMaxSize()) {
             // A phone shows the tabs at the bottom. A tablet or an unfolded phone shows them at the side.

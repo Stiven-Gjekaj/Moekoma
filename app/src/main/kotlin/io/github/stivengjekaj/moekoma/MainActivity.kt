@@ -8,8 +8,10 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import kotlinx.coroutines.launch
+import io.github.stivengjekaj.moekoma.data.ChapterChecks
 import io.github.stivengjekaj.moekoma.ui.MoekomaRoot
+import java.util.UUID
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val container get() = (application as MoekomaApp).container
@@ -18,12 +20,22 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent { MoekomaRoot(container) }
-        if (savedInstanceState == null) importShared(intent)
+        if (savedInstanceState == null) {
+            importShared(intent)
+            openBook(intent)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         importShared(intent)
+        openBook(intent)
+    }
+
+    /** A tap on the notification of new chapters opens the book. */
+    private fun openBook(intent: Intent?) {
+        val id = intent?.getStringExtra(ChapterChecks.EXTRA_BOOK) ?: return
+        runCatching { UUID.fromString(id) }.getOrNull()?.let { container.model.openRequest.value = it }
     }
 
     /** Each start of the app scans the folders that it watches. */
