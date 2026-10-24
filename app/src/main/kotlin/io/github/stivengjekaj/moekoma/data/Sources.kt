@@ -1,6 +1,7 @@
 package io.github.stivengjekaj.moekoma.data
 
 import android.content.Context
+import io.github.stivengjekaj.moekoma.core.ChapterGroups
 import io.github.stivengjekaj.moekoma.core.AidokuIndex
 import io.github.stivengjekaj.moekoma.core.AidokuSource
 import io.github.stivengjekaj.moekoma.core.Book
@@ -448,6 +449,30 @@ class Sources(
             model.update(book.id) { it.copy(pageCount = novel.chapters.size, finished = false) }
         }
         added
+    }
+
+    /**
+     * Moves a book of the library to another source of the same title. The place of the user goes to the chapter with
+     * the same number in the new source. The chapters of the old source leave the device. The caller removes the
+     * downloads of the book first.
+     */
+    suspend fun move(book: Book, to: InstalledSource, details: OnlineDetails): Book = withContext(Dispatchers.IO) {
+        val folder = model.folder(book)
+        val old = runCatching { Novel.load(folder) }.getOrNull()
+        val (fresh, _) = Novel(
+            title = old?.title ?: book.title, author = details.author ?: old?.author, summary = details.summary ?: old?.summary, chapters = emptyList(),
+        ).merge(details.chapters)
+        File(folder, "chapters").deleteRecursively()
+        File(folder, "chapters").mkdirs()
+        fresh.save(folder)
+        val place = ChapterGroups.place(book.page, old?.chapters.orEmpty().map { it.title.orEmpty() }, details.chapters.map { it.title })
+        model.update(book.id) { moved ->
+            moved.copy(
+                origin = originOf(to, details.series.id), fileName = to.info.name, pageCount = fresh.chapters.size, finished = false,
+                page = if (moved.lastRead != null) place else moved.page, position = if (moved.lastRead != null) 0.0 else moved.position,
+            )
+        }
+        model.library.value.books.first { it.id == book.id }
     }
 
     /** The result of a check for new chapters: the new chapters, the books whose source did not answer, and each book with new chapters. */

@@ -204,6 +204,10 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
     fun bookOf(hit: SearchHit): Book? = installedOf(hit)?.let { library.book(sources.originOf(it, hit.series.id)) }
     val installed = installedOf(chosen)
     val book = bookOf(chosen)
+    // The book of the library that reads this title from another source, with the name of that source.
+    val bookOfOtherSource = if (book != null) null else hits.asSequence().filter { it != chosen }.firstNotNullOfOrNull { hit ->
+        bookOf(hit)?.let { it to (installedOf(hit)?.info?.name ?: "another source") }
+    }
     val details = answers[chosen.source]
     val downloadState by container.downloads.state.collectAsState()
     // The chapters of the book on the device, read again when a download ends.
@@ -374,6 +378,25 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
                             onRetry = { book?.let { container.downloads.retry(it.id) } },
                             onRemove = { book?.let { container.downloads.cancel(it.id); container.downloads.remove(it) } },
                         )
+                    }
+                }
+                if (bookOfOtherSource != null && installed != null) {
+                    val (other, name) = bookOfOtherSource
+                    item {
+                        Card {
+                            Text("Your book reads from $name.", style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary)
+                            TextButton(
+                                contentPadding = PaddingValues(0.dp),
+                                onClick = {
+                                    scope.launch {
+                                        container.downloads.cancel(other.id)
+                                        container.downloads.remove(other)
+                                        runCatching { sources.move(other, installed, details) }
+                                            .onFailure { container.model.fault.value = "The book did not move: ${it.message}" }
+                                    }
+                                },
+                            ) { Text("Move my book to ${installed.info.name}", style = MaterialTheme.typography.labelLarge, color = palette.accent) }
+                        }
                     }
                 }
                 details.summary?.let { item { Summary(it) } }
