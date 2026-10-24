@@ -184,14 +184,14 @@ class AidokuSettingsTest {
         val listUrl = "https://aidoku-community.github.io/sources/index.min.json"
         val infos = AidokuIndex.parse(get(listUrl), listUrl).filter { it.language == "en" }
         val offline: Fetcher = { throw java.io.IOException("No network in this test.") }
-        var opened = 0
+        val opened = mutableListOf<String>()
         var forms = 0
         val kinds = sortedMapOf<String, Int>()
         for (info in infos) {
             val file = kotlin.io.path.createTempFile(info.id, ".aix").toFile().apply { writeBytes(get(info.code)); deleteOnExit() }
             val source = runCatching { AidokuSource.load(info, file, null, offline, null) }.getOrNull() ?: continue
             if (source.hasSettingsForm) {
-                opened++
+                opened += info.id
                 val queue = mutableListOf(source.form("root"))
                 while (queue.isNotEmpty()) {
                     val form = queue.removeAt(queue.size - 1)
@@ -204,7 +204,7 @@ class AidokuSettingsTest {
             }
             source.close()
         }
-        println("LIVE settings: ${infos.size} packages, $opened with settings, $forms forms, $kinds")
+        println("LIVE settings: ${infos.size} packages, ${opened.size} with settings $opened, $forms forms, $kinds")
         assertFalse("Each row of a real form is a row that the app can do.", "Unsupported" in kinds)
     }
 }
