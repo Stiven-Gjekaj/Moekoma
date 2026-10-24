@@ -90,7 +90,7 @@ fun MoekomaRoot(container: AppContainer) {
             BoxWithConstraints(Modifier.fillMaxSize().background(palette.background).then(hidden)) {
                 val content: @Composable () -> Unit = {
                     when (tab) {
-                        Tab.Library -> LibraryScreen(container.model, container.settings) { reading = it.id.toString() }
+                        Tab.Library -> LibraryScreen(container.model, container.settings, container.downloads) { reading = it.id.toString() }
                         Tab.Discover -> TitleStack(container, discoverStack, { discoverStack = it }, read) {
                             DiscoverScreen(container, { discoverStack = discoverStack + it }, openSources)
                         }

@@ -1,5 +1,18 @@
 package io.github.stivengjekaj.moekoma.ui
 
+import androidx.core.content.ContextCompat
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.os.Build
+import android.content.pm.PackageManager
+import android.Manifest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import io.github.stivengjekaj.moekoma.data.Downloads
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -192,6 +205,12 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
     val installed = installedOf(chosen)
     val book = bookOf(chosen)
     val details = answers[chosen.source]
+    val downloadState by container.downloads.state.collectAsState()
+    // The chapters of the book on the device, read again when a download ends.
+    var downloaded by remember { mutableStateOf(emptySet<Int>()) }
+    LaunchedEffect(book?.id, book?.pageCount, downloadState.changes) {
+        downloaded = book?.let { withContext(Dispatchers.IO) { container.downloads.downloaded(it) } }.orEmpty()
+    }
     val fault = faults[chosen.source]
 
     // At most four sources read a title at the same time, so that a slow source, such as a WebAssembly source, does not
@@ -332,8 +351,9 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
                             onClick = {
                                 scope.launch {
                                     if (book != null && book.listed) {
-                                        // A book with no place leaves the library. A book with a place stays for Continue reading.
-                                        if (book.lastRead == null) container.model.delete(book) else container.model.update(book.id) { it.copy(listed = false) }
+                                        // A book with no place and no downloads leaves the library. A book with a place stays for
+                                        // Continue reading, and a book with downloads keeps them.
+                                        if (book.lastRead == null && downloaded.isEmpty()) container.model.delete(book) else container.model.update(book.id) { it.copy(listed = false) }
                                     } else {
                                         add(details, listed = true)
                                     }
@@ -346,6 +366,14 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
                                 tint = palette.accent,
                             )
                         }
+                        DownloadsMenu(
+                            failed = book?.let { container.downloads.failedCount(it.id).takeIf { downloadState.failed.isNotEmpty() } } ?: 0,
+                            hasDownloads = downloaded.isNotEmpty(),
+                            onAll = { scope.launch { add(details, listed = book?.listed ?: false)?.let { container.downloads.downloadChapters(it) } } },
+                            onFromHere = { scope.launch { add(details, listed = book?.listed ?: false)?.let { container.downloads.downloadChapters(it, it.page) } } },
+                            onRetry = { book?.let { container.downloads.retry(it.id) } },
+                            onRemove = { book?.let { container.downloads.cancel(it.id); container.downloads.remove(it) } },
+                        )
                     }
                 }
                 details.summary?.let { item { Summary(it) } }
@@ -405,13 +433,63 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
                         val shown = ranges[selected].toList().let { if (newestFirst) it.reversed() else it }
                         items(shown, key = { "c:$it" }) { index ->
                             Card(padding = PaddingValues(0.dp)) {
-                                ChapterRow(details, index, isRead(index), isCurrent(index), { open(index, details) }, { markRead(index, details) })
+                                ChapterRow(details, index, isRead(index), isCurrent(index), { open(index, details) }, { markRead(index, details) }) {
+                                    val at = book?.let { position(it, details, index) } ?: return@ChapterRow
+                                    DownloadMark(downloadState, book.id, at, at in downloaded)
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/** The downloads of a series: all chapters, the chapters from the place of the user, the failed ones again, or none. */
+@Composable
+private fun DownloadsMenu(failed: Int, hasDownloads: Boolean, onAll: () -> Unit, onFromHere: () -> Unit, onRetry: () -> Unit, onRemove: () -> Unit) {
+    val palette = LocalPalette.current
+    val context = LocalContext.current
+    var open by remember { mutableStateOf(false) }
+    // Android 13 and newer show the notification of the downloads only with the permission. The download runs with or without it.
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    fun start(body: () -> Unit) {
+        open = false
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            ask.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        body()
+    }
+    Box {
+        IconButton(onClick = { open = true }) { Icon(Icons.Outlined.Download, contentDescription = "Downloads", tint = palette.accent) }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(text = { Text("Download all chapters") }, onClick = { start(onAll) })
+            DropdownMenuItem(text = { Text("Download from this chapter") }, onClick = { start(onFromHere) })
+            if (failed > 0) DropdownMenuItem(text = { Text("Try the failed downloads again ($failed)") }, onClick = { open = false; onRetry() })
+            if (hasDownloads) DropdownMenuItem(text = { Text("Remove downloads", color = palette.danger) }, onClick = { open = false; onRemove() })
+        }
+    }
+}
+
+/** The state of the download of a chapter: on the device, downloading, waiting, or failed. */
+@Composable
+private fun DownloadMark(state: Downloads.State, book: UUID, chapter: Int, onDevice: Boolean) {
+    val palette = LocalPalette.current
+    val job = Downloads.Job(book, chapter)
+    val modifier = Modifier.padding(start = 8.dp).size(20.dp)
+    when {
+        state.queue.firstOrNull() == job -> {
+            val progress = state.progress
+            if (progress != null && progress.second > 0) {
+                CircularProgressIndicator({ progress.first.toFloat() / progress.second }, modifier.semantics { contentDescription = "Downloading" }, color = palette.accent, strokeWidth = 2.dp)
+            } else {
+                CircularProgressIndicator(modifier.semantics { contentDescription = "Downloading" }, color = palette.accent, strokeWidth = 2.dp)
+            }
+        }
+        job in state.failed -> Icon(Icons.Outlined.ErrorOutline, contentDescription = "Download failed", tint = palette.danger, modifier = modifier)
+        job in state.queue -> Icon(Icons.Outlined.Schedule, contentDescription = "Waiting to download", tint = palette.textSecondary, modifier = modifier)
+        onDevice -> Icon(Icons.Filled.CheckCircle, contentDescription = "Downloaded", tint = palette.accent, modifier = modifier)
     }
 }
 
@@ -432,7 +510,9 @@ private fun Summary(text: String) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ChapterRow(details: OnlineDetails, index: Int, read: Boolean, current: Boolean, onOpen: () -> Unit, onMarkRead: () -> Unit) {
+private fun ChapterRow(
+    details: OnlineDetails, index: Int, read: Boolean, current: Boolean, onOpen: () -> Unit, onMarkRead: () -> Unit, mark: @Composable () -> Unit = {},
+) {
     val palette = LocalPalette.current
     val chapter = details.chapters[index]
     var menu by remember { mutableStateOf(false) }
@@ -447,6 +527,7 @@ private fun ChapterRow(details: OnlineDetails, index: Int, read: Boolean, curren
                 val facts = listOfNotNull(chapter.date, chapter.group).joinToString(" · ")
                 if (facts.isNotEmpty()) Text(facts, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
             }
+            mark()
             if (current) Icon(Icons.Filled.Bookmark, contentDescription = "You read here", tint = palette.accent)
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {

@@ -1,5 +1,8 @@
 package io.github.stivengjekaj.moekoma.ui
 
+import io.github.stivengjekaj.moekoma.data.Downloads
+import androidx.compose.material.icons.outlined.FolderDelete
+import androidx.compose.material.icons.outlined.Download
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -79,7 +82,7 @@ private val importTypes = arrayOf("*/*")
 
 /** The shelf: the books that the user reads now, and the read list. */
 @Composable
-fun LibraryScreen(model: AppModel, settings: Settings, onRead: (Book) -> Unit) {
+fun LibraryScreen(model: AppModel, settings: Settings, downloads: Downloads, onRead: (Book) -> Unit) {
     val library by model.library.collectAsState()
     val prefs by settings.preferences.collectAsState()
     var orderMenu by remember { mutableStateOf(false) }
@@ -132,7 +135,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, onRead: (Book) -> Unit) {
                             SectionTitle("Continue reading")
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                                 items(continuing, key = { it.id }) { book ->
-                                    BookMenu(book, model, onRead, onDelete = { deleting = it }) { ContinueCard(book, model) }
+                                    BookMenu(book, model, downloads, onRead, onDelete = { deleting = it }) { ContinueCard(book, model) }
                                 }
                             }
                         }
@@ -170,7 +173,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, onRead: (Book) -> Unit) {
                         }
                     }
                     items(readList, key = { it.id }) { book ->
-                        BookMenu(book, model, onRead, onDelete = { deleting = it }) { BookTile(book, model) }
+                        BookMenu(book, model, downloads, onRead, onDelete = { deleting = it }) { BookTile(book, model) }
                     }
                 }
             }
@@ -200,7 +203,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, onRead: (Book) -> Unit) {
             onDismissRequest = { deleting = null },
             title = { Text("Delete ${book.title}?") },
             text = { Text("The book and its progress leave the library. A file that you imported stays where it is.") },
-            confirmButton = { TextButton(onClick = { model.delete(book); deleting = null }) { Text("Delete", color = palette.danger) } },
+            confirmButton = { TextButton(onClick = { downloads.cancel(book.id); model.delete(book); deleting = null }) { Text("Delete", color = palette.danger) } },
             dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
         )
     }
@@ -222,7 +225,7 @@ private fun SectionTitle(text: String) {
 /** A long press opens the menu of a book. A tap reads it. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookMenu(book: Book, model: AppModel, onRead: (Book) -> Unit, onDelete: (Book) -> Unit, content: @Composable () -> Unit) {
+private fun BookMenu(book: Book, model: AppModel, downloads: Downloads, onRead: (Book) -> Unit, onDelete: (Book) -> Unit, content: @Composable () -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box(Modifier.combinedClickable(onClickLabel = "Read", onLongClickLabel = "Open the menu", onLongClick = { open = true }) { onRead(book) }) {
         content()
@@ -242,6 +245,17 @@ private fun BookMenu(book: Book, model: AppModel, onRead: (Book) -> Unit, onDele
                 DropdownMenuItem(text = { Text("Add to the read list") }, leadingIcon = { Icon(Icons.Outlined.BookmarkAdd, null) }, onClick = {
                     open = false; model.update(book.id) { it.copy(listed = true) }
                 })
+            }
+            if (book.origin != null) {
+                DropdownMenuItem(text = { Text("Download all chapters") }, leadingIcon = { Icon(Icons.Outlined.Download, null) }, onClick = {
+                    open = false; downloads.downloadChapters(book)
+                })
+                // The menu asks the disk only while it is open.
+                if (downloads.hasDownloads(book)) {
+                    DropdownMenuItem(text = { Text("Remove downloads") }, leadingIcon = { Icon(Icons.Outlined.FolderDelete, null) }, onClick = {
+                        open = false; downloads.cancel(book.id); downloads.remove(book)
+                    })
+                }
             }
             DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { open = false; onDelete(book) })
         }
