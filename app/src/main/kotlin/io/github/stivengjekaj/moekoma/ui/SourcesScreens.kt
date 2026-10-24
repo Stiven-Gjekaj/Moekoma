@@ -107,6 +107,7 @@ sealed interface SettingsRoute {
     data class Source(val source: InstalledSource) : SettingsRoute
     data class Title(val route: TitleRoute) : SettingsRoute
     data object Storage : SettingsRoute
+    data object MoveBooks : SettingsRoute
 }
 
 /** The pages of a book that Moekoma reads from the network and does not keep. */
