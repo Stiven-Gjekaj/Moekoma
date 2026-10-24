@@ -1,5 +1,6 @@
 package io.github.stivengjekaj.moekoma.ui
 
+import android.graphics.BitmapFactory
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -106,6 +107,7 @@ import coil3.size.Size
 import io.github.stivengjekaj.moekoma.VolumeKeys
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.ReadingMode
+import io.github.stivengjekaj.moekoma.core.Spreads
 import io.github.stivengjekaj.moekoma.data.PdfDocument
 import io.github.stivengjekaj.moekoma.data.PdfPage
 import io.github.stivengjekaj.moekoma.data.AppModel
@@ -118,6 +120,8 @@ import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 import kotlin.math.abs
@@ -200,15 +204,36 @@ fun PageReader(
         }
     }
 
+    // Two pages show side by side when the screen is wider than it is tall. A page of two pages in one image is alone.
+    val configuration = LocalConfiguration.current
+    val pairs = mode != ReadingMode.Vertical && layout.spreads && configuration.screenWidthDp > configuration.screenHeightDp
+    var widePages by remember(pages) { mutableStateOf(emptySet<Int>()) }
+    LaunchedEffect(pages, pairs) {
+        if (pairs) widePages = withContext(Dispatchers.IO) { pages.indices.filter { isWide(pages[it]) }.toSet() }
+    }
+    val spreads = remember(pages, pairs, layout.shift, widePages) {
+        if (pairs) Spreads.make(pages.size, { it in widePages }, layout.shift) else pages.indices.map { listOf(it) }
+    }
+    val spread = Spreads.index(page, spreads)
+    val currentSpreads by rememberUpdatedState(spreads)
+    /** Goes by one spread. A spread of two pages counts as one turn. */
+    fun turn(by: Int) {
+        val all = currentSpreads
+        all.getOrNull(Spreads.index(page, all) + by)?.let { go(it.first()) }
+    }
+    // "3 of 20", or "2-3 of 20" for a spread of two pages.
+    val shown = spreads.getOrNull(spread) ?: listOf(page)
+    val pageLabel = if (shown.size > 1) "${shown.first() + 1}-${shown.last() + 1} of ${pages.size}" else "${page + 1} of ${pages.size}"
+
     // The page holds a reference to tap from its first composition, so tap reads the layout and the mode of now.
     val taps by rememberUpdatedState(layout.taps)
     val direction by rememberUpdatedState(mode)
     fun tap(zone: TapZone) {
         when {
             zone == TapZone.Middle || taps == TapZones.Off -> bars = !bars
-            taps == TapZones.Forward -> go(page + 1)
+            taps == TapZones.Forward -> turn(1)
             // The left edge goes back in a western comic and forward in a manga.
-            else -> go(page + if ((zone == TapZone.Right) != (direction == ReadingMode.RightToLeft)) 1 else -1)
+            else -> turn(if ((zone == TapZone.Right) != (direction == ReadingMode.RightToLeft)) 1 else -1)
         }
     }
 
@@ -219,18 +244,29 @@ fun PageReader(
                 modifier = Modifier.align(Alignment.Center),
             )
             mode == ReadingMode.Vertical -> VerticalReader(pages, page, eInk, onPage = { page = it }, onTurn = { turns++ }, onTap = { bars = !bars })
-            else -> PagedReader(pages, mode == ReadingMode.RightToLeft, page, eInk, layout, onPage = ::go, onTap = ::tap)
+            else -> PagedReader(
+                pages, spreads, mode == ReadingMode.RightToLeft, spread, eInk, layout,
+                onSpread = { index -> spreads.getOrNull(index)?.let { go(it.first()) } }, onTap = ::tap,
+            )
         }
 
         if (eInk) {
-            if (bars) Chrome(title, page, pages.size, mode, layout, onClose, onMode = onMode, onLayout = onLayout, onPage = ::go)
+            if (bars) Chrome(title, page, pages.size, pageLabel, mode, layout, onClose, onMode = onMode, onLayout = onLayout, onPage = ::go)
         } else {
             AnimatedVisibility(bars, enter = fadeIn(), exit = fadeOut()) {
-                Chrome(title, page, pages.size, mode, layout, onClose, onMode = onMode, onLayout = onLayout, onPage = ::go)
+                Chrome(title, page, pages.size, pageLabel, mode, layout, onClose, onMode = onMode, onLayout = onLayout, onPage = ::go)
             }
         }
         if (flash) Box(Modifier.fillMaxSize().background(Color.Black))
     }
+}
+
+/** True when a page of the device is wider than it is tall, such as two pages in one image. A page of the network counts as one page. */
+private fun isWide(page: Any): Boolean {
+    val file = page as? File ?: return false
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(file.path, options)
+    return options.outWidth > options.outHeight && options.outHeight > 0
 }
 
 /** The title of a group of choices in a menu. */
@@ -242,13 +278,17 @@ private fun MenuLabel(text: String) {
 /** A page from the network, with the headers that its server asks for, such as the password of a catalog. */
 data class RemotePage(val url: String, val headers: Map<String, String> = emptyMap())
 
-/** One page at a time, with a swipe or a tap at the edge. Each page zooms with a pinch or a double tap. */
+/**
+ * One spread at a time, with a swipe or a tap at the edge. A spread is one page, or two pages on a wide screen. Each
+ * page zooms with a pinch or a double tap. [page] and [onPage] count spreads.
+ */
 @Composable
 private fun PagedReader(
-    pages: List<Any>, rightToLeft: Boolean, page: Int, eInk: Boolean, layout: PageLayout,
-    onPage: (Int) -> Unit, onTap: (TapZone) -> Unit,
+    pages: List<Any>, spreads: List<List<Int>>, rightToLeft: Boolean, page: Int, eInk: Boolean, layout: PageLayout,
+    onSpread: (Int) -> Unit, onTap: (TapZone) -> Unit,
 ) {
-    val pager = rememberPagerState(initialPage = page) { pages.size }
+    val onPage = onSpread
+    val pager = rememberPagerState(initialPage = page) { spreads.size }
     var zoomed by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -327,7 +367,19 @@ private fun PagedReader(
                 } else Modifier,
             ),
         ) { index ->
-            ZoomablePage(pages[index], index, layout.fit, layout.crop, onTap = onTap, onZoom = { if (index == pager.currentPage) zoomed = it })
+            val group = spreads[index]
+            if (group.size == 1) {
+                ZoomablePage(pages[group[0]], group[0], layout.fit, layout.crop, onTap = onTap, onZoom = { if (index == pager.currentPage) zoomed = it })
+            } else {
+                // In a manga the first page of a pair is at the right.
+                Row(Modifier.fillMaxSize()) {
+                    (if (rightToLeft) group.reversed() else group).forEach { at ->
+                        Box(Modifier.weight(1f).fillMaxHeight()) {
+                            ZoomablePage(pages[at], at, layout.fit, layout.crop, onTap = onTap, onZoom = { if (index == pager.currentPage) zoomed = it })
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -558,7 +610,7 @@ fun SystemBars(visible: Boolean) {
 
 @Composable
 private fun Chrome(
-    title: String, page: Int, count: Int, mode: ReadingMode, layout: PageLayout,
+    title: String, page: Int, count: Int, pageLabel: String, mode: ReadingMode, layout: PageLayout,
     onClose: () -> Unit, onMode: (ReadingMode) -> Unit, onLayout: (PageLayout) -> Unit, onPage: (Int) -> Unit,
 ) {
     val palette = LocalPalette.current
@@ -591,6 +643,18 @@ private fun Chrome(
                         trailingIcon = { if (layout.crop) Icon(Icons.Outlined.Check, contentDescription = "On", Modifier.size(18.dp)) },
                         onClick = { layoutMenu = false; onLayout(layout.copy(crop = !layout.crop)) },
                     )
+                    DropdownMenuItem(
+                        text = { Text("Two pages on a wide screen") },
+                        trailingIcon = { if (layout.spreads) Icon(Icons.Outlined.Check, contentDescription = "On", Modifier.size(18.dp)) },
+                        onClick = { layoutMenu = false; onLayout(layout.copy(spreads = !layout.spreads)) },
+                    )
+                    if (layout.spreads) {
+                        DropdownMenuItem(
+                            text = { Text("Move the pairs by one page") },
+                            trailingIcon = { if (layout.shift) Icon(Icons.Outlined.Check, contentDescription = "On", Modifier.size(18.dp)) },
+                            onClick = { layoutMenu = false; onLayout(layout.copy(shift = !layout.shift)) },
+                        )
+                    }
                     HorizontalDivider()
                     MenuLabel("Taps at the edges")
                     TapZones.entries.forEach { taps ->
@@ -637,7 +701,7 @@ private fun Chrome(
                     )
                 }
             }
-            Text("${page + 1} of $count", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
+            Text(pageLabel, style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
         }
     }
 }
