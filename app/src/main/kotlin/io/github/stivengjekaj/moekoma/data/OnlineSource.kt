@@ -15,6 +15,11 @@ import io.github.stivengjekaj.moekoma.core.OnlineSeries
 import io.github.stivengjekaj.moekoma.core.OptionValue
 import io.github.stivengjekaj.moekoma.core.SourceOption
 import io.github.stivengjekaj.moekoma.core.SourceInfo
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.Response
 import okio.FileSystem
 
@@ -54,6 +59,9 @@ interface OnlineSource {
 
     /** Keeps a new value of a setting. */
     suspend fun setSetting(id: String, value: OptionValue) {}
+
+    /** Frees what the source holds, such as a JavaScript context or a WebAssembly instance. */
+    fun close() {}
 }
 
 /**
@@ -83,13 +91,26 @@ object LoadedSources {
 
     @Synchronized fun get(id: String): OnlineSource? = sources[id]
 
+    /** Closes the sources that leave the memory. */
+    private val closer = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     @Synchronized fun set(id: String, source: OnlineSource) {
-        sources[id] = source
-        while (sources.size > LIMIT) sources.remove(sources.keys.first())
+        sources.put(id, source)?.takeIf { it !== source }?.let(::closeLater)
+        while (sources.size > LIMIT) sources.remove(sources.keys.first())?.let(::closeLater)
     }
 
     @Synchronized fun remove(id: String) {
-        sources.remove(id)
+        sources.remove(id)?.let(::closeLater)
+    }
+
+    /** A screen can still use a source that leaves the memory, so the source closes a minute later. */
+    @Volatile internal var closeDelayMillis = 60_000L
+
+    private fun closeLater(source: OnlineSource) {
+        closer.launch {
+            delay(closeDelayMillis)
+            runCatching { source.close() }
+        }
     }
 }
 
