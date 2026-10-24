@@ -194,7 +194,12 @@ class AndroidAidokuPlatform(private val context: Context) : AidokuPlatform {
     override fun canvas(width: Int, height: Int): AidokuCanvas? = runCatching { AndroidCanvas(width, height) }.getOrNull()
     override fun decode(bytes: ByteArray): AidokuBitmap? = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let(::AndroidBitmap)
     override fun font(name: String): Any = Typeface.create(name, Typeface.NORMAL)
-    override fun systemFont(weight: Int): Any = Typeface.create(Typeface.DEFAULT, (weight + 1) * 100, false)
+    /** The weight is 0 for thin to 8 for black. Android before 9 has only normal and bold. */
+    override fun systemFont(weight: Int): Any = if (android.os.Build.VERSION.SDK_INT >= 28) {
+        Typeface.create(Typeface.DEFAULT, (weight + 1) * 100, false)
+    } else {
+        Typeface.create(Typeface.DEFAULT, if (weight >= 5) Typeface.BOLD else Typeface.NORMAL)
+    }
 
     override fun loadFont(bytes: ByteArray): Any? = runCatching {
         val file = File(context.cacheDir, "aidoku-font-${UUID.randomUUID()}.ttf").apply { writeBytes(bytes) }
