@@ -303,7 +303,7 @@ the form of a function before you write it again here. Do not guess it.
   design it here.
 - Reason: the owner asked to see how the agent of Asabunko does it first.
 
-## 2026-10-23: Parity with Asabunko 2.2.0
+## 2026-10-23: Parity with Asabunko 2.2.0 (extended on 2026-10-24, see "Parity with Asabunko 3.0.0")
 
 - Asabunko 2.2.0 has the functions that "Parity with Asabunko first" kept
   for later: the Cloudflare check, MOBI and AZW3, the chapter downloads, the
@@ -627,3 +627,25 @@ the form of a function before you write it again here. Do not guess it.
   that reads the images of a chapter with the password, filters the list,
   and changes a preference on the test server; on the emulator, the same
   flow in the debug and the release builds.
+
+## 2026-10-24: Parity with Asabunko 3.0.0
+
+- Asabunko went from 2.2.0 to 3.0.0. On this date its working tree has the
+  version 3.0.0 with no tag yet, and its last tag is v2.8.0.
+- Moekoma 2.0.0 has each function of Asabunko 3.0.0 and the Android extras.
+  The releases from 1.0.0 to 2.0.0 follow the releases of Asabunko from 2.4.0
+  to 3.0.0, one large function in each, in the same order.
+- The functions of Asabunko 2.3.0 go into the releases of the sources that
+  they change: Aidoku in 0.13.0, Paperback in 0.14.0. The fixes of 2.3.0 for
+  the vertical reader, the save of the source list, and the filter sheet are
+  in Moekoma already.
+- An Android tool takes the place of an iOS tool: WorkManager for the
+  background tasks of iOS, the text to speech of Android for the voice of
+  iOS, an App Widget for WidgetKit, and the share sheet of Android.
+- 2.0.0 is the release of quality, as 3.0.0 of Asabunko, with the speed,
+  the fixes, and the tidy-up of all of Moekoma. Each speed change has a
+  measure before and after it.
+- Reason: the owner asked for the new functions of Asabunko 3 and for a
+  Moekoma 2 that is faster and has fewer faults.
+- "Parity with Asabunko 2.2.0" stays: 1.0.0 has the functions of Asabunko
+  2.2.0. This decision adds the target of 2.0.0.
