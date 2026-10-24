@@ -57,6 +57,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -66,6 +67,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
@@ -220,13 +222,33 @@ private fun PagedReader(
     var zoomed by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // The pager follows a page that the slider, a tap, or a key chooses. An e-ink screen jumps with no animation.
+    // The pager follows a page that the slider, a tap, or a key chooses. An e-ink screen jumps with no animation, and
+    // a turn that comes while the last turn moves jumps too, so that quick taps do not wait for each other.
+    val target by rememberUpdatedState(page)
+    val turns = remember { intArrayOf(0) }
     LaunchedEffect(page) {
-        if (pager.currentPage != page) if (eInk) pager.scrollToPage(page) else pager.animateScrollToPage(page)
+        if (pager.currentPage == page) return@LaunchedEffect
+        val jump = eInk || turns[0] > 0 || pager.isScrollInProgress
+        turns[0]++
+        try {
+            if (jump) pager.scrollToPage(page) else pager.animateScrollToPage(page)
+        } finally {
+            turns[0]--
+        }
     }
+    // Only a drag of the user chooses a page. A tap during a turn stops the pager between two pages, and that page is
+    // not a choice, so the pager goes on to the page of the app.
+    val dragged = remember { booleanArrayOf(false) }
     LaunchedEffect(pager) {
-        snapshotFlow { pager.settledPage }.collect { if (it != page) onPage(it) }
+        snapshotFlow { pager.settledPage }.collect { settled ->
+            when {
+                settled == target -> dragged[0] = false
+                dragged[0] -> { dragged[0] = false; onPage(settled) }
+                turns[0] == 0 -> pager.scrollToPage(target)
+            }
+        }
     }
+    val tapped by rememberUpdatedState(onTap)
     VolumeHandler { forward -> onPage(page + if (forward) 1 else -1) }
 
     // In a manga the first page is at the right. reverseLayout puts it there.
@@ -239,7 +261,31 @@ private fun PagedReader(
             pageSpacing = 14.dp,
             beyondViewportPageCount = 1,
             key = { it },
-            modifier = Modifier.fillMaxSize().then(
+            modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+                // A tap at the edge of a page that is not zoomed turns the page at once. The reader takes it before the
+                // pager, because the pager uses a tap during a turn only to stop the turn, and quick taps then get lost.
+                // A finger that moves is a drag of the user.
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    val x = down.position.x / maxOf(size.width, 1)
+                    val zone = if (x < 0.3f) TapZone.Left else if (x > 0.7f) TapZone.Right else null
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: return@awaitEachGesture
+                        if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) {
+                            dragged[0] = true
+                            return@awaitEachGesture
+                        }
+                        if (!change.pressed) {
+                            if (zone != null && !zoomed && event.changes.size == 1) {
+                                change.consume()
+                                tapped(zone)
+                            }
+                            return@awaitEachGesture
+                        }
+                    }
+                }
+            }.then(
                 if (eInk) Modifier.pointerInput(rightToLeft) {
                     var total = 0f
                     detectHorizontalDragGestures(onDragStart = { total = 0f }, onDragEnd = {
