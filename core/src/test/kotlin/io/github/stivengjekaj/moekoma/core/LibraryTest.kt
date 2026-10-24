@@ -163,4 +163,19 @@ class LibraryTest {
         assertEquals("A book with no installed source keeps its old list.", old, relinked.books[1].origin?.list)
         assertEquals(0, relinked.relinkOrphans().second)
     }
+
+    @Test fun keepsTheNewChaptersOfTheChecksNewestFirst() {
+        val book = Book(title = "Tide", fileName = "t", pageCount = 3)
+        val early = Instant.ofEpochSecond(1_000)
+        val late = Instant.ofEpochSecond(2_000)
+        var library = Library(books = listOf(book))
+            .record(listOf(1 to "Two", 2 to "Three"), book.id, early)
+            .record(listOf(2 to "Three", 3 to "Four"), book.id, late)
+        assertEquals("A chapter that is in the list does not come two times.", listOf(3, 2, 1), library.updates.map { it.chapter })
+        assertEquals(late, library.updates.first().found)
+        library = library.record((10 until 10 + Library.UPDATE_LIMIT).map { it to null }, book.id)
+        assertEquals(Library.UPDATE_LIMIT, library.updates.size)
+        // A book that left the library does not show its updates.
+        assertEquals(emptyList<ChapterUpdate>(), library.copy(books = emptyList()).shownUpdates)
+    }
 }

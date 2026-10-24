@@ -132,7 +132,7 @@ data class Library(
     val sources: List<SourceLink> = emptyList(),
     /** The sources that the user installed from the lists. */
     val installed: List<InstalledSource> = emptyList(),
-    /** The new chapters that the checks found, the newest last. */
+    /** The new chapters that the checks found, the newest first. */
     val updates: List<ChapterUpdate> = emptyList(),
     /** The categories of the read list, in their order. */
     val categories: List<BookCategory> = emptyList(),
@@ -194,8 +194,29 @@ data class Library(
     fun update(id: UUID, change: (Book) -> Book): Library =
         copy(books = books.map { if (it.id == id) change(it) else it })
 
+    /**
+     * Keeps the new chapters of a book at the top of the updates. A chapter that is in the list already does not come
+     * two times. The list keeps at most [UPDATE_LIMIT] chapters.
+     */
+    fun record(chapters: List<Pair<Int, String?>>, book: UUID, at: Instant = now()): Library {
+        val known = updates.filter { it.book == book }.map { it.chapter }.toSet()
+        // The last chapter comes first, as in the list of the source.
+        val new = chapters.filter { it.first !in known }.sortedByDescending { it.first }
+            .map { (index, title) -> ChapterUpdate(book = book, chapter = index, title = title, found = at) }
+        return copy(updates = (new + updates).take(UPDATE_LIMIT))
+    }
+
+    /** The updates of the books that are in the library, the newest first. */
+    val shownUpdates: List<ChapterUpdate>
+        get() {
+            val ids = books.map { it.id }.toSet()
+            return updates.filter { it.book in ids }
+        }
+
     companion object {
         const val CURRENT_FORM = 1
+        /** The list of updates keeps at most this number of chapters. */
+        const val UPDATE_LIMIT = 300
     }
 }
 
