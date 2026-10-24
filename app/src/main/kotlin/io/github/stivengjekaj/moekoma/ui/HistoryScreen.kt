@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import io.github.stivengjekaj.moekoma.core.Book
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.HistoryEntry
-import io.github.stivengjekaj.moekoma.core.Novel
 import io.github.stivengjekaj.moekoma.data.AppModel
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
@@ -61,7 +60,7 @@ fun HistoryScreen(model: AppModel, onRead: (Book) -> Unit, onBack: () -> Unit) {
             entries.map { it.book }.toSet().mapNotNull { id ->
                 val book = library.book(id) ?: return@mapNotNull null
                 if (book.format != BookFormat.Novel && book.format != BookFormat.Series) return@mapNotNull null
-                runCatching { id to Novel.load(model.folder(book)).chapters.map { it.title } }.getOrNull()
+                model.novel(book)?.let { novel -> id to novel.chapters.map { it.title } }
             }.toMap()
         }
     }

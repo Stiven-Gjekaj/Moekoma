@@ -520,8 +520,8 @@ class Sources(
      */
     suspend fun chapterFile(book: Book, index: Int): File = withContext(Dispatchers.IO) {
         val folder = model.folder(book)
-        val novel = Novel.load(folder)
-        val chapter = novel.chapters[index]
+        // The novel in memory, so that the open of a chapter does not read the whole list of chapters again.
+        val chapter = model.novel(book)?.chapters?.getOrNull(index) ?: throw IOException("The chapters of this book cannot be read. Import the book again.")
         val file = File(folder, chapter.path)
         if (file.isFile) return@withContext file
         val remote = chapter.remote ?: throw IOException("The file of the chapter is not on this device.")

@@ -190,7 +190,7 @@ class Downloads(private val context: Context, private val model: AppModel, priva
     /** The pages of a chapter on the device, or null when it did not download. */
     fun pages(book: Book, index: Int): List<File>? {
         val folder = model.folder(book)
-        val chapter = runCatching { Novel.load(folder) }.getOrNull()?.chapters?.getOrNull(index) ?: return null
+        val chapter = model.novel(book)?.chapters?.getOrNull(index) ?: return null
         return ChapterDownload.pages(chapter, folder).ifEmpty { null }
     }
 
@@ -201,7 +201,7 @@ class Downloads(private val context: Context, private val model: AppModel, priva
     /** The chapters of a book that are on the device, by their index. The book and its folder come one time. */
     fun downloaded(book: Book): Set<Int> {
         val folder = model.folder(book)
-        val novel = runCatching { Novel.load(folder) }.getOrNull() ?: return emptySet()
+        val novel = model.novel(book) ?: return emptySet()
         return novel.chapters.indices.filter { isDownloaded(book, folder, novel.chapters[it]) }.toSet()
     }
 
@@ -209,21 +209,21 @@ class Downloads(private val context: Context, private val model: AppModel, priva
     fun hasDownloads(book: Book): Boolean {
         if (book.origin == null) return false
         val folder = model.folder(book)
-        val novel = runCatching { Novel.load(folder) }.getOrNull() ?: return false
+        val novel = model.novel(book) ?: return false
         return novel.chapters.any { isDownloaded(book, folder, it) }
     }
 
     /** Downloads each chapter of a book from [start] that is not on the device. */
     fun downloadChapters(book: Book, start: Int = 0) {
         val folder = model.folder(book)
-        val novel = runCatching { Novel.load(folder) }.getOrNull() ?: return
+        val novel = model.novel(book) ?: return
         enqueue(novel.chapters.indices.filter { it >= start && !isDownloaded(book, folder, novel.chapters[it]) }.map { Job(book.id, it) })
     }
 
     /** Removes the downloaded chapters of a book before [end], which are the chapters that the user read. */
     fun remove(book: Book, end: Int = Int.MAX_VALUE) {
         val folder = model.folder(book)
-        val novel = runCatching { Novel.load(folder) }.getOrNull() ?: return
+        val novel = model.novel(book) ?: return
         novel.chapters.forEachIndexed { index, chapter ->
             if (index >= end) return@forEachIndexed
             if (book.format == BookFormat.Novel) File(folder, chapter.path).delete() else ChapterDownload.remove(chapter, folder)

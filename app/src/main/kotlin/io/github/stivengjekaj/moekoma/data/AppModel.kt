@@ -16,6 +16,7 @@ import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.BookImporter
 import io.github.stivengjekaj.moekoma.core.ImportSource
 import io.github.stivengjekaj.moekoma.core.Novel
+import io.github.stivengjekaj.moekoma.core.NovelCache
 import io.github.stivengjekaj.moekoma.core.ComicFiles
 import io.github.stivengjekaj.moekoma.core.ComicImporter
 import io.github.stivengjekaj.moekoma.core.ImportException
@@ -360,8 +361,10 @@ class AppModel(
         return result.isSuccess
     }
 
-    /** The chapters of a novel, or null when its file does not load. */
-    fun novel(book: Book): Novel? = runCatching { Novel.load(folder(book)) }.getOrNull()
+    private val novels = NovelCache()
+
+    /** The chapters of a novel or a series, or null when its file does not load. They stay in memory until the file changes. */
+    fun novel(book: Book): Novel? = novels.get(folder(book))
 
     /** Imports a folder of images as a comic. */
     private fun importComic(files: ComicFiles, name: String): Book {
