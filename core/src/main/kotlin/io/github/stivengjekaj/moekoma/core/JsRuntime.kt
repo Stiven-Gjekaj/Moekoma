@@ -24,8 +24,11 @@ import java.nio.charset.Charset
 /** A request of a JavaScript source. */
 class HttpRequest(val url: String, val method: String = "GET", val headers: Map<String, String> = emptyMap(), val body: ByteArray? = null)
 
-/** An answer to a JavaScript source. The names of the headers are in lowercase. */
-class HttpResponse(val status: Int, val url: String, val headers: Map<String, String>, val body: ByteArray)
+/**
+ * An answer to a JavaScript source. The names of the headers are in lowercase. [setCookies] holds each Set-Cookie
+ * header, because one map cannot hold two headers with the same name.
+ */
+class HttpResponse(val status: Int, val url: String, val headers: Map<String, String>, val body: ByteArray, val setCookies: List<String> = emptyList())
 
 /** Makes the network requests of a JavaScript source. The app gives OkHttp, and a test gives fixed answers. */
 typealias Fetcher = suspend (HttpRequest) -> HttpResponse
@@ -81,6 +84,21 @@ class JsRuntime private constructor(private val fetcher: Fetcher) : Closeable {
             else -> JsonPrimitive(value.toString())
         }
 
+        /** The cookies of the Set-Cookie headers of an answer, as host.js reads them: a name, a value, a domain, a path, and the end in milliseconds. */
+        internal fun cookies(response: HttpResponse): JsonArray {
+            val headers = response.setCookies.ifEmpty { listOfNotNull(response.headers["set-cookie"]) }
+            val host = runCatching { java.net.URI(response.url).host }.getOrNull().orEmpty()
+            val now = System.currentTimeMillis()
+            return JsonArray(headers.flatMap { header -> runCatching { java.net.HttpCookie.parse("set-cookie: $header") }.getOrDefault(emptyList()) }.map { cookie ->
+                val item = linkedMapOf<String, JsonElement>(
+                    "name" to JsonPrimitive(cookie.name), "value" to JsonPrimitive(cookie.value),
+                    "domain" to JsonPrimitive(cookie.domain?.removePrefix(".") ?: host), "path" to JsonPrimitive(cookie.path ?: "/"),
+                )
+                if (cookie.maxAge >= 0) item["expires"] = JsonPrimitive(now + cookie.maxAge * 1000)
+                JsonObject(item)
+            })
+        }
+
         /** Decodes bytes with an IANA name of an encoding, such as "utf-8", "gbk", or "shift_jis". */
         fun decode(bytes: ByteArray, label: String): String {
             val name = label.ifEmpty { "utf-8" }
@@ -109,6 +127,7 @@ class JsRuntime private constructor(private val fetcher: Fetcher) : Closeable {
             JsObject(mapOf(
                 "status" to response.status, "url" to response.url,
                 "headers" to toJson(response.headers).toString(), "body" to response.body,
+                "cookies" to cookies(response).toString(),
             ))
         })
         js.defineBinding("__kt_decode", FunctionBinding { args -> decode(args[0] as? ByteArray ?: ByteArray(0), args[1] as? String ?: "") })
@@ -171,7 +190,7 @@ private val SHIM = """
   globalThis.__native = {
     fetch(id, url, method, headers, body) {
       __kt_fetch(url, method, JSON.stringify(headers || {}), signed(body)).then(
-        (r) => r.error !== undefined ? __fetchDone(id, r.error) : __fetchDone(id, null, r.status, r.url, JSON.parse(r.headers), unsigned(r.body), []),
+        (r) => r.error !== undefined ? __fetchDone(id, r.error) : __fetchDone(id, null, r.status, r.url, JSON.parse(r.headers), unsigned(r.body), JSON.parse(r.cookies)),
         (e) => __fetchDone(id, String((e && e.message) || e)));
     },
     decode(bytes, label) { return __kt_decode(signed(bytes), label); },

@@ -91,6 +91,17 @@ class JsRuntimeTest {
         runtime.close()
     }
 
+    @Test fun givesTheCookiesOfAnAnswer() = runBlocking {
+        val fetcher: Fetcher = { request ->
+            HttpResponse(200, request.url, emptyMap(), ByteArray(0), listOf("a=1; Path=/; Max-Age=60", "b=2; Domain=.site.test; Path=/x"))
+        }
+        val runtime = JsRuntime.create(fetcher)
+        val text = runtime.invoke(String.serializer(), "async () => (await fetch('https://www.site.test/')).setCookies.map((c) => c.name + '=' + c.value + '@' + c.domain + c.path + (c.expires ? '+' : '')).join(' ')")
+        // Two Set-Cookie headers give two cookies. A cookie with no domain has the host of the answer.
+        assertEquals("a=1@www.site.test/+ b=2@site.test/x", text)
+        runtime.close()
+    }
+
     /** Many contexts start at the same time, as when a search asks many JavaScript sources. */
     @Test fun startsManyContextsAtTheSameTime() = runBlocking {
         val runtimes = (1..12).map { async(kotlinx.coroutines.Dispatchers.Default) { JsRuntime.create(fixedFetcher(emptyMap())) } }.map { it.await() }

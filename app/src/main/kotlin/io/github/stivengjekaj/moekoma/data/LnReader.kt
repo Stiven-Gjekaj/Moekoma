@@ -33,7 +33,10 @@ fun networkFetcher(client: OkHttpClient = Injekt.get<NetworkHelper>().client): F
             ?: if (request.method in setOf("POST", "PUT", "PATCH")) ByteArray(0).toRequestBody() else null
         val call = Request.Builder().url(request.url).headers(request.headers.toHeaders()).method(request.method, body).build()
         client.newCall(call).execute().use { response ->
-            HttpResponse(response.code, response.request.url.toString(), response.headers.associate { (k, v) -> k.lowercase() to v }, response.body.bytes())
+            HttpResponse(
+                response.code, response.request.url.toString(), response.headers.associate { (k, v) -> k.lowercase() to v }, response.body.bytes(),
+                response.headers("Set-Cookie"),
+            )
         }
     }
 }
