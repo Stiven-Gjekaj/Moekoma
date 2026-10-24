@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,10 +29,13 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Add
@@ -39,13 +43,18 @@ import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.FolderDelete
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.Undo
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -53,10 +62,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,14 +79,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.stivengjekaj.moekoma.R
 import io.github.stivengjekaj.moekoma.core.Book
+import io.github.stivengjekaj.moekoma.core.BookCategory
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.ReadListOrder
 import io.github.stivengjekaj.moekoma.data.AppModel
@@ -86,7 +100,10 @@ import io.github.stivengjekaj.moekoma.ui.theme.Corner
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import java.time.LocalTime
+import java.util.UUID
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** The kinds of file that the importer offers. Android does not know a type for each comic archive, so all files show. */
 private val importTypes = arrayOf("*/*")
@@ -128,6 +145,25 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
         HistoryScreen(model, onRead) { showingHistory = false }
         return
     }
+    var editingCategories by rememberSaveable { mutableStateOf(false) }
+    if (editingCategories) {
+        CategoriesScreen(model) { editingCategories = false }
+        return
+    }
+    // The search, the filters, and the category of the read list.
+    var searching by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var filters by remember { mutableStateOf(emptySet<LibraryFilter>()) }
+    var filterMenu by remember { mutableStateOf(false) }
+    var category by remember { mutableStateOf<UUID?>(null) }
+    // The online books with a chapter on the device, for the filter "On the device".
+    var onDevice by remember { mutableStateOf(emptySet<UUID>()) }
+    val downloadState by downloads.state.collectAsState()
+    LaunchedEffect(LibraryFilter.OnDevice in filters, downloadState.changes) {
+        if (LibraryFilter.OnDevice in filters) {
+            onDevice = withContext(Dispatchers.IO) { library.books.filter { downloads.hasDownloads(it) }.map { it.id }.toSet() }
+        }
+    }
 
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { model.importDocuments(it) }
     val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(model::importFolder) }
@@ -151,6 +187,9 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                         Text(greeting(LocalTime.now().hour), style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary)
                         Text("Your library", style = MaterialTheme.typography.displaySmall)
                     }
+                    IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
+                        Icon(if (searching) Icons.Outlined.SearchOff else Icons.Outlined.Search, contentDescription = if (searching) "Close the search" else "Search the library")
+                    }
                     if (hasOnline) {
                         IconButton(onClick = { check(quiet = false) }, enabled = !checking) {
                             if (checking && !pulled) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = palette.accent)
@@ -166,9 +205,17 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                     }
                 }
             }
+            if (searching) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    OutlinedTextField(
+                        value = query, onValueChange = { query = it }, singleLine = true, placeholder = { Text("Search the library") },
+                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) }, modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
             // The new chapters of the checks, in one list.
             val updates = library.shownUpdates.size
-            if (updates > 0) {
+            if (updates > 0 && query.isBlank()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Card(Modifier.clickable(onClickLabel = "Open") { showingUpdates = true }.semantics(mergeDescendants = true) {}) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -183,7 +230,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                 }
             }
             // The chapters that the user opened, the newest first.
-            if (library.shownHistory.isNotEmpty()) {
+            if (library.shownHistory.isNotEmpty() && query.isBlank()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Card(Modifier.clickable(onClickLabel = "Open") { showingHistory = true }.semantics(mergeDescendants = true) {}) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -194,9 +241,15 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                     }
                 }
             }
-            val continuing = library.continueReading
-            val readList = library.readList(prefs.readListOrder)
-            if (continuing.isEmpty() && readList.isEmpty()) {
+            val continuing = if (query.isBlank() && filters.isEmpty()) library.continueReading else emptyList()
+            val wholeList = library.readList(prefs.readListOrder)
+            val words = query.trim()
+            // The books of the read list in the category, with the search and the filters.
+            val readList = library.readList(category, prefs.readListOrder).filter { book ->
+                (words.isEmpty() || book.title.contains(words, ignoreCase = true) || book.author.orEmpty().contains(words, ignoreCase = true)) &&
+                    filters.all { it.keeps(book, onDevice) }
+            }
+            if (library.continueReading.isEmpty() && wholeList.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Card(padding = PaddingValues(0.dp)) {
                         EmptyArt(
@@ -218,7 +271,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                         }
                     }
                 }
-                if (readList.isEmpty()) {
+                if (wholeList.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         EmptyArt(
                             title = "Your read list is empty",
@@ -229,6 +282,23 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.weight(1f)) { SectionTitle("Read list") }
+                            Box {
+                                IconButton(
+                                    onClick = { filterMenu = true },
+                                    modifier = Modifier.semantics { stateDescription = if (filters.isEmpty()) "Off" else filters.joinToString(", ") { it.label } },
+                                ) {
+                                    Icon(Icons.Outlined.FilterList, contentDescription = "Filter the read list", tint = if (filters.isEmpty()) palette.textSecondary else palette.accent)
+                                }
+                                DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
+                                    LibraryFilter.entries.forEach { filter ->
+                                        DropdownMenuItem(
+                                            text = { Text(filter.label) },
+                                            trailingIcon = { if (filter in filters) Icon(Icons.Outlined.Check, contentDescription = "On") },
+                                            onClick = { filters = if (filter in filters) filters - filter else filters + filter },
+                                        )
+                                    }
+                                }
+                            }
                             Box {
                                 TextButton(
                                     onClick = { orderMenu = true },
@@ -247,6 +317,17 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                                     }
                                 }
                             }
+                        }
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        CategoryChips(library.categories, category, { category = it }) { editingCategories = true }
+                    }
+                    if (readList.isEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Text(
+                                if (words.isEmpty()) "No book of the read list fits the filters." else "No book of the read list has \"$words\" in its title.",
+                                style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary,
+                            )
                         }
                     }
                     items(readList, key = { it.id }) { book ->
@@ -286,6 +367,53 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
     }
 }
 
+/** A filter of the read list. */
+enum class LibraryFilter(val label: String) {
+    Unread("Unread"), OnDevice("On the device"), Comics("Comics"), Novels("Novels");
+
+    /** [onDevice] holds the online books with a chapter on the device. */
+    fun keeps(book: Book, onDevice: Set<UUID>): Boolean = when (this) {
+        Unread -> !book.finished
+        // A book from a file is on the device. An online book needs a downloaded chapter.
+        OnDevice -> book.origin == null || book.id in onDevice
+        Comics -> book.format != BookFormat.Novel
+        Novels -> book.format == BookFormat.Novel
+    }
+}
+
+/** "All", then one chip for each category, then a chip that edits the categories. */
+@Composable
+private fun CategoryChips(categories: List<BookCategory>, chosen: UUID?, choose: (UUID?) -> Unit, edit: () -> Unit) {
+    val palette = LocalPalette.current
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        item { CategoryChip("All", chosen == null) { choose(null) } }
+        items(categories, key = { it.id }) { item -> CategoryChip(item.name, chosen == item.id) { choose(item.id) } }
+        item {
+            val label = if (categories.isEmpty()) "Add a category" else "Edit"
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.heightIn(min = 36.dp).clip(CircleShape).background(palette.surfaceHigh)
+                    .clickable(onClickLabel = if (categories.isEmpty()) label else "Edit the categories", onClick = edit).padding(horizontal = 12.dp),
+            ) {
+                Icon(if (categories.isEmpty()) Icons.Outlined.Add else Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryChip(title: String, selected: Boolean, onClick: () -> Unit) {
+    val palette = LocalPalette.current
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.heightIn(min = 36.dp).clip(CircleShape).background(if (selected) palette.accent else palette.surfaceHigh)
+            .selectable(selected = selected, onClick = onClick).padding(horizontal = 14.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.labelLarge, color = if (selected) palette.onAccent else palette.textPrimary)
+    }
+}
+
 /** "Asa" is the morning in Japanese, so the app says hello at each time of the day, as Asabunko does. */
 fun greeting(hour: Int): String = when (hour) {
     in 5..11 -> "Good morning"
@@ -304,6 +432,7 @@ private fun SectionTitle(text: String) {
 @Composable
 private fun BookMenu(book: Book, model: AppModel, downloads: Downloads, onRead: (Book) -> Unit, onDelete: (Book) -> Unit, content: @Composable () -> Unit) {
     var open by remember { mutableStateOf(false) }
+    var choosing by remember { mutableStateOf(false) }
     Box(Modifier.combinedClickable(onClickLabel = "Read", onLongClickLabel = "Open the menu", onLongClick = { open = true }) { onRead(book) }) {
         content()
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
@@ -334,8 +463,35 @@ private fun BookMenu(book: Book, model: AppModel, downloads: Downloads, onRead: 
                     })
                 }
             }
+            if (book.listed && model.library.value.categories.isNotEmpty()) {
+                DropdownMenuItem(text = { Text("Categories") }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Label, null) }, onClick = { open = false; choosing = true })
+            }
             DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { open = false; onDelete(book) })
         }
+    }
+    if (choosing) {
+        val library by model.library.collectAsState()
+        val chosen = library.book(book.id)?.categories.orEmpty()
+        AlertDialog(
+            onDismissRequest = { choosing = false },
+            title = { Text("Categories") },
+            text = {
+                Column {
+                    library.categories.forEach { item ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(value = item.id in chosen, role = Role.Checkbox) { on ->
+                                model.update(book.id) { it.copy(categories = it.categories.filterNot { id -> id == item.id } + if (on) listOf(item.id) else emptyList()) }
+                            },
+                        ) {
+                            Checkbox(checked = item.id in chosen, onCheckedChange = null)
+                            Text(item.name, modifier = Modifier.padding(start = 12.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { choosing = false }) { Text("Done") } },
+        )
     }
 }
 
