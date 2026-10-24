@@ -11,6 +11,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -281,40 +283,42 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                     }
                 } else {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.weight(1f)) { SectionTitle("Read list") }
-                            Box {
-                                IconButton(
-                                    onClick = { filterMenu = true },
-                                    modifier = Modifier.semantics { stateDescription = if (filters.isEmpty()) "Off" else filters.joinToString(", ") { it.label } },
-                                ) {
-                                    Icon(Icons.Outlined.FilterList, contentDescription = tr("Filter the read list"), tint = if (filters.isEmpty()) palette.textSecondary else palette.accent)
-                                }
-                                DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
-                                    LibraryFilter.entries.forEach { filter ->
-                                        DropdownMenuItem(
-                                            text = { Text(filter.label) },
-                                            trailingIcon = { if (filter in filters) Icon(Icons.Outlined.Check, contentDescription = tr("On")) },
-                                            onClick = { filters = if (filter in filters) filters - filter else filters + filter },
-                                        )
+                        FlowRow(itemVerticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.weight(1f).widthIn(min = 160.dp)) { SectionTitle("Read list") }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box {
+                                    IconButton(
+                                        onClick = { filterMenu = true },
+                                        modifier = Modifier.semantics { stateDescription = if (filters.isEmpty()) "Off" else filters.joinToString(", ") { it.label } },
+                                    ) {
+                                        Icon(Icons.Outlined.FilterList, contentDescription = tr("Filter the read list"), tint = if (filters.isEmpty()) palette.textSecondary else palette.accent)
+                                    }
+                                    DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
+                                        LibraryFilter.entries.forEach { filter ->
+                                            DropdownMenuItem(
+                                                text = { Text(filter.label) },
+                                                trailingIcon = { if (filter in filters) Icon(Icons.Outlined.Check, contentDescription = tr("On")) },
+                                                onClick = { filters = if (filter in filters) filters - filter else filters + filter },
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                            Box {
-                                TextButton(
-                                    onClick = { orderMenu = true },
-                                    modifier = Modifier.semantics { contentDescription = tr("Order of the read list, ${tr(prefs.readListOrder.label)}") },
-                                ) {
-                                    Icon(Icons.Outlined.SwapVert, contentDescription = null, modifier = Modifier.size(18.dp), tint = palette.accent)
-                                    Text(prefs.readListOrder.label, style = MaterialTheme.typography.labelLarge, color = palette.accent, modifier = Modifier.padding(start = 4.dp))
-                                }
-                                DropdownMenu(expanded = orderMenu, onDismissRequest = { orderMenu = false }) {
-                                    ReadListOrder.entries.forEach { order ->
-                                        DropdownMenuItem(
-                                            text = { Text(order.label) },
-                                            trailingIcon = { if (order == prefs.readListOrder) Icon(Icons.Outlined.Check, contentDescription = tr("Chosen")) },
-                                            onClick = { orderMenu = false; settings.update { it.copy(readListOrder = order) } },
-                                        )
+                                Box {
+                                    TextButton(
+                                        onClick = { orderMenu = true },
+                                        modifier = Modifier.semantics { contentDescription = tr("Order of the read list, ${tr(prefs.readListOrder.label)}") },
+                                    ) {
+                                        Icon(Icons.Outlined.SwapVert, contentDescription = null, modifier = Modifier.size(18.dp), tint = palette.accent)
+                                        Text(prefs.readListOrder.label, style = MaterialTheme.typography.labelLarge, color = palette.accent, modifier = Modifier.padding(start = 4.dp))
+                                    }
+                                    DropdownMenu(expanded = orderMenu, onDismissRequest = { orderMenu = false }) {
+                                        ReadListOrder.entries.forEach { order ->
+                                            DropdownMenuItem(
+                                                text = { Text(order.label) },
+                                                trailingIcon = { if (order == prefs.readListOrder) Icon(Icons.Outlined.Check, contentDescription = tr("Chosen")) },
+                                                onClick = { orderMenu = false; settings.update { it.copy(readListOrder = order) } },
+                                            )
+                                        }
                                     }
                                 }
                             }

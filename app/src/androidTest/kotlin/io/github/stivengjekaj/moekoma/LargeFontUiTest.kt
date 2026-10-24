@@ -11,6 +11,8 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.github.stivengjekaj.moekoma.core.Book
+import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.ui.MoekomaRoot
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -20,7 +22,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.util.UUID
 
-/** The largest font size of the device: each tab label stays on one line. */
+/** The largest font size of the device: the tab labels and the headings stay on one line. */
 @RunWith(AndroidJUnit4::class)
 class LargeFontUiTest {
     @get:Rule val compose = createComposeRule()
@@ -32,17 +34,22 @@ class LargeFontUiTest {
         root.deleteRecursively()
     }
 
-    @Test fun keepsEachTabLabelOnOneLine() {
+    @Test fun keepsEachTabLabelAndTheReadListHeadingOnOneLine() {
         val container = AppContainer(app, root)
+        container.model.change { it.copy(books = it.books + Book(title = "Night Harbor", format = BookFormat.Comic, fileName = "Night", pageCount = 3)) }
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) { MoekomaRoot(container) }
         }
-        for (label in listOf("Library", "Discover", "Search", "Settings")) {
-            val node = compose.onNodeWithText(label, useUnmergedTree = true).fetchSemanticsNode()
-            val layouts = mutableListOf<TextLayoutResult>()
-            node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-            assertEquals("The label $label has more than one line", 1, layouts.single().lineCount)
+        for (label in listOf("Library", "Discover", "Search", "Settings", "Read list")) {
+            assertEquals("The text $label has more than one line", 1, lines(label))
         }
+    }
+
+    private fun lines(text: String): Int {
+        val node = compose.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
+        val layouts = mutableListOf<TextLayoutResult>()
+        node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
+        return layouts.single().lineCount
     }
 }
