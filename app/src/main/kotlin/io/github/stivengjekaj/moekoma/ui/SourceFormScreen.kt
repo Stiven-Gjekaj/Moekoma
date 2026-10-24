@@ -194,7 +194,8 @@ private fun LabelRow(row: SourceForm.Row, onClick: (() -> Unit)?) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(row.title, style = MaterialTheme.typography.bodyLarge)
-            row.subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary) }
+            // A subtitle that only says the value again does not show.
+            row.subtitle?.takeIf { it != row.value }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary) }
         }
         row.value?.takeIf { it.isNotEmpty() }?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary, maxLines = 2, modifier = Modifier.padding(start = 12.dp))
