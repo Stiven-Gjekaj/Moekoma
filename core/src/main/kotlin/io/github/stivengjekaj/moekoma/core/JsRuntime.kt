@@ -162,6 +162,14 @@ class JsRuntime private constructor(private val fetcher: Fetcher) : Closeable {
         }
     }
 
+    /**
+     * Adds a native function that answers at once, as the binding `__kt_<name>`. A script in the context maps it to the
+     * form that its code needs. The arguments are strings, numbers, booleans, null, and ByteArray for an Int8Array.
+     */
+    fun defineBinding(name: String, handler: (Array<Any?>) -> Any?) {
+        js.defineBinding("__kt_$name", FunctionBinding { args -> handler(args) })
+    }
+
     /** Adds a native function that takes time, such as a page in a web view. The script calls `__native.<name>(text)` and gets a promise of the text of the answer. */
     suspend fun defineAsync(name: String, handler: suspend (String) -> String) {
         js.defineBinding("__kt_$name", AsyncFunctionBinding { args -> handler(args[0]?.toString() ?: "") })
