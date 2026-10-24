@@ -203,6 +203,8 @@ class Sources(
             mine.filter { it.info.id in plan.remove }.forEach(::uninstall)
             installAll(plan.install, link)
         }
+        // A book of a line that the user removed and added again finds its source.
+        model.change { it.relinkOrphans().first }
         if (failed.isNotEmpty()) model.fault.value = "Moekoma could not read " + failed.joinToString(", ") + "."
     }
 

@@ -144,4 +144,23 @@ class LibraryTest {
         assertEquals(TrackerKind.AniList, library.books.single().tracking.single().kind)
         file.delete()
     }
+
+    @Test fun aBookFindsItsSourceWhenItsListComesBack() {
+        val old = UUID.randomUUID()
+        val new = UUID.randomUUID()
+        val info = SourceInfo("en.sea", "Sea", "English", "1", code = "https://x.test/s.aix", novels = false)
+        val library = Library(
+            books = listOf(
+                Book(title = "Lost", fileName = "Sea", pageCount = 1, origin = BookOrigin(old, "en.sea", "s1")),
+                Book(title = "Other", fileName = "Hill", pageCount = 1, origin = BookOrigin(old, "en.hill", "h1")),
+            ),
+            sources = listOf(SourceLink(id = new, url = "https://x.test/index.min.json")),
+            installed = listOf(InstalledSource(new, info)),
+        )
+        val (relinked, linked) = library.relinkOrphans()
+        assertEquals(1, linked)
+        assertEquals(new, relinked.books[0].origin?.list)
+        assertEquals("A book with no installed source keeps its old list.", old, relinked.books[1].origin?.list)
+        assertEquals(0, relinked.relinkOrphans().second)
+    }
 }

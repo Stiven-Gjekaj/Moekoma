@@ -144,6 +144,24 @@ data class Library(
     /** The book of a series or a novel of a source, when the library has it. */
     fun book(origin: BookOrigin): Book? = books.firstOrNull { it.origin == origin }
 
+    /**
+     * Links each book of a list that left the source list to an installed source with the same ID. A line that the
+     * user removes and adds again gets a new ID, and its books find their source again. It gives the new library and
+     * the number of books that found their source.
+     */
+    fun relinkOrphans(): Pair<Library, Int> {
+        val lists = sources.map { it.id }.toSet()
+        var linked = 0
+        val relinked = books.map { book ->
+            val origin = book.origin
+            if (origin == null || origin.list in lists) return@map book
+            val match = installed.firstOrNull { it.info.id == origin.source && it.list in lists } ?: return@map book
+            linked++
+            book.copy(origin = origin.copy(list = match.list))
+        }
+        return copy(books = relinked) to linked
+    }
+
     /** The mode that the reader uses for a book. */
     fun mode(of: Book): ReadingMode = of.mode ?: defaultMode
 
