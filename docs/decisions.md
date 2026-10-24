@@ -715,3 +715,29 @@ the form of a function before you write it again here. Do not guess it.
   test server extension and of the web view of Android; on the emulator,
   WeebCentral and MangaDex with its forms, in the debug and the release
   builds.
+
+## 2026-10-24: Chapter downloads in the background
+
+- The design is the design of Asabunko: a download writes the pages of a
+  chapter to a `.part` folder, and the folder gets its final name and a
+  `.complete` mark only when all pages are there. Each page has three
+  attempts. One queue downloads one chapter at a time. The reader opens the
+  files of a downloaded chapter before it asks the source.
+- A page must start as an image: JPEG, PNG, GIF, WebP, BMP, AVIF, or HEIC.
+  The core module has no image decoder, so it reads the first bytes.
+- The queue stays in `downloads.json`, and a worker of WorkManager runs it as
+  a foreground service of the type "data sync", with a notification of the
+  progress. So the downloads go on when the app closes, and a new start of
+  the app goes on with the queue. Android 13 and newer ask for the
+  notification permission at the first download; the download runs without
+  it.
+- A page goes through the source, as in the reader, so it gets the headers,
+  the cookies, and the drawn pages of the source.
+- A chapter of a novel downloads as its one file, as the reader of novels
+  does.
+- The checks: core tests of the download, of the mark of completion, of the
+  attempts, and of the kinds of image; a device test that downloads a chapter
+  of the test server into a library of its own, keeps the queue in its file,
+  and fails with no part of the chapter when the server refuses the pages;
+  on the emulator, a download and a read with the server offline, in the
+  debug and the release builds.

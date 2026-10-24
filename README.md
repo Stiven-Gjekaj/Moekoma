@@ -79,6 +79,7 @@ Moekoma has no sources in it. Your books stay on your device.
 - OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
   read a comic at once, or download a book. A password stays encrypted on
   the device
+- Chapter downloads in the background, which open with no network
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 

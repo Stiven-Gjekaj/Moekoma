@@ -11,7 +11,6 @@ Each release keeps the backup that Asabunko of the same functions reads.
 
 ## Releases up to 1.0.0
 
-- 0.15.0 Chapter downloads in the background, with WorkManager.
 - 1.0.0 The backup of Asabunko in both directions, the import of a Mihon
   backup, the check for new chapters, the move of a book to another source,
   and the fixes, the speed, and the comforts of the review of Asabunko 2.0.0.

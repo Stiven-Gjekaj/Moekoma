@@ -7,6 +7,21 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.15.0 (2026-10-24)
+
+- Download the chapters of an online series. The download button on the
+  page of a title downloads all chapters, or the chapters from your place.
+  Hold a book in the Library to download it or to remove its downloads.
+- The downloads go on in the background, also when you close the app. A
+  notification shows the progress.
+- A downloaded chapter opens from the device, with no network.
+- Each chapter shows its state: on the device, downloading, waiting, or
+  failed. "Try the failed downloads again" downloads the failed chapters.
+- A downloaded chapter holds only real images. A page of HTML, such as a
+  check page, does not count as a page.
+- A book with downloaded chapters stays in the library when you take it off
+  the read list.
+
 ## 0.14.0 (2026-10-24)
 
 - Run the Paperback 0.9 extensions. Paste the URL of a repository, such as
