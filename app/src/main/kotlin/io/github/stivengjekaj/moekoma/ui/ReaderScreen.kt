@@ -99,6 +99,8 @@ import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
 import coil3.request.maxBitmapSize
+import coil3.request.allowHardware
+import coil3.request.transformations
 import coil3.size.Dimension
 import coil3.size.Size
 import io.github.stivengjekaj.moekoma.VolumeKeys
@@ -111,6 +113,7 @@ import io.github.stivengjekaj.moekoma.data.Preferences
 import io.github.stivengjekaj.moekoma.data.PageFit
 import io.github.stivengjekaj.moekoma.data.PageLayout
 import io.github.stivengjekaj.moekoma.data.TapZones
+import io.github.stivengjekaj.moekoma.data.CropBorders
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import kotlinx.coroutines.delay
@@ -324,14 +327,14 @@ private fun PagedReader(
                 } else Modifier,
             ),
         ) { index ->
-            ZoomablePage(pages[index], index, layout.fit, onTap = onTap, onZoom = { if (index == pager.currentPage) zoomed = it })
+            ZoomablePage(pages[index], index, layout.fit, layout.crop, onTap = onTap, onZoom = { if (index == pager.currentPage) zoomed = it })
         }
     }
 }
 
 /** A page that zooms with a pinch and a double tap. While it is zoomed, a drag moves the page and not the pager. */
 @Composable
-private fun ZoomablePage(file: Any, index: Int, fit: PageFit, onTap: (TapZone) -> Unit, onZoom: (Boolean) -> Unit) {
+private fun ZoomablePage(file: Any, index: Int, fit: PageFit, crop: Boolean, onTap: (TapZone) -> Unit, onZoom: (Boolean) -> Unit) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var size by remember { mutableStateOf(IntSize.Zero) }
@@ -401,7 +404,7 @@ private fun ZoomablePage(file: Any, index: Int, fit: PageFit, onTap: (TapZone) -
             }
             val image: @Composable (Modifier, ContentScale) -> Unit = { modifier, contentScale ->
                 AsyncImage(
-                    model = pageRequest(file),
+                    model = pageRequest(file, crop = crop),
                     contentDescription = null,
                     contentScale = contentScale,
                     onState = {
@@ -497,15 +500,17 @@ private fun VerticalReader(
  * it is wide, so its width, not its long side, sets its size, and the strip stays sharp.
  */
 @Composable
-private fun pageRequest(file: Any, strip: Boolean = false): ImageRequest {
+private fun pageRequest(file: Any, strip: Boolean = false, crop: Boolean = false): ImageRequest {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val longSide = with(density) { maxOf(configuration.screenWidthDp, configuration.screenHeightDp).dp.roundToPx() }
     val width = with(density) { configuration.screenWidthDp.dp.roundToPx() }
     val pixels = (longSide * 2).coerceAtMost(4096)
-    return remember(file, pixels, width, strip) {
+    return remember(file, pixels, width, strip, crop) {
         val builder = ImageRequest.Builder(context)
+        // The crop reads the pixels of the page, so the page does not come as a hardware bitmap.
+        if (crop) builder.transformations(CropBorders()).allowHardware(false)
         // Coil keeps a bitmap at 4096 pixels on each side. A strip can be taller, up to the limit of a bitmap that Android draws.
         if (strip) builder.size(Size(Dimension(width), Dimension.Undefined)).maxBitmapSize(Size(width, 16384)) else builder.size(pixels, pixels)
         if (file is RemotePage) {
@@ -581,6 +586,11 @@ private fun Chrome(
                             onClick = { layoutMenu = false; onLayout(layout.copy(fit = fit)) },
                         )
                     }
+                    DropdownMenuItem(
+                        text = { Text("Crop the borders") },
+                        trailingIcon = { if (layout.crop) Icon(Icons.Outlined.Check, contentDescription = "On", Modifier.size(18.dp)) },
+                        onClick = { layoutMenu = false; onLayout(layout.copy(crop = !layout.crop)) },
+                    )
                     HorizontalDivider()
                     MenuLabel("Taps at the edges")
                     TapZones.entries.forEach { taps ->
