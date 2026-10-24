@@ -1,5 +1,6 @@
 package io.github.stivengjekaj.moekoma.ui
 
+import android.view.HapticFeedbackConstants
 import android.graphics.BitmapFactory
 import android.app.Activity
 import androidx.activity.compose.BackHandler
@@ -217,9 +218,13 @@ fun PageReader(
     val spread = Spreads.index(page, spreads)
     val currentSpreads by rememberUpdatedState(spreads)
     /** Goes by one spread. A spread of two pages counts as one turn. */
+    val view = LocalView.current
     fun turn(by: Int) {
         val all = currentSpreads
-        all.getOrNull(Spreads.index(page, all) + by)?.let { go(it.first()) }
+        val next = all.getOrNull(Spreads.index(page, all) + by)
+        if (next != null) go(next.first())
+        // A turn past the last page stops there, with a light tap of the device.
+        else if (by > 0) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
     }
     // "3 of 20", or "2-3 of 20" for a spread of two pages.
     val shown = spreads.getOrNull(spread) ?: listOf(page)

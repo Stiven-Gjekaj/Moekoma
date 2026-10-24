@@ -1,5 +1,6 @@
 package io.github.stivengjekaj.moekoma.ui
 
+import android.view.HapticFeedbackConstants
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
@@ -73,6 +74,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -132,6 +134,7 @@ fun NovelReaderScreen(
     var pendingFind by remember { mutableStateOf<String?>(null) }
     var showMarks by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val view = LocalView.current
     val speaker = remember { Speaker(context) }
     // True while the speech goes on into the next chapter.
     var speakNext by remember { mutableStateOf(false) }
@@ -220,7 +223,12 @@ fun NovelReaderScreen(
                 start = start,
                 eInk = palette.isEInk,
                 background = palette.background,
-                onPosition = { value -> place = value; model.update(bookId) { it.read(chapter = chapter, position = value) } },
+                onPosition = { value ->
+                    // The end of a chapter gives a light tap of the device, one time.
+                    if (value >= 0.995 && place < 0.995) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                    place = value
+                    model.update(bookId) { it.read(chapter = chapter, position = value) }
+                },
                 onTap = { bars = !bars },
                 onLink = { path -> current.chapters.indexOfFirst { File(folder, it.path).canonicalPath == path }.takeIf { it >= 0 }?.let { go(it) } },
                 onEnd = { forward -> go(chapter + if (forward) 1 else -1, if (forward) 0.0 else 1.0) },
