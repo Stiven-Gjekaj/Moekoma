@@ -22,6 +22,9 @@ import io.github.stivengjekaj.moekoma.data.Settings
 import io.github.stivengjekaj.moekoma.data.Sources
 import io.github.stivengjekaj.moekoma.update.UpdateChecker
 import io.github.stivengjekaj.moekoma.update.UpdateInstaller
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,6 +40,11 @@ class MoekomaApp : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         container = AppContainer(this)
         ChapterChecks.schedule(this, container.settings.preferences.value.backgroundChecks)
+        // The widget shows the books of Continue reading, so it draws again when they or their places change.
+        container.scope.launch {
+            container.model.library.map { library -> library.continueReading.take(3).map { Triple(it.id, it.page, it.title) } }
+                .distinctUntilChanged().collect { ContinueReadingWidget.update(this@MoekomaApp) }
+        }
     }
 
     /** The image loader of the app also draws the pages of a PDF and the images of the sources. */

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app updates the widget when Continue reading changes, so the widget asks for no updates. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_shelf"
+    android:previewLayout="@layout/widget_shelf"
+    android:description="@string/widget_description"
+    android:widgetCategory="home_screen" />

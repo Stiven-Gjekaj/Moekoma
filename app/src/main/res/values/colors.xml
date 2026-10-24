@@ -1,4 +1,9 @@
 <resources>
     <!-- The background of the adaptive icon: the black of the icon of Asabunko. -->
     <color name="ic_launcher_background">#FF000000</color>
+    <!-- The colors of the widget: the paper look of the app, and its warm dark look at night. -->
+    <color name="widget_background">#FFF5EFE3</color>
+    <color name="widget_text">#FF2A2420</color>
+    <color name="widget_secondary">#FF7A6E62</color>
+    <color name="widget_accent">#FF1E6B45</color>
 </resources>
