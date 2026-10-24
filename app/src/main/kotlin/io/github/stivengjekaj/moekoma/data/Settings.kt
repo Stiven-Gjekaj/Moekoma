@@ -32,6 +32,32 @@ data class Preferences(
     val wifiOnly: Boolean = false,
     /** The books that the user reads do not go into the history or into Continue reading. */
     val privateReading: Boolean = false,
+    /** The fit, the crop, the pairs of pages, and the taps of the reader of pages. */
+    val layout: PageLayout = PageLayout(),
+)
+
+/** How the page fills the screen. */
+enum class PageFit(val label: String) { Screen("Fit the screen"), Width("Fit the width"), Height("Fit the height") }
+
+/** What a tap at an edge of the page does. */
+enum class TapZones(val label: String) {
+    /** The left edge and the right edge turn back and forward, in the direction of the book. */
+    Edges("Left and right"),
+    /** A tap at each edge turns forward. */
+    Forward("Forward at each edge"),
+    /** A tap at an edge only shows or hides the bars. */
+    Off("No turns"),
+}
+
+/** The page layout of the reader of pages, as in Asabunko. */
+data class PageLayout(
+    val fit: PageFit = PageFit.Screen,
+    val crop: Boolean = false,
+    /** Two pages on a wide screen. */
+    val spreads: Boolean = true,
+    /** The pairs move by one page. */
+    val shift: Boolean = false,
+    val taps: TapZones = TapZones.Edges,
 )
 
 /** Keeps the preferences in the shared preferences of Android. */
@@ -50,6 +76,13 @@ class Settings(context: Context) {
         backgroundChecks = prefs.getBoolean("backgroundChecks", false),
         wifiOnly = prefs.getBoolean("wifiOnly", false),
         privateReading = prefs.getBoolean("privateReading", false),
+        layout = PageLayout(
+            fit = prefs.getString("layout.fit", null)?.let { name -> PageFit.entries.firstOrNull { it.name == name } } ?: PageFit.Screen,
+            crop = prefs.getBoolean("layout.crop", false),
+            spreads = prefs.getBoolean("layout.spreads", true),
+            shift = prefs.getBoolean("layout.shift", false),
+            taps = prefs.getString("layout.taps", null)?.let { name -> TapZones.entries.firstOrNull { it.name == name } } ?: TapZones.Edges,
+        ),
         keepScreenOn = prefs.getBoolean("keepScreenOn", true),
         readListOrder = prefs.getString("readListOrder", null)?.let { name -> ReadListOrder.entries.firstOrNull { it.name == name } } ?: ReadListOrder.Added,
         text = TextStyle(
@@ -73,6 +106,11 @@ class Settings(context: Context) {
             .putBoolean("backgroundChecks", next.backgroundChecks)
             .putBoolean("wifiOnly", next.wifiOnly)
             .putBoolean("privateReading", next.privateReading)
+            .putString("layout.fit", next.layout.fit.name)
+            .putBoolean("layout.crop", next.layout.crop)
+            .putBoolean("layout.spreads", next.layout.spreads)
+            .putBoolean("layout.shift", next.layout.shift)
+            .putString("layout.taps", next.layout.taps.name)
             .putBoolean("keepScreenOn", next.keepScreenOn)
             .putString("readListOrder", next.readListOrder.name)
             .putString("text.family", next.text.family.name)

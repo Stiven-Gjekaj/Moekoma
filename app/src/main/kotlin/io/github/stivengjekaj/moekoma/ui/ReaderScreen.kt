@@ -25,17 +25,22 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,6 +50,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -102,6 +108,9 @@ import io.github.stivengjekaj.moekoma.data.PdfDocument
 import io.github.stivengjekaj.moekoma.data.PdfPage
 import io.github.stivengjekaj.moekoma.data.AppModel
 import io.github.stivengjekaj.moekoma.data.Preferences
+import io.github.stivengjekaj.moekoma.data.PageFit
+import io.github.stivengjekaj.moekoma.data.PageLayout
+import io.github.stivengjekaj.moekoma.data.TapZones
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import kotlinx.coroutines.delay
@@ -129,7 +138,7 @@ private val ReadingMode.icon: ImageVector
 
 /** Reads one comic or one PDF of the library. */
 @Composable
-fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () -> Unit) {
+fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onLayout: (PageLayout) -> Unit, onClose: () -> Unit) {
     val library by model.library.collectAsState()
     val book = library.book(bookId) ?: return
     // A page is the file of an image, or a page of a PDF that the image loader draws.
@@ -143,6 +152,7 @@ fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () 
         onPage = { page -> model.update(bookId) { it.read(page) } },
         onMode = { m -> model.update(bookId) { it.copy(mode = m) } },
         onClose = onClose,
+        onLayout = onLayout,
     )
 }
 
@@ -154,7 +164,9 @@ fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () 
 fun PageReader(
     title: String, pages: List<Any>, start: Int, mode: ReadingMode, prefs: Preferences,
     onPage: (Int) -> Unit, onMode: (ReadingMode) -> Unit, onClose: () -> Unit,
+    onLayout: (PageLayout) -> Unit = {},
 ) {
+    val layout = prefs.layout
     val palette = LocalPalette.current
     val eInk = palette.isEInk
     var page by rememberSaveable { mutableIntStateOf(start.coerceIn(0, maxOf(pages.size - 1, 0))) }
@@ -185,11 +197,15 @@ fun PageReader(
         }
     }
 
+    // The page holds a reference to tap from its first composition, so tap reads the layout and the mode of now.
+    val taps by rememberUpdatedState(layout.taps)
+    val direction by rememberUpdatedState(mode)
     fun tap(zone: TapZone) {
-        when (zone) {
-            TapZone.Middle -> bars = !bars
+        when {
+            zone == TapZone.Middle || taps == TapZones.Off -> bars = !bars
+            taps == TapZones.Forward -> go(page + 1)
             // The left edge goes back in a western comic and forward in a manga.
-            else -> go(page + if ((zone == TapZone.Right) != (mode == ReadingMode.RightToLeft)) 1 else -1)
+            else -> go(page + if ((zone == TapZone.Right) != (direction == ReadingMode.RightToLeft)) 1 else -1)
         }
     }
 
@@ -200,18 +216,24 @@ fun PageReader(
                 modifier = Modifier.align(Alignment.Center),
             )
             mode == ReadingMode.Vertical -> VerticalReader(pages, page, eInk, onPage = { page = it }, onTurn = { turns++ }, onTap = { bars = !bars })
-            else -> PagedReader(pages, mode == ReadingMode.RightToLeft, page, eInk, onPage = ::go, onTap = ::tap)
+            else -> PagedReader(pages, mode == ReadingMode.RightToLeft, page, eInk, layout, onPage = ::go, onTap = ::tap)
         }
 
         if (eInk) {
-            if (bars) Chrome(title, page, pages.size, mode, onClose, onMode = onMode, onPage = ::go)
+            if (bars) Chrome(title, page, pages.size, mode, layout, onClose, onMode = onMode, onLayout = onLayout, onPage = ::go)
         } else {
             AnimatedVisibility(bars, enter = fadeIn(), exit = fadeOut()) {
-                Chrome(title, page, pages.size, mode, onClose, onMode = onMode, onPage = ::go)
+                Chrome(title, page, pages.size, mode, layout, onClose, onMode = onMode, onLayout = onLayout, onPage = ::go)
             }
         }
         if (flash) Box(Modifier.fillMaxSize().background(Color.Black))
     }
+}
+
+/** The title of a group of choices in a menu. */
+@Composable
+private fun MenuLabel(text: String) {
+    Text(text, style = MaterialTheme.typography.labelMedium, color = LocalPalette.current.textSecondary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
 }
 
 /** A page from the network, with the headers that its server asks for, such as the password of a catalog. */
@@ -220,7 +242,7 @@ data class RemotePage(val url: String, val headers: Map<String, String> = emptyM
 /** One page at a time, with a swipe or a tap at the edge. Each page zooms with a pinch or a double tap. */
 @Composable
 private fun PagedReader(
-    pages: List<Any>, rightToLeft: Boolean, page: Int, eInk: Boolean,
+    pages: List<Any>, rightToLeft: Boolean, page: Int, eInk: Boolean, layout: PageLayout,
     onPage: (Int) -> Unit, onTap: (TapZone) -> Unit,
 ) {
     val pager = rememberPagerState(initialPage = page) { pages.size }
@@ -302,14 +324,14 @@ private fun PagedReader(
                 } else Modifier,
             ),
         ) { index ->
-            ZoomablePage(pages[index], index, onTap = onTap, onZoom = { if (index == pager.currentPage) zoomed = it })
+            ZoomablePage(pages[index], index, layout.fit, onTap = onTap, onZoom = { if (index == pager.currentPage) zoomed = it })
         }
     }
 }
 
 /** A page that zooms with a pinch and a double tap. While it is zoomed, a drag moves the page and not the pager. */
 @Composable
-private fun ZoomablePage(file: Any, index: Int, onTap: (TapZone) -> Unit, onZoom: (Boolean) -> Unit) {
+private fun ZoomablePage(file: Any, index: Int, fit: PageFit, onTap: (TapZone) -> Unit, onZoom: (Boolean) -> Unit) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var size by remember { mutableStateOf(IntSize.Zero) }
@@ -371,21 +393,30 @@ private fun ZoomablePage(file: Any, index: Int, onTap: (TapZone) -> Unit, onZoom
         var failed by remember(file) { mutableStateOf(false) }
         var attempt by remember(file) { mutableIntStateOf(0) }
         key(attempt) {
-            AsyncImage(
-                model = pageRequest(file),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                onState = {
-                    loaded = it is AsyncImagePainter.State.Success
-                    failed = it is AsyncImagePainter.State.Error
-                },
-                modifier = Modifier.fillMaxSize().graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    translationX = offset.x
-                    translationY = offset.y
-                },
-            )
+            val zoom = Modifier.graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                translationX = offset.x
+                translationY = offset.y
+            }
+            val image: @Composable (Modifier, ContentScale) -> Unit = { modifier, contentScale ->
+                AsyncImage(
+                    model = pageRequest(file),
+                    contentDescription = null,
+                    contentScale = contentScale,
+                    onState = {
+                        loaded = it is AsyncImagePainter.State.Success
+                        failed = it is AsyncImagePainter.State.Error
+                    },
+                    modifier = modifier.then(zoom),
+                )
+            }
+            // A page that fills the width or the height scrolls in the other direction.
+            when (fit) {
+                PageFit.Screen -> image(Modifier.fillMaxSize(), ContentScale.Fit)
+                PageFit.Width -> Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) { image(Modifier.fillMaxWidth(), ContentScale.FillWidth) }
+                PageFit.Height -> Box(Modifier.fillMaxSize().horizontalScroll(rememberScrollState())) { image(Modifier.fillMaxHeight(), ContentScale.FillHeight) }
+            }
         }
         // A page of a source can take some seconds. A page of the device loads at once, so it shows no spinner.
         val remote = file is RemotePage || file is io.github.stivengjekaj.moekoma.data.RemoteImage
@@ -522,13 +553,14 @@ fun SystemBars(visible: Boolean) {
 
 @Composable
 private fun Chrome(
-    title: String, page: Int, count: Int, mode: ReadingMode,
-    onClose: () -> Unit, onMode: (ReadingMode) -> Unit, onPage: (Int) -> Unit,
+    title: String, page: Int, count: Int, mode: ReadingMode, layout: PageLayout,
+    onClose: () -> Unit, onMode: (ReadingMode) -> Unit, onLayout: (PageLayout) -> Unit, onPage: (Int) -> Unit,
 ) {
     val palette = LocalPalette.current
     // An e-ink screen shows a solid bar. A translucent bar shows the page through it.
     val barColor = if (palette.isEInk) palette.surface else palette.surface.copy(alpha = 0.92f)
     var modes by remember { mutableStateOf(false) }
+    var layoutMenu by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -537,6 +569,29 @@ private fun Chrome(
         ) {
             IconButton(onClick = onClose) { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Close") }
             Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            // The fit and the taps of the paged reader.
+            if (mode != ReadingMode.Vertical) Box {
+                IconButton(onClick = { layoutMenu = true }) { Icon(Icons.Outlined.ViewAgenda, contentDescription = "Page layout") }
+                DropdownMenu(expanded = layoutMenu, onDismissRequest = { layoutMenu = false }) {
+                    MenuLabel("Fit")
+                    PageFit.entries.forEach { fit ->
+                        DropdownMenuItem(
+                            text = { Text(fit.label) },
+                            trailingIcon = { if (fit == layout.fit) Icon(Icons.Outlined.Check, contentDescription = "Chosen", Modifier.size(18.dp)) },
+                            onClick = { layoutMenu = false; onLayout(layout.copy(fit = fit)) },
+                        )
+                    }
+                    HorizontalDivider()
+                    MenuLabel("Taps at the edges")
+                    TapZones.entries.forEach { taps ->
+                        DropdownMenuItem(
+                            text = { Text(taps.label) },
+                            trailingIcon = { if (taps == layout.taps) Icon(Icons.Outlined.Check, contentDescription = "Chosen", Modifier.size(18.dp)) },
+                            onClick = { layoutMenu = false; onLayout(layout.copy(taps = taps)) },
+                        )
+                    }
+                }
+            }
             Box {
                 IconButton(onClick = { modes = true }) { Icon(mode.icon, contentDescription = "Reading mode, ${mode.label}") }
                 DropdownMenu(expanded = modes, onDismissRequest = { modes = false }) {

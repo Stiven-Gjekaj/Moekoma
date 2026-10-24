@@ -156,7 +156,7 @@ fun MoekomaRoot(container: AppContainer) {
                         fetchChapter = book.origin?.let { { index -> container.sources.chapterFile(book, index) } },
                     ) { reading = null }
                     BookFormat.Series -> SeriesReaderScreen(container, book.id) { reading = null }
-                    else -> ReaderScreen(container.model, book.id, prefs) { reading = null }
+                    else -> ReaderScreen(container.model, book.id, prefs, { layout -> container.settings.update { it.copy(layout = layout) } }) { reading = null }
                 }
             }
         }
@@ -177,7 +177,10 @@ fun MoekomaRoot(container: AppContainer) {
 
         // The reader of a remote book covers the tabs too.
         remote?.let { open ->
-            PageReader(open.title, open.pages, 0, remoteMode, prefs, onPage = {}, onMode = { remoteMode = it }, onClose = { remote = null })
+            PageReader(
+                open.title, open.pages, 0, remoteMode, prefs, onPage = {}, onMode = { remoteMode = it }, onClose = { remote = null },
+                onLayout = { layout -> container.settings.update { it.copy(layout = layout) } },
+            )
         }
 
         fault?.let { message ->

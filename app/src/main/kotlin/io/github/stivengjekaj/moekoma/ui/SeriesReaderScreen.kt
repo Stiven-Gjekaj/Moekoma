@@ -125,6 +125,7 @@ fun SeriesReaderScreen(container: AppContainer, bookId: UUID, onClose: () -> Uni
                     },
                     onMode = { mode -> container.model.update(bookId) { it.copy(mode = mode) } },
                     onClose = onClose,
+                    onLayout = { layout -> container.settings.update { it.copy(layout = layout) } },
                 )
                 // The buttons for the chapters show on the last page.
                 if (page >= shown.size - 1) {
