@@ -232,7 +232,7 @@ class PaperbackExtension private constructor(
         if (coverHeaders == null) page.items.firstNotNullOfOrNull { it.cover }?.let { first ->
             coverHeaders = runCatching { runtime.invoke(MapSerializer(String.serializer(), String.serializer()), "__paperback.imageHeaders", listOf(first)) }.getOrDefault(emptyMap())
         }
-        return OnlinePage(page.items.map { OnlineSeries(it.id, it.title, it.cover) }, page.hasMore)
+        return OnlinePage(page.items.map { OnlineSeries(it.id, cleanTitle(it.title), it.cover) }, page.hasMore)
     }
 
     suspend fun popular(page: Int): OnlinePage =
@@ -326,7 +326,7 @@ class PaperbackExtension private constructor(
     suspend fun details(series: OnlineSeries): OnlineDetails {
         val details = runtime.invoke(Details.serializer(), "__paperback.details", listOf(series.id))
         return OnlineDetails(
-            series = OnlineSeries(series.id, details.title, details.cover ?: series.cover),
+            series = OnlineSeries(series.id, cleanTitle(details.title), details.cover ?: series.cover),
             author = details.author, summary = details.summary?.let { Jsoup.parse(it).text() }?.ifEmpty { null }, status = details.status?.ifEmpty { null },
             genres = details.tags,
             chapters = ordered(details.chapters).map { OnlineChapter(it.id, title(it), it.number, it.date, it.group) },
@@ -352,6 +352,9 @@ class PaperbackExtension private constructor(
 
     override fun close() = runtime.close()
 }
+
+/** A title with no spaces and no invisible marks at its ends, such as the zero-width joiner of some MangaDex titles. */
+internal fun cleanTitle(text: String): String = text.trim { it.isWhitespace() || it in "\u200B\u200C\u200D\u200E\u200F\uFEFF" }
 
 /** The forms of paperback.js are the JSON of SourceForm. */
 internal object PaperbackForms {

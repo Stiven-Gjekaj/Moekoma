@@ -197,6 +197,12 @@ class PaperbackTest {
         source.close()
     }
 
+    @Test fun removesTheSpacesAndTheInvisibleMarksAtTheEndsOfATitle() {
+        assertEquals("Since I'm Interested In Your Hair", cleanTitle("Since I'm Interested In Your Hair       \u200D"))
+        // A mark in the middle of a title stays.
+        assertEquals("A\u200DB", cleanTitle("\uFEFF A\u200DB "))
+    }
+
     @Test fun readsTheRepositoryAndSkipsTheTrackers() {
         val json = """{"buildTime":"x","builtWith":{"toolchain":"1","types":"1"},"repository":{"name":"Inkdex","description":""},"sources":[{"id":"Toonily","name":"Toonily","description":"","version":"1.0.1","icon":"icon.png","language":"en","contentRating":"ADULT","badges":[],"capabilities":[1,16,4,32,64],"developers":[]},{"id":"AniList","name":"AniList","description":"","version":"1","icon":"icon.png","language":"en","contentRating":"SAFE","badges":[],"capabilities":[4,2,32,64,8],"developers":[]}]}"""
         val list = PaperbackIndex.parse(json.toByteArray(), "https://inkdex.test/0.9/stable/versioning.json")
