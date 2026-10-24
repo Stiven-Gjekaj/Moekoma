@@ -135,6 +135,19 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
             ).joinToString("\n\n")
         }
     }
+    val readMihon = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        work("Mihon backup") {
+            val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } } ?: throw java.io.IOException("The file cannot be read.")
+            val result = container.sources.importMihon(bytes)
+            listOfNotNull(
+                "${result.added} series came into the library.",
+                result.waiting.takeIf { it.isNotEmpty() }?.let { waiting ->
+                    "These series come in when their source installs: " + waiting.entries.joinToString(", ") { "${it.key} (${it.value})" } + "."
+                },
+            ).joinToString("\n\n")
+        }
+    }
 
     Column(
         Modifier.fillMaxSize().background(palette.background).statusBarsPadding().verticalScroll(rememberScrollState())
@@ -158,11 +171,14 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
         Section(
             "Backup",
             footer = "A backup is one file with your books, their places, the source list with no passwords, and the installed sources. " +
-                "Asabunko restores it too. The files of the books are not in it.",
+                "Asabunko restores it too. The files of the books are not in it. A Mihon backup brings its series, the chapters that you read, " +
+                "its categories, and its repositories.",
         ) {
             LinkRow(if (busy) "Working" else "Back up the library", bold = true, color = palette.accent) { if (!busy) writeBackup.launch(Backup.fileName()) }
             Divider()
             LinkRow("Restore a backup") { if (!busy) readBackup.launch(arrayOf("application/json", "*/*")) }
+            Divider()
+            LinkRow("Import a Mihon backup") { if (!busy) readMihon.launch(arrayOf("*/*")) }
         }
 
         Section(

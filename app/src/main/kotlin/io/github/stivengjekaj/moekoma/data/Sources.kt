@@ -9,7 +9,10 @@ import io.github.stivengjekaj.moekoma.core.BookOrigin
 import io.github.stivengjekaj.moekoma.core.InstalledSource
 import io.github.stivengjekaj.moekoma.core.LnReaderIndex
 import io.github.stivengjekaj.moekoma.core.LnReaderPlugin
+import io.github.stivengjekaj.moekoma.core.MihonBackup
 import io.github.stivengjekaj.moekoma.core.MihonRepo
+import io.github.stivengjekaj.moekoma.core.BookCategory
+import io.github.stivengjekaj.moekoma.core.SourceList
 import io.github.stivengjekaj.moekoma.core.OnlineChapter
 import io.github.stivengjekaj.moekoma.core.Xhtml
 import io.github.stivengjekaj.moekoma.core.MihonStore
@@ -94,8 +97,79 @@ class Sources(
         setUpJob = scope.launch {
             previous?.join()
             setUp(links)
+            // A series of a Mihon backup comes in when its source installs.
+            runCatching { importPendingMihon() }
         }
         return links
+    }
+
+    /** The result of the import of a Mihon backup: the series that came in, and the sources that the others wait for. */
+    data class MihonImport(val added: Int, val waiting: Map<String, Int>)
+
+    private val pendingMihon = File(model.root, "mihon-pending.tachibk")
+
+    /**
+     * Imports a backup of Mihon: its categories, its series with the chapters that the user read, and its repositories of
+     * extensions, which go into the source list. A series of a source that is not installed waits in a file, and comes in
+     * when its source installs.
+     */
+    suspend fun importMihon(bytes: ByteArray): MihonImport {
+        val content = withContext(Dispatchers.IO) { MihonBackup.parse(bytes) }
+        withContext(Dispatchers.IO) {
+            // A new library has no folder yet.
+            pendingMihon.parentFile?.mkdirs()
+            pendingMihon.writeBytes(bytes)
+        }
+        // The repositories of the backup go into the source list, and their sources install.
+        val known = model.library.value.sources.map { it.url.trimEnd('/') }.toSet()
+        val repositories = content.repositories.map { it.trimEnd('/') }.map { if (it.endsWith(".json")) it else "$it/index.min.json" }.filter { it !in known }
+        if (repositories.isNotEmpty()) {
+            val text = (SourceList.format(model.library.value.sources).lines() + repositories).filter { it.isNotBlank() }.joinToString("\n")
+            save(text)
+        }
+        return importPendingMihon()
+    }
+
+    /** Imports the series of the waiting Mihon backup whose sources are installed now. */
+    suspend fun importPendingMihon(): MihonImport = withContext(Dispatchers.IO) {
+        if (!pendingMihon.isFile) return@withContext MihonImport(0, emptyMap())
+        val content = runCatching { MihonBackup.parse(pendingMihon.readBytes()) }.getOrElse {
+            pendingMihon.delete()
+            return@withContext MihonImport(0, emptyMap())
+        }
+        // The categories of the backup that the library does not have yet come in, in their order.
+        val names = model.library.value.categories.map { it.name }.toSet()
+        val newCategories = content.categories.filter { it !in names }.map { BookCategory(name = it) }
+        if (newCategories.isNotEmpty()) withContext(Dispatchers.Main) { model.change { it.copy(categories = it.categories + newCategories) } }
+        val categories = model.library.value.categories
+        var added = 0
+        val waiting = linkedMapOf<String, Int>()
+        for (entry in content.entries) {
+            val source = installed.firstOrNull { it.info.id == entry.source && kind(it) == SourceKind.Mihon }
+            if (source == null) {
+                waiting.merge(entry.sourceName, 1, Int::plus)
+                continue
+            }
+            if (model.library.value.book(originOf(source, entry.url)) != null) continue
+            val (book, novel) = MihonBackup.book(entry, source.list, source.info.name, categories)
+            val folder = model.folder(book)
+            File(folder, "chapters").mkdirs()
+            novel.save(folder)
+            withContext(Dispatchers.Main) { model.change { it.copy(books = it.books + book) } }
+            added++
+            entry.cover?.let { url ->
+                scope.launch(Dispatchers.IO) {
+                    runCatching {
+                        val original = File(folder, "cover-original")
+                        load(source).image(RemoteImage.cover(source.id, url)).use { response -> original.outputStream().use { response.body.byteStream().copyTo(it) } }
+                        AppModel.makeCover(original, File(folder, "cover.jpg"))
+                        original.delete()
+                    }
+                }
+            }
+        }
+        if (waiting.isEmpty()) pendingMihon.delete()
+        MihonImport(added, waiting)
     }
 
     /**
