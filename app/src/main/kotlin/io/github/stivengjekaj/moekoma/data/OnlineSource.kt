@@ -66,11 +66,17 @@ interface OnlineSource {
     /** True when the settings of the source are a form, such as the settings of an Aidoku source. */
     suspend fun hasSettingsForm(): Boolean = false
 
-    /** A form of the settings: "root" for the first form. */
+    /** The first form of the settings. */
+    suspend fun settingsForm(): SourceForm = form("root")
+
+    /** A form of the settings, by its ID. */
     suspend fun form(id: String): SourceForm = throw SourceFormException.noForm()
 
     /** Does the action of a row of a form, and gives the form again. */
     suspend fun formAction(form: String, row: String, input: FormInput): SourceForm = throw SourceFormException.noForm()
+
+    /** Keeps the changes of a form that the user must save. */
+    suspend fun submitForm(id: String) {}
 
     /** Frees what the source holds, such as a JavaScript context or a WebAssembly instance. */
     fun close() {}

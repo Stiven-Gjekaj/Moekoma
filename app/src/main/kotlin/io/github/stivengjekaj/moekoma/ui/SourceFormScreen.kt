@@ -67,6 +67,9 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.json.JSONTokener
 
+/** The ID of the first form of the settings of a source. */
+const val ROOT_FORM = "root"
+
 /**
  * A settings form of a source, as in Asabunko. The source gives the form again after each action, so the rows can
  * change. A link opens the child form as the next screen.
@@ -81,7 +84,8 @@ fun SourceFormScreen(container: AppContainer, installed: InstalledSource, id: St
 
     LaunchedEffect(installed.id, id) {
         try {
-            form = container.sources.load(installed).form(id)
+            val source = container.sources.load(installed)
+            form = if (id == ROOT_FORM) source.settingsForm() else source.form(id)
         } catch (e: Exception) {
             fault = e.message ?: "The settings did not open."
         }
@@ -102,7 +106,23 @@ fun SourceFormScreen(container: AppContainer, installed: InstalledSource, id: St
         }
     }
 
-    SubScreen(title, onBack) {
+    fun save() {
+        val current = form ?: return
+        busy = true
+        scope.launch {
+            try {
+                container.sources.load(installed).submitForm(current.id)
+                onBack()
+            } catch (e: Exception) {
+                fault = e.message ?: "The settings were not saved."
+            } finally {
+                busy = false
+            }
+        }
+    }
+
+    // A form that the user must save has a Save button. Its changes go to the source only then.
+    SubScreen(title, onBack, actions = { if (form?.submit == true) TextButton(onClick = ::save, enabled = !busy) { Text("Save") } }) {
         val shown = form
         LazyColumn(contentPadding = PaddingValues(Gutter), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             fault?.let { text -> item { Text(text, color = palette.danger, style = MaterialTheme.typography.bodyMedium) } }

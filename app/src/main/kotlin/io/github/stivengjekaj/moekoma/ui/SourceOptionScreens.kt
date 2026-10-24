@@ -183,7 +183,7 @@ fun SourceSettingsScreen(container: AppContainer, installed: InstalledSource, op
         values = source?.settingValues().orEmpty()
     }
     // A source with a settings form shows the form, with its groups, pages, and sign-ins.
-    if (asForm) return SourceFormScreen(container, installed, "root", "${installed.info.name} settings", open, onBack)
+    if (asForm) return SourceFormScreen(container, installed, ROOT_FORM, "${installed.info.name} settings", open, onBack)
     SubScreen("${installed.info.name} settings", onBack) {
         val list = options
         if (list == null) {
