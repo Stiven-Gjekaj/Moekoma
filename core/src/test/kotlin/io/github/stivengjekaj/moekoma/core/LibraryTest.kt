@@ -207,4 +207,19 @@ class LibraryTest {
         assertEquals(Library.HISTORY_LIMIT, library.history.size)
         assertEquals(emptyList<HistoryEntry>(), library.copy(books = emptyList()).shownHistory)
     }
+
+    @Test fun keepsTheMarksOfANovelInTheOrderOfTheBook() {
+        val book = Book(title = "Tide", format = BookFormat.Novel, fileName = "t", pageCount = 5)
+        val library = Library(
+            books = listOf(book),
+            marks = listOf(
+                BookMark.at(book.id, 2, 0.5, "late", BookMark.Kind.Highlight),
+                BookMark.at(book.id, 0, 1.4, "end", BookMark.Kind.Bookmark),
+                BookMark.at(book.id, 2, 0.1, "early", BookMark.Kind.Bookmark),
+                BookMark.at(UUID.randomUUID(), 0, 0.0, "other", BookMark.Kind.Bookmark),
+            ),
+        )
+        assertEquals(listOf("end", "early", "late"), library.marks(book.id).map { it.text })
+        assertEquals("A place stays between 0 and 1.", 1.0, library.marks[1].position, 0.0)
+    }
 }

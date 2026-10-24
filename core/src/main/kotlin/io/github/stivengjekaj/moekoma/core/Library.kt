@@ -237,6 +237,9 @@ data class Library(
         return if (category == null) list else list.filter { category in it.categories }
     }
 
+    /** The marks of a book in the order of the book: by chapter, then by place. */
+    fun marks(book: UUID): List<BookMark> = marks.filter { it.book == book }.sortedWith(compareBy({ it.chapter }, { it.position }))
+
     /** Removes a category, and takes it off each book. */
     fun removeCategory(id: UUID): Library = copy(
         categories = categories.filterNot { it.id == id },
@@ -279,6 +282,12 @@ data class BookMark(
 ) {
     @Serializable
     enum class Kind { @SerialName("bookmark") Bookmark, @SerialName("highlight") Highlight }
+
+    companion object {
+        /** A mark at a place that stays between 0 and 1. */
+        fun at(book: UUID, chapter: Int, position: Double, text: String, kind: Kind): BookMark =
+            BookMark(book = book, chapter = chapter, position = position.coerceIn(0.0, 1.0), text = text, kind = kind)
+    }
 }
 
 /** A new chapter that a check found. The chapter is its index in the book, from 0. */
