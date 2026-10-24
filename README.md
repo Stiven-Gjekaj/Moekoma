@@ -83,6 +83,7 @@ Moekoma has no sources in it. Your books stay on your device.
   read a comic at once, or download a book. A password stays encrypted on
   the device
 - Chapter downloads in the background, which open with no network
+- AniList and MyAnimeList trackers, and the progress of Komga and Kavita
 - A backup that Asabunko restores, the restore of a backup of Asabunko, and
   the import of a Mihon backup
 - A check of all online books for new chapters, and the move of a book to

@@ -7,6 +7,19 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 1.4.0 (2026-10-24)
+
+- Track your books on AniList and MyAnimeList. In Settings, Sources,
+  Trackers, paste the client ID of a client that you register on the site,
+  with the redirect URI moekoma://anilist or moekoma://myanimelist, and sign
+  in. Then hold a book in the Library and choose Track.
+- A tracked book sends the number of chapters that you read each time it
+  goes up. A finished book is complete on the tracker. Private reading
+  sends nothing.
+- A stream of a Komga or a Kavita catalog opens at the last page that you
+  read on the server. Each page that you read goes back to Komga. Kavita
+  keeps it by itself.
+
 ## 1.3.0 (2026-10-24)
 
 - The page layout button in the reader of pages chooses the fit (the

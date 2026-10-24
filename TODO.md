@@ -11,8 +11,6 @@ Each release keeps the backup that Asabunko of the same functions reads.
 
 ## Releases from 1.0.0 to 2.0.0
 
-- 1.4.0 Trackers and servers, as Asabunko 2.7.0: AniList and MyAnimeList,
-  the Track action of a book, and the progress of Komga and Kavita.
 - 1.5.0 Moekoma fits into Android, as Asabunko 2.8.0: the app in Japanese, a
   Home Screen widget of Continue reading, "Share the file" of a book (CBZ,
   PDF, or EPUB), HTML files in "Open with", a light vibration at the end of a
