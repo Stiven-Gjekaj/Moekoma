@@ -87,6 +87,7 @@ fun SettingsScreen(
         is SettingsRoute.Title -> key(stack.size, route) { OnlineSeriesScreen(container, route.route, read, back) }
         is SettingsRoute.Feed -> key(route) { OpdsFeedScreen(container, route.source, route.url, route.title, open, back) }
         is SettingsRoute.Publication -> PublicationScreen(container, route.source, route.publication, onRead, back)
+        SettingsRoute.Storage -> StorageScreen(container, back)
     }
 }
 
@@ -172,6 +173,8 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
 
         Section("Sources", footer = "Mihon extensions, Kotatsu parsers, LNReader plugins, Aidoku sources, Paperback extensions, Suwayomi servers, and OPDS catalogs such as Komga, Kavita, and Calibre-web.") {
             LinkRow(if (library.sources.isEmpty()) "Add sources" else "${library.sources.size} source" + (if (library.sources.size == 1) "" else "s")) { open(SettingsRoute.Sources) }
+            Divider()
+            LinkRow("Storage") { open(SettingsRoute.Storage) }
         }
 
         Section(

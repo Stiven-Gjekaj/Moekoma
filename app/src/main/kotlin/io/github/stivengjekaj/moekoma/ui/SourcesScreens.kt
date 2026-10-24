@@ -106,6 +106,7 @@ sealed interface SettingsRoute {
     data class SourceForm(val source: InstalledSource, val form: String, val title: String) : SettingsRoute
     data class Source(val source: InstalledSource) : SettingsRoute
     data class Title(val route: TitleRoute) : SettingsRoute
+    data object Storage : SettingsRoute
 }
 
 /** The pages of a book that Moekoma reads from the network and does not keep. */
