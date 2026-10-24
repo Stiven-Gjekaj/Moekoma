@@ -136,6 +136,8 @@ fun ReaderScreen(model: AppModel, bookId: UUID, prefs: Preferences, onClose: () 
     val pdf = remember(bookId) { if (book.format == BookFormat.Pdf) runCatching { PdfDocument(model.pdf(book)) }.getOrNull() else null }
     DisposableEffect(pdf) { onDispose { pdf?.close() } }
     val pages: List<Any> = remember(bookId) { pdf?.let { doc -> List(doc.pageCount) { PdfPage(doc, it) } } ?: model.pages(book) }
+    // To open a book is to read it, so the book goes into the history and into Continue reading.
+    LaunchedEffect(bookId) { model.update(bookId) { it.read(it.page) } }
     PageReader(
         title = book.title, pages = pages, start = book.page, mode = library.mode(book), prefs = prefs,
         onPage = { page -> model.update(bookId) { it.read(page) } },

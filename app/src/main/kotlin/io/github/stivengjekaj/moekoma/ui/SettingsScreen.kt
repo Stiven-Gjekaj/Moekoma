@@ -245,12 +245,14 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
             }
         }
 
-        Section("Reader", footer = "A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left. With \"Keep the screen on\", the screen does not go dark while a book is open.") {
+        Section("Reader", footer = "A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left. With \"Keep the screen on\", the screen does not go dark while a book is open. With \"Private reading\", the books that you read do not go into the history or into Continue reading.") {
             ReadingMode.entries.forEach { option ->
                 Choice(option.label, library.defaultMode == option) { container.model.setDefaultMode(option) }
             }
             Divider()
             Toggle("Keep the screen on", prefs.keepScreenOn) { on -> container.settings.update { it.copy(keepScreenOn = on) } }
+            Divider()
+            Toggle("Private reading", prefs.privateReading) { on -> container.settings.update { it.copy(privateReading = on) } }
         }
 
         Section("Keys", footer = "The volume keys turn the page while a book is open. The page keys of an e-ink reader always turn the page.") {

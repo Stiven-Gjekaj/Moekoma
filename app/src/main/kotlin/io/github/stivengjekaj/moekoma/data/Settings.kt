@@ -30,6 +30,8 @@ data class Preferences(
     val backgroundChecks: Boolean = false,
     /** The new chapters download with no question only on Wi-Fi. */
     val wifiOnly: Boolean = false,
+    /** The books that the user reads do not go into the history or into Continue reading. */
+    val privateReading: Boolean = false,
 )
 
 /** Keeps the preferences in the shared preferences of Android. */
@@ -47,6 +49,7 @@ class Settings(context: Context) {
         adult = prefs.getBoolean("adult", false),
         backgroundChecks = prefs.getBoolean("backgroundChecks", false),
         wifiOnly = prefs.getBoolean("wifiOnly", false),
+        privateReading = prefs.getBoolean("privateReading", false),
         keepScreenOn = prefs.getBoolean("keepScreenOn", true),
         readListOrder = prefs.getString("readListOrder", null)?.let { name -> ReadListOrder.entries.firstOrNull { it.name == name } } ?: ReadListOrder.Added,
         text = TextStyle(
@@ -69,6 +72,7 @@ class Settings(context: Context) {
             .putBoolean("adult", next.adult)
             .putBoolean("backgroundChecks", next.backgroundChecks)
             .putBoolean("wifiOnly", next.wifiOnly)
+            .putBoolean("privateReading", next.privateReading)
             .putBoolean("keepScreenOn", next.keepScreenOn)
             .putString("readListOrder", next.readListOrder.name)
             .putString("text.family", next.text.family.name)

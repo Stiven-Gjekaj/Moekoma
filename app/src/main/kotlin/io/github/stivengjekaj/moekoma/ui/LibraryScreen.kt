@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FolderDelete
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.SwapVert
@@ -122,6 +123,11 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
         UpdatesScreen(model, downloads, onRead) { showingUpdates = false }
         return
     }
+    var showingHistory by rememberSaveable { mutableStateOf(false) }
+    if (showingHistory) {
+        HistoryScreen(model, onRead) { showingHistory = false }
+        return
+    }
 
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { model.importDocuments(it) }
     val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(model::importFolder) }
@@ -171,6 +177,18 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                                 Text("Updates", style = MaterialTheme.typography.titleSmall)
                                 Text(if (updates == 1) "1 new chapter" else "$updates new chapters", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
                             }
+                            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = palette.textSecondary)
+                        }
+                    }
+                }
+            }
+            // The chapters that the user opened, the newest first.
+            if (library.shownHistory.isNotEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Card(Modifier.clickable(onClickLabel = "Open") { showingHistory = true }.semantics(mergeDescendants = true) {}) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Icon(Icons.Outlined.History, contentDescription = null, tint = palette.accent)
+                            Text("History", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                             Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = palette.textSecondary)
                         }
                     }

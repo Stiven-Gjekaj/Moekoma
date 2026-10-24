@@ -135,7 +135,20 @@ class AppModel(
     /** The PDF of a book, which the reader opens and closes. */
     fun pdf(book: Book): File = File(folder(book), PdfImporter.FILE_NAME)
 
-    fun update(id: UUID, change: (Book) -> Book) = change { it.update(id, change) }
+    /** True while the private reading is on: a read does not go into the history or into Continue reading. */
+    var privateReading: () -> Boolean = { false }
+
+    fun update(id: UUID, edit: (Book) -> Book) = change { library ->
+        val before = library.book(id)?.lastRead
+        val next = library.update(id, edit)
+        val book = next.book(id)
+        // A change of the time of the last read is a read. It goes into the history, one entry for each chapter.
+        when {
+            book == null || book.lastRead == before || book.lastRead == null -> next
+            privateReading() -> next.update(id) { it.copy(lastRead = before) }
+            else -> next.noteVisit(id, if (book.format == BookFormat.Novel || book.format == BookFormat.Series) book.page else 0)
+        }
+    }
 
     fun setDefaultMode(mode: ReadingMode) = change { it.copy(defaultMode = mode) }
 

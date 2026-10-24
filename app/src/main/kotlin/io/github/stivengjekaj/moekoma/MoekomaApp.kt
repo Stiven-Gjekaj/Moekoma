@@ -67,7 +67,7 @@ class AppContainer(val app: Application, root: File = File(app.filesDir, "Moekom
         .build()
     val model = AppModel(app, scope, root, http)
     val folders = Folders(app, model, root, scope)
-    val settings = Settings(app)
+    val settings = Settings(app).also { settings -> model.privateReading = { settings.preferences.value.privateReading } }
     val sources = Sources(app, model, settings, http, scope)
     val downloads = Downloads(app, model, sources, root).also { downloads ->
         // A book with "Download new chapters" downloads them after each check, on Wi-Fi only when the user asks for it.

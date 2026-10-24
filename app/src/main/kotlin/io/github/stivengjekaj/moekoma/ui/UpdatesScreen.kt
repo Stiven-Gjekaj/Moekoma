@@ -105,5 +105,5 @@ private fun UpdateRow(update: ChapterUpdate, book: Book, model: AppModel, downlo
     }
 }
 
-/** The day of a check, such as "Saturday, October 24". */
-private fun dayName(day: LocalDate): String = day.format(DateTimeFormatter.ofPattern("EEEE, MMMM d"))
+/** The day of a check or a visit, such as "Saturday, October 24". */
+internal fun dayName(day: LocalDate): String = day.format(DateTimeFormatter.ofPattern("EEEE, MMMM d"))
