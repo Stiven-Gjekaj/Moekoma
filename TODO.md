@@ -11,9 +11,6 @@ Each release keeps the backup that Asabunko of the same functions reads.
 
 ## Releases from 1.0.0 to 2.0.0
 
-- 1.2.0 The tools of the library, as Asabunko 2.5.0: categories of the read
-  list, the search and the filters of the library, the History, "Private
-  reading", the Storage page, and the move of many books to another source.
 - 1.3.0 The reader does more, as Asabunko 2.6.0: two pages side by side on a
   wide screen, the page layout menu (the fit, "Crop the borders", the taps at
   the edges), a novel that reads itself aloud with the text to speech of

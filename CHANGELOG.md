@@ -7,6 +7,25 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 1.2.0 (2026-10-24)
+
+- Put the books of your read list in categories, such as "Reading" or "On
+  hold". The chips above the read list show one category. "Add a category"
+  and "Edit" open the editor, where you add, rename, order, and remove the
+  categories. Hold a book to choose its categories.
+- Search the library by title or writer with the search button.
+- Filter the read list: Unread, On the device, Comics, and Novels.
+- The History in the Library shows the chapters that you opened, by day. A
+  tap reads the chapter again. "Clear" removes all of the history.
+- "Private reading" in Settings, Reader keeps your reads out of the history
+  and out of Continue reading.
+- The Storage page in Settings, Sources shows the space of the downloads of
+  each book. Remove the read chapters, the downloads of a book, or all
+  downloads.
+- "Move books to another source" in Settings, Sources moves many books at
+  one time. Moekoma finds each title in the new source, and you see the
+  matches before the move.
+
 ## 1.1.0 (2026-10-24)
 
 - New chapters come to you. Turn on "Check in the background" in Settings,
