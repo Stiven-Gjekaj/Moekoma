@@ -7,6 +7,22 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 2.1.0 (2026-10-24)
+
+The last parts of Asabunko 3.0.0, after a new read of all its releases.
+
+- The chapters of each book stay in memory until their file changes, as in
+  Asabunko. The menus, the History, and the open of a chapter no longer
+  read the file each time. For a book of 2,000 chapters, one read went from
+  832 to 3 microseconds in a test on the computer.
+- A chapter of a web novel that opens downloads the next chapter too, so
+  that the next chapter opens with no wait.
+- A test runs the Accessibility Test Framework on the four tabs, the pages
+  of Settings, and the readers, as the audit of Asabunko does.
+- A test reads each tab at the largest font size. No text goes past the
+  edge of the screen, and each text keeps a margin.
+- On the release commit, 55 of 55 device tests passed.
+
 ## 2.0.0 (2026-10-24)
 
 The quality release. Each number is a measurement on the emulator. The
