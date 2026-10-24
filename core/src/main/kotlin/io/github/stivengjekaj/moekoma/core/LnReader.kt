@@ -229,4 +229,7 @@ class LnReaderPlugin private constructor(
     }
 
     override fun close() = runtime.close()
+
+    /** The close of the source, with no reference to the source. */
+    fun closer(): AutoCloseable = runtime
 }

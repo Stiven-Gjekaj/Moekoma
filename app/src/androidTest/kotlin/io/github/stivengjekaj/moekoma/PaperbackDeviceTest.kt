@@ -50,7 +50,7 @@ class PaperbackDeviceTest {
         val loud = root.sections.flatMap { it.rows }.first { it.id == "loud" }
         source.formAction(root.id, loud.id, FormInput.Toggle(true))
         assertEquals(series.title.uppercase(), source.popular(1).items.first().title)
-        source.close()
+        extension.close()
         assertEquals(true, state.delete())
     }
 

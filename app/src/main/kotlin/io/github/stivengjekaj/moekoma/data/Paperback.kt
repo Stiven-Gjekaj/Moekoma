@@ -46,7 +46,7 @@ class PaperbackSource(private val installed: InstalledSource, val extension: Pap
     override suspend fun form(id: String) = extension.form(id)
     override suspend fun formAction(form: String, row: String, input: FormInput) = extension.formAction(form, row, input)
     override suspend fun submitForm(id: String) = extension.submitForm(id)
-    override fun close() = extension.close()
+    override fun closer() = extension.closer()
 
     override suspend fun content(chapter: OnlineChapter, series: OnlineSeries): ChapterContent {
         val (html, pages) = extension.content(chapter, series)

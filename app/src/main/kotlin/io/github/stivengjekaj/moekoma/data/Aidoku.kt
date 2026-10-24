@@ -77,7 +77,7 @@ class AidokuOnlineSource(
     override suspend fun hasSettingsForm() = source.hasSettingsForm
     override suspend fun form(id: String) = source.form(id)
     override suspend fun formAction(form: String, row: String, input: FormInput) = source.formAction(form, row, input)
-    override fun close() = source.close()
+    override fun closer() = source.closer()
 
     override suspend fun content(chapter: OnlineChapter, series: OnlineSeries): ChapterContent = when (val content = source.content(chapter, series)) {
         is AidokuContent.Html -> ChapterContent.Html(content.html)

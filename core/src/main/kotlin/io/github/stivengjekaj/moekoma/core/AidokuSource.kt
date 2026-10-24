@@ -385,4 +385,7 @@ class AidokuSource private constructor(
     }
 
     override fun close() = host.close()
+
+    /** The close of the source, with no reference to the source. */
+    fun closer(): AutoCloseable = host.closer()
 }

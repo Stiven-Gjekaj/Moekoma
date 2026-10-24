@@ -197,9 +197,27 @@ class AidokuHost(name: String, wasm: ByteArray, val defaults: AidokuDefaults, in
         if ("start" in exports) invoke("start")
     }
 
-    override fun close() {
-        executor.execute { items.values.forEach { runCatching { (it as? AutoCloseable)?.close() } } }
-        executor.shutdown()
+    override fun close() = closer().close()
+
+    /**
+     * The close of the host, with no reference to the WebAssembly instance. The app closes a source a minute after
+     * it leaves the cache, and the instance can leave the memory in that minute.
+     */
+    fun closer(): AutoCloseable {
+        val executor = executor
+        val items = items
+        return AutoCloseable {
+            executor.execute {
+                // A plain try, because runCatching in a class takes the class as its receiver and holds it.
+                for (item in items.values) {
+                    try {
+                        (item as? AutoCloseable)?.close()
+                    } catch (_: Exception) {
+                    }
+                }
+            }
+            executor.shutdown()
+        }
     }
 
     // Values and memory

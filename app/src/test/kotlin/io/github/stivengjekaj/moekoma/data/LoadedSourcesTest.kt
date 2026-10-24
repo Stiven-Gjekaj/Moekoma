@@ -22,7 +22,7 @@ class LoadedSourcesTest {
         override suspend fun details(series: OnlineSeries) = OnlineDetails(series)
         override suspend fun content(chapter: OnlineChapter, series: OnlineSeries): ChapterContent = ChapterContent.Html("")
         override suspend fun image(image: RemoteImage): Response = throw UnsupportedOperationException()
-        override fun close() { closed = true }
+        override fun closer() = AutoCloseable { closed = true }
     }
 
     @Test fun closesASourceThatLeavesTheMemory() {

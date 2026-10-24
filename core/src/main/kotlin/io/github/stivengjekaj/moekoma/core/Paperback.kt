@@ -351,6 +351,9 @@ class PaperbackExtension private constructor(
     fun imageRequest(url: String): HttpRequest = HttpRequest(url, headers = coverHeaders.orEmpty().filterKeys { !it.equals("cookie", true) })
 
     override fun close() = runtime.close()
+
+    /** The close of the source, with no reference to the source. */
+    fun closer(): AutoCloseable = runtime
 }
 
 /** A title with no spaces and no invisible marks at its ends, such as the zero-width joiner of some MangaDex titles. */

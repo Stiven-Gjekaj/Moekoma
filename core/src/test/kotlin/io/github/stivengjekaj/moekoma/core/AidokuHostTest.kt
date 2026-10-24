@@ -3,6 +3,7 @@ package io.github.stivengjekaj.moekoma.core
 import com.dylibso.chicory.wabt.Wat2Wasm
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -75,4 +76,21 @@ class AidokuHostTest {
         assertEquals("c", String(second["other"]!!))
         assertTrue(file.delete())
     }
+
+    @Test fun theCloserDoesNotHoldTheHost() {
+        val (closer, reference) = closerOfAHostThatGoes()
+        repeat(20) {
+            if (reference.get() == null) return@repeat
+            System.gc()
+            Thread.sleep(50)
+        }
+        assertNull("The closer holds the host and its WebAssembly instance", reference.get())
+        closer.close()
+    }
+
+    private fun closerOfAHostThatGoes(): Pair<AutoCloseable, java.lang.ref.WeakReference<AidokuHost>> {
+        val host = host()
+        return host.closer() to java.lang.ref.WeakReference(host)
+    }
 }
+

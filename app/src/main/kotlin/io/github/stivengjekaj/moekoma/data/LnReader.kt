@@ -55,7 +55,7 @@ class LnReaderSource(private val installed: InstalledSource, val plugin: LnReade
     override suspend fun settingOptions() = plugin.settingOptions()
     override suspend fun settingValues() = plugin.settingValues()
     override suspend fun setSetting(id: String, value: OptionValue) = plugin.setSetting(id, value)
-    override fun close() = plugin.close()
+    override fun closer() = plugin.closer()
 
     override suspend fun image(image: RemoteImage): Response = withContext(Dispatchers.IO) {
         val url = image.item as? String ?: throw IOException("The image is not of this source.")

@@ -78,8 +78,12 @@ interface OnlineSource {
     /** Keeps the changes of a form that the user must save. */
     suspend fun submitForm(id: String) {}
 
-    /** Frees what the source holds, such as a JavaScript context or a WebAssembly instance. */
-    fun close() {}
+    /**
+     * What frees the parts that the source holds, such as a JavaScript context or a WebAssembly instance. It holds
+     * only those parts, so the rest of the source can leave the memory before the close. Null when the source has
+     * nothing to free.
+     */
+    fun closer(): AutoCloseable? = null
 }
 
 /**
@@ -125,9 +129,11 @@ object LoadedSources {
     @Volatile internal var closeDelayMillis = 60_000L
 
     private fun closeLater(source: OnlineSource) {
+        // The delay holds only the closer, so the code of the source can leave the memory at once.
+        val closing = source.closer() ?: return
         closer.launch {
             delay(closeDelayMillis)
-            runCatching { source.close() }
+            runCatching { closing.close() }
         }
     }
 }
