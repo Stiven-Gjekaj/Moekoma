@@ -72,6 +72,12 @@ data class Book(
      * Before the read list, the user added each book on purpose, so a book with no value is listed.
      */
     val listed: Boolean = true,
+    /** True when each new chapter that a check finds downloads. */
+    val autoDownload: Boolean = false,
+    /** The categories of the read list that the book is in. */
+    val categories: List<@Serializable(with = UuidSerializer::class) UUID> = emptyList(),
+    /** The entries of the book on the trackers, such as AniList. */
+    val tracking: List<TrackLink> = emptyList(),
 ) {
     /** The part of the book that the user read, from 0 to 1. */
     val progress: Double
@@ -126,6 +132,14 @@ data class Library(
     val sources: List<SourceLink> = emptyList(),
     /** The sources that the user installed from the lists. */
     val installed: List<InstalledSource> = emptyList(),
+    /** The new chapters that the checks found, the newest last. */
+    val updates: List<ChapterUpdate> = emptyList(),
+    /** The categories of the read list, in their order. */
+    val categories: List<BookCategory> = emptyList(),
+    /** The chapters and the books that the user opened. */
+    val history: List<HistoryEntry> = emptyList(),
+    /** The bookmarks and the highlights of the novels. */
+    val marks: List<BookMark> = emptyList(),
 ) {
     /** The book of a series or a novel of a source, when the library has it. */
     fun book(origin: BookOrigin): Book? = books.firstOrNull { it.origin == origin }
@@ -166,6 +180,52 @@ data class Library(
         const val CURRENT_FORM = 1
     }
 }
+
+/** A category of the read list, such as "Reading" or "On hold". As in Asabunko. */
+@Serializable
+data class BookCategory(@Serializable(with = UuidSerializer::class) val id: UUID = UUID.randomUUID(), val name: String)
+
+/** One time that the user opened a chapter or a page of a book. The place is the chapter, or the page of a comic, from 0. */
+@Serializable
+data class HistoryEntry(
+    @Serializable(with = UuidSerializer::class) val id: UUID = UUID.randomUUID(),
+    @Serializable(with = UuidSerializer::class) val book: UUID,
+    val place: Int,
+    @Serializable(with = InstantSerializer::class) val date: Instant,
+)
+
+/** A bookmark or a highlight in a chapter of a novel. The position is the place in the chapter, from 0 to 1. */
+@Serializable
+data class BookMark(
+    @Serializable(with = UuidSerializer::class) val id: UUID = UUID.randomUUID(),
+    @Serializable(with = UuidSerializer::class) val book: UUID,
+    val chapter: Int,
+    val position: Double,
+    /** The words of a highlight, or the first words at the place of a bookmark. */
+    val text: String,
+    val kind: Kind,
+    @Serializable(with = InstantSerializer::class) val created: Instant = now(),
+) {
+    @Serializable
+    enum class Kind { @SerialName("bookmark") Bookmark, @SerialName("highlight") Highlight }
+}
+
+/** A new chapter that a check found. The chapter is its index in the book, from 0. */
+@Serializable
+data class ChapterUpdate(
+    @Serializable(with = UuidSerializer::class) val id: UUID = UUID.randomUUID(),
+    @Serializable(with = UuidSerializer::class) val book: UUID,
+    val chapter: Int,
+    val title: String? = null,
+    @Serializable(with = InstantSerializer::class) val found: Instant,
+)
+
+/** The entry of a book on a tracker. [sent] is the number of chapters that the tracker has now from the app. */
+@Serializable
+data class TrackLink(val kind: TrackerKind, val id: Int, val title: String, val sent: Int = 0)
+
+@Serializable
+enum class TrackerKind { @SerialName("anilist") AniList, @SerialName("myanimelist") MyAnimeList }
 
 /** The file comes from a newer version of the app. */
 class NewerFormException(val form: Int) : Exception("The library has the form $form, which is newer than ${Library.CURRENT_FORM}.")

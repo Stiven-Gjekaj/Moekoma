@@ -113,4 +113,35 @@ class LibraryTest {
         assertEquals("{not json", copy.readText())
         assertEquals("{not json", file.readText())
     }
+
+    /** A library of Asabunko 3.0 keeps its categories, history, marks, updates, and trackers through Moekoma. */
+    @Test fun keepsTheFieldsOfAsabunkoThree() {
+        val text = """
+            {"form":1,"defaultMode":"rightToLeft","books":[{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","title":"Tea","format":"series","fileName":"Tea",
+              "pageCount":3,"added":"2026-10-24T01:00:00Z","page":1,"finished":false,"listed":true,"autoDownload":true,
+              "categories":["11111111-2222-3333-4444-555555555555"],"tracking":[{"kind":"anilist","id":7,"title":"Tea","sent":2}]}],
+             "sources":[],"installed":[],
+             "categories":[{"id":"11111111-2222-3333-4444-555555555555","name":"Reading"}],
+             "history":[{"id":"21111111-2222-3333-4444-555555555555","book":"6F9619FF-8B86-D011-B42D-00C04FC964FF","place":1,"date":"2026-10-24T02:00:00Z"}],
+             "marks":[{"id":"31111111-2222-3333-4444-555555555555","book":"6F9619FF-8B86-D011-B42D-00C04FC964FF","chapter":0,"position":0.5,"text":"Steam","kind":"highlight","created":"2026-10-24T03:00:00Z"}],
+             "updates":[{"id":"41111111-2222-3333-4444-555555555555","book":"6F9619FF-8B86-D011-B42D-00C04FC964FF","chapter":2,"title":"Ch. 3","found":"2026-10-24T04:00:00Z"}]}
+        """.trimIndent()
+        val file = kotlin.io.path.createTempFile("library", ".json").toFile()
+        file.writeText(text)
+        val library = LibraryStore.load(file)
+        LibraryStore.save(library, file)
+        // Each value of the file of Asabunko is in the file that Moekoma writes. Moekoma can add its defaults.
+        fun keeps(expected: kotlinx.serialization.json.JsonElement, actual: kotlinx.serialization.json.JsonElement?, path: String) {
+            when (expected) {
+                is kotlinx.serialization.json.JsonObject -> expected.forEach { (key, value) -> keeps(value, (actual as? kotlinx.serialization.json.JsonObject)?.get(key), "$path.$key") }
+                is kotlinx.serialization.json.JsonArray -> expected.forEachIndexed { index, value -> keeps(value, (actual as? kotlinx.serialization.json.JsonArray)?.getOrNull(index), "$path[$index]") }
+                else -> assertEquals(path, expected, actual)
+            }
+        }
+        keeps(LibraryStore.json.parseToJsonElement(text), LibraryStore.json.parseToJsonElement(file.readText()), "library")
+        assertEquals(listOf("Reading"), library.categories.map { it.name })
+        assertEquals(BookMark.Kind.Highlight, library.marks.single().kind)
+        assertEquals(TrackerKind.AniList, library.books.single().tracking.single().kind)
+        file.delete()
+    }
 }
