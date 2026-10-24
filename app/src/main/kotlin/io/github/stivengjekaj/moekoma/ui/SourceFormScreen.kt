@@ -6,7 +6,6 @@ import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,10 +21,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Remove
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -60,6 +59,7 @@ import io.github.stivengjekaj.moekoma.core.FormInput
 import io.github.stivengjekaj.moekoma.core.InstalledSource
 import io.github.stivengjekaj.moekoma.core.SourceForm
 import io.github.stivengjekaj.moekoma.data.BrowserChecks
+import io.github.stivengjekaj.moekoma.data.SafeWebViewClient
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import kotlinx.coroutines.launch
@@ -351,7 +351,7 @@ private fun SignInPage(login: SourceForm.Login, onClose: () -> Unit, done: (Form
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         settings.userAgentString = BrowserChecks.userAgent(context)
-                        webViewClient = object : WebViewClient() {
+                        webViewClient = object : SafeWebViewClient() {
                             override fun shouldOverrideUrlLoading(page: WebView, request: WebResourceRequest): Boolean {
                                 val target = request.url.toString()
                                 if (login.method == "oauth" && target.startsWith("$scheme:")) {

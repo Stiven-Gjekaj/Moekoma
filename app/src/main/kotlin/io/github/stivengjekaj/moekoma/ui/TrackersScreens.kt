@@ -3,7 +3,6 @@ package io.github.stivengjekaj.moekoma.ui
 import android.annotation.SuppressLint
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +42,7 @@ import io.github.stivengjekaj.moekoma.core.TrackerHit
 import io.github.stivengjekaj.moekoma.core.TrackerKind
 import io.github.stivengjekaj.moekoma.core.label
 import io.github.stivengjekaj.moekoma.core.redirect
+import io.github.stivengjekaj.moekoma.data.SafeWebViewClient
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import java.util.UUID
@@ -111,7 +111,7 @@ private fun TrackerSignIn(url: String, scheme: String, onClose: () -> Unit, done
                     WebView(context).apply {
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
-                        webViewClient = object : WebViewClient() {
+                        webViewClient = object : SafeWebViewClient() {
                             override fun shouldOverrideUrlLoading(page: WebView, request: WebResourceRequest): Boolean {
                                 val target = request.url.toString()
                                 if (target.startsWith("$scheme:")) {

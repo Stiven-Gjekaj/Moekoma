@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.webkit.CookieManager
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import io.github.stivengjekaj.moekoma.data.BrowserChecks
+import io.github.stivengjekaj.moekoma.data.SafeWebViewClient
 import io.github.stivengjekaj.moekoma.ui.theme.Corner
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 
@@ -106,7 +106,7 @@ fun BrowserCheckScreen(url: String, onClose: (Boolean) -> Unit) {
                     settings.domStorageEnabled = true
                     settings.userAgentString = BrowserChecks.userAgent(context)
                     CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                    webViewClient = object : WebViewClient() {
+                    webViewClient = object : SafeWebViewClient() {
                         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                             if (passed()) finish(true)
                         }

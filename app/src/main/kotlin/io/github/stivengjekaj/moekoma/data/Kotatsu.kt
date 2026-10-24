@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import dalvik.system.PathClassLoader
 import eu.kanade.tachiyomi.network.NetworkHelper
 import io.github.stivengjekaj.moekoma.core.InstalledSource
@@ -180,7 +179,7 @@ class KotatsuHost(private val context: Context, private val http: OkHttpClient) 
                         view.settings.javaScriptEnabled = true
                         view.settings.domStorageEnabled = true
                         view.settings.userAgentString = getDefaultUserAgent()
-                        view.webViewClient = object : WebViewClient() {
+                        view.webViewClient = object : SafeWebViewClient() {
                             private var ran = false
 
                             override fun onPageFinished(page: WebView, url: String) {

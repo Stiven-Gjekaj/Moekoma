@@ -17,7 +17,6 @@ import android.os.Looper
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import io.github.stivengjekaj.moekoma.core.AidokuBitmap
 import io.github.stivengjekaj.moekoma.core.AidokuCanvas
 import io.github.stivengjekaj.moekoma.core.AidokuColor
@@ -237,7 +236,7 @@ private class AndroidAidokuWebView(context: Context) : AidokuWebView {
                 settings.domStorageEnabled = true
                 settings.userAgentString = BrowserChecks.userAgent(context)
                 addJavascriptInterface(Bridge(), "__moekomaAidoku")
-                webViewClient = object : WebViewClient() {
+                webViewClient = object : SafeWebViewClient() {
                     override fun onPageFinished(page: WebView, url: String) {
                         lastUrl = url
                         loaded.countDown()
@@ -304,7 +303,7 @@ private class AndroidAidokuWebView(context: Context) : AidokuWebView {
         onMain {
             view.evaluateJavascript(script, null)
             val client = view.webViewClient
-            view.webViewClient = object : WebViewClient() {
+            view.webViewClient = object : SafeWebViewClient() {
                 override fun onPageFinished(page: WebView, url: String) {
                     page.evaluateJavascript(script, null)
                     client.onPageFinished(page, url)

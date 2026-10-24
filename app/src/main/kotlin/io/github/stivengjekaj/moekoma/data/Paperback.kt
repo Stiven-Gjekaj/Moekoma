@@ -5,7 +5,6 @@ import android.content.Context
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import io.github.stivengjekaj.moekoma.core.FormInput
 import io.github.stivengjekaj.moekoma.core.HttpRequest
 import io.github.stivengjekaj.moekoma.core.InstalledSource
@@ -97,7 +96,7 @@ class PaperbackWebView(private val context: Context) {
                 view.addJavascriptInterface(object {
                     @JavascriptInterface fun done(id: String, value: String?) { answers[id]?.complete(value) }
                 }, "__moekomaPaperback")
-                view.webViewClient = object : WebViewClient() {
+                view.webViewClient = object : SafeWebViewClient() {
                     override fun onPageFinished(page: WebView, url: String) { loaded.complete(Unit) }
                 }
                 view.loadDataWithBaseURL(base, input.getString("html"), "text/html", "utf-8", null)

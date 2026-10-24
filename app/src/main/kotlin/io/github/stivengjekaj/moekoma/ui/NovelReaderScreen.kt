@@ -1,14 +1,13 @@
 package io.github.stivengjekaj.moekoma.ui
 
-import android.view.HapticFeedbackConstants
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import android.view.HapticFeedbackConstants
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -34,19 +33,19 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.outlined.FormatSize
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.BorderColor
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FormatSize
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.StopCircle
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -64,40 +63,41 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import io.github.stivengjekaj.moekoma.R
 import io.github.stivengjekaj.moekoma.VolumeKeys
+import io.github.stivengjekaj.moekoma.core.BookMark
 import io.github.stivengjekaj.moekoma.core.Novel
 import io.github.stivengjekaj.moekoma.core.NovelSearch
-import io.github.stivengjekaj.moekoma.core.BookMark
 import io.github.stivengjekaj.moekoma.data.AppModel
+import io.github.stivengjekaj.moekoma.data.SafeWebViewClient
 import io.github.stivengjekaj.moekoma.data.Settings
 import io.github.stivengjekaj.moekoma.data.TextStyle
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import io.github.stivengjekaj.moekoma.ui.theme.Palette
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.launch
-import org.json.JSONObject
 import java.io.File
 import java.util.UUID
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 /** The host that serves the files of a book to the web view. It is not a real host. */
 private const val BOOK_HOST = "book.moekoma.invalid"
@@ -438,7 +438,7 @@ private fun ChapterView(
                         }
                     }
                 }, "MoekomaReader")
-                webViewClient = object : WebViewClient() {
+                webViewClient = object : SafeWebViewClient() {
                     // The font of the app is a plain TTF file in res/font, so it opens as a raw resource.
                     @SuppressLint("ResourceType")
                     override fun shouldInterceptRequest(web: WebView, request: WebResourceRequest): WebResourceResponse? {
