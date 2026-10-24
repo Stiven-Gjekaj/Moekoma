@@ -9,6 +9,7 @@ import io.github.stivengjekaj.moekoma.data.PdfPageFetcher
 import io.github.stivengjekaj.moekoma.data.PdfPageKeyer
 import eu.kanade.tachiyomi.network.AndroidCookieJar
 import io.github.stivengjekaj.moekoma.data.AppModel
+import io.github.stivengjekaj.moekoma.data.Downloads
 import io.github.stivengjekaj.moekoma.data.BrowserChecks
 import io.github.stivengjekaj.moekoma.data.DiscoverFeed
 import io.github.stivengjekaj.moekoma.data.Folders
@@ -66,6 +67,7 @@ class AppContainer(val app: Application, root: File = File(app.filesDir, "Moekom
     val folders = Folders(app, model, root, scope)
     val settings = Settings(app)
     val sources = Sources(app, model, settings, http, scope)
+    val downloads = Downloads(app, model, sources, root)
     val discover = DiscoverFeed(sources, { model.library.value.installed }, scope)
     val updates = UpdateChecker(http)
     val installer = UpdateInstaller(app, http, scope)
