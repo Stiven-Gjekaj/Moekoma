@@ -84,6 +84,8 @@ Moekoma has no sources in it. Your books stay on your device.
   the import of a Mihon backup
 - A check of all online books for new chapters, and the move of a book to
   another source
+- New chapters in the background: a notification for each book, the
+  Updates list, and the download of new chapters, on Wi-Fi only if you want
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 

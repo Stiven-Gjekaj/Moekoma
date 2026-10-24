@@ -7,6 +7,24 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 1.1.0 (2026-10-24)
+
+- New chapters come to you. Turn on "Check in the background" in Settings,
+  New chapters. The books of your read list check for new chapters about
+  every six hours, and a notification tells you about each book with new
+  chapters. A tap on the notification opens the book.
+- The Updates list in the Library shows the new chapters of each check, by
+  day. A tap reads the chapter. "Clear" empties the list.
+- "Download new chapters" in the downloads menu of a title downloads the
+  new chapters of the book after each check. "Download only on Wi-Fi" keeps
+  these downloads off a network that costs money.
+
+Fixes:
+
+- A check names the books that did not update.
+- A search of many sources does not stop the app. The app asks Android for
+  the large heap, as Mihon does.
+
 ## 1.0.0 (2026-10-24)
 
 - Back up the library in Settings, Backup. The backup is one JSON file with

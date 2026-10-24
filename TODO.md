@@ -11,10 +11,6 @@ Each release keeps the backup that Asabunko of the same functions reads.
 
 ## Releases from 1.0.0 to 2.0.0
 
-- 1.1.0 New chapters come to you, as Asabunko 2.4.0: the check of the read
-  list in the background with WorkManager, a notification for each book
-  with new chapters, the Updates list, "Download new chapters" for each
-  book, and "Download only on Wi-Fi".
 - 1.2.0 The tools of the library, as Asabunko 2.5.0: categories of the read
   list, the search and the filters of the library, the History, "Private
   reading", the Storage page, and the move of many books to another source.
@@ -34,7 +30,9 @@ Each release keeps the backup that Asabunko of the same functions reads.
     library and the source list off the main thread, the memory of the page
     cache and of the loaded sources, the start of the JavaScript and
     WebAssembly sources, and the size of the APK. Measure each change before
-    and after it.
+    and after it. A search of 87 sources (47 Aidoku, 40 Paperback) took the
+    Java heap to 357 MB on the emulator. Most of it is the parsed code of the
+    Aidoku sources in Chicory, about 945,000 instruction objects.
   - Fixes: a full pass over the readers, the sources, the downloads, the
     backup, and the settings, with a test for each fault that it finds.
   - Tidy-up: code that nothing calls goes, and the same code in two places
