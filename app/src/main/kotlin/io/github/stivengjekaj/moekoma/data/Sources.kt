@@ -1,6 +1,8 @@
 package io.github.stivengjekaj.moekoma.data
 
 import android.content.Context
+import io.github.stivengjekaj.moekoma.core.AidokuIndex
+import io.github.stivengjekaj.moekoma.core.AidokuSource
 import io.github.stivengjekaj.moekoma.core.Book
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.BookOrigin
@@ -57,6 +59,8 @@ class Sources(
     private val mihon by lazy { MihonHost(context, http) }
     private val kotatsu by lazy { KotatsuHost(context, http) }
     private val code = SourceCode(model.root)
+    private val context = context.applicationContext
+    private val aidokuPlatform by lazy { AndroidAidokuPlatform(this.context) }
 
     init {
         // The Kotatsu parsers use the network helper of the Mihon extensions, so Injekt is ready before each kind.
@@ -132,6 +136,7 @@ class Sources(
         }
         SourceKind.LnReader -> LnReaderIndex.parse(model.fetch(link.url, link))
         SourceKind.Suwayomi -> server(link).sources()
+        SourceKind.Aidoku -> AidokuIndex.parse(model.fetch(link.url, link), link.url)
         SourceKind.Kotatsu -> {
             val jar = kotatsu.jar(link.url) { url -> model.fetch(url, null) }
             // The list has no name, so it takes the name of the owner of the repository, such as "Gekkoushi".
@@ -191,7 +196,7 @@ class Sources(
                 mihon.install(info, key)
             }
             SourceKind.Kotatsu -> kotatsu.sources(io.github.stivengjekaj.moekoma.core.KotatsuPlugin.Jar(info.code, info.version))
-            SourceKind.LnReader -> code.install(InstalledSource(link.id, info), http)
+            SourceKind.LnReader, SourceKind.Aidoku -> code.install(InstalledSource(link.id, info), http)
             // The server runs the source, so the app keeps no code for it.
             SourceKind.Suwayomi -> {}
             else -> throw MihonException("Moekoma cannot install this kind of source yet.")
@@ -211,7 +216,7 @@ class Sources(
         val others = installed.filter { it.id != source.id }.map { it.info }
         when (kind(source)) {
             SourceKind.Kotatsu -> kotatsu.uninstall(source.info, others)
-            SourceKind.LnReader -> code.remove(source)
+            SourceKind.LnReader, SourceKind.Aidoku -> code.remove(source)
             SourceKind.Mihon, null -> mihon.uninstall(source.info, others)
             else -> {}
         }
@@ -246,6 +251,13 @@ class Sources(
             val file = code.file(source)
             if (!file.isFile) throw MihonException("The code of ${source.info.name} is not on this device. Save the source list again.")
             LnReaderSource(source, LnReaderPlugin.load(source.info, file.readText(), networkFetcher(), code.settings(source)), http)
+        }
+        SourceKind.Aidoku -> {
+            // The code file of an Aidoku source holds its .aix package.
+            val file = code.file(source)
+            if (!file.isFile) throw MihonException("The code of ${source.info.name} is not on this device. Save the source list again.")
+            val loaded = AidokuSource.load(source.info, file, code.settings(source), networkFetcher(), aidokuPlatform)
+            AidokuOnlineSource(source, loaded, http, File(context.cacheDir, "aidoku-pages/" + source.info.id.replace('/', '_')))
         }
         SourceKind.Suwayomi -> {
             val link = model.library.value.sources.firstOrNull { it.id == source.list } ?: throw MihonException("The server of ${source.info.name} is not in the source list.")

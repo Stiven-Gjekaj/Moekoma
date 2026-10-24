@@ -138,7 +138,7 @@ fun SourcesHomeScreen(container: AppContainer, open: (SettingsRoute) -> Unit, on
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = Gutter, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(22.dp)) {
             Section(
                 null,
-                footer = "Paste the URLs of your catalogs and source lists. Moekoma installs the English sources of each list, and Search and Discover ask them. Moekoma runs Mihon extensions, Kotatsu parsers, LNReader plugins, and the sources of a Suwayomi server, and reads OPDS catalogs now. Aidoku and Paperback come in the next versions.",
+                footer = "Paste the URLs of your catalogs and source lists. Moekoma installs the English sources of each list, and Search and Discover ask them. Moekoma runs Mihon extensions, Kotatsu parsers, LNReader plugins, Aidoku sources, and the sources of a Suwayomi server, and reads OPDS catalogs now. Paperback comes in the next version.",
             ) {
                 LinkRow(if (library.sources.isEmpty()) "Add sources" else "Edit the source list", bold = true, color = palette.accent) { open(SettingsRoute.EditSources) }
             }
@@ -164,7 +164,7 @@ fun SourcesHomeScreen(container: AppContainer, open: (SettingsRoute) -> Unit, on
                             open(
                                 when (link.kind) {
                                     SourceKind.Opds -> SettingsRoute.Feed(link, link.url, link.name ?: link.host ?: "Catalog")
-                                    SourceKind.Mihon, SourceKind.Kotatsu, SourceKind.LnReader, SourceKind.Suwayomi -> SettingsRoute.SourceList(link)
+                                    SourceKind.Mihon, SourceKind.Kotatsu, SourceKind.LnReader, SourceKind.Suwayomi, SourceKind.Aidoku -> SettingsRoute.SourceList(link)
                                     else -> SettingsRoute.Detect(link)
                                 },
                             )
