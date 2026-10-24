@@ -9,12 +9,6 @@ before you write it here, and port its design, its words, and its tests.
 Moekoma 2.0.0 has the functions of Asabunko 3.0.0 and the Android extras.
 Each release keeps the backup that Asabunko of the same functions reads.
 
-## Releases up to 1.0.0
-
-- 1.0.0 The backup of Asabunko in both directions, the import of a Mihon
-  backup, the check for new chapters, the move of a book to another source,
-  and the fixes, the speed, and the comforts of the review of Asabunko 2.0.0.
-
 ## Releases from 1.0.0 to 2.0.0
 
 - 1.1.0 New chapters come to you, as Asabunko 2.4.0: the check of the read

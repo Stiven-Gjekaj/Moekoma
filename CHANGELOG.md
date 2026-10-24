@@ -7,6 +7,34 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 1.0.0 (2026-10-24)
+
+- Back up the library in Settings, Backup. The backup is one JSON file with
+  the books and their places, the source list with no passwords, the
+  installed sources, and the chapters of each online book. Asabunko restores
+  it, and Moekoma restores a backup of Asabunko.
+- Restore a backup. Moekoma installs each source of the backup again and
+  names the sources that did not install. A book from a file comes back
+  only when its file is on the device.
+- Import a Mihon backup. Its series, the chapters that you read, its
+  categories, and its repositories come in. A series comes in when its
+  source installs.
+- Check all online books for new chapters with the button in the Library,
+  or pull the Library down. A pull with no new chapters says nothing.
+- Move a book to another source. When you open a title in another source,
+  "Move my book" moves your book there, and your place goes to the chapter
+  with the same number.
+
+Fixes:
+
+- Each quick tap at the edge turns one page. Before, two quick taps zoomed
+  the page, and a tap during a turn got lost.
+- The books of a line of the source list that you remove and add again find
+  their source.
+- A strip of a webtoon in the vertical reader fills the width of the screen
+  and stays sharp.
+- The licenses name QuickJS and Chicory.
+
 ## 0.15.0 (2026-10-24)
 
 - Download the chapters of an online series. The download button on the
