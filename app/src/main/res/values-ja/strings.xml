@@ -1,0 +1,5 @@
+<resources>
+    <string name="widget_name">続きを読む</string>
+    <string name="widget_description">今読んでいる本。</string>
+    <string name="widget_empty">Moekoma で本を開くと、ここに表示されます。</string>
+</resources>

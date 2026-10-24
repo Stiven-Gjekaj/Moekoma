@@ -21,6 +21,7 @@ import io.github.stivengjekaj.moekoma.MainActivity
 import io.github.stivengjekaj.moekoma.MoekomaApp
 import io.github.stivengjekaj.moekoma.R
 import io.github.stivengjekaj.moekoma.core.Book
+import io.github.stivengjekaj.moekoma.ui.Words
 import java.util.concurrent.TimeUnit
 
 /**
@@ -55,7 +56,7 @@ object ChapterChecks {
     fun notify(context: Context, found: List<Pair<Book, Int>>) {
         if (!mayNotify(context)) return
         val manager = context.getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(NotificationChannel(CHANNEL, "New chapters", NotificationManager.IMPORTANCE_DEFAULT))
+        if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(NotificationChannel(CHANNEL, Words.of(context, "New chapters"), NotificationManager.IMPORTANCE_DEFAULT))
         for ((book, added) in found) {
             if (added <= 0) continue
             val intent = Intent(context, MainActivity::class.java).putExtra(EXTRA_BOOK, book.id.toString()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -63,7 +64,7 @@ object ChapterChecks {
             val notification = NotificationCompat.Builder(context, CHANNEL)
                 .setSmallIcon(R.drawable.ic_chapters)
                 .setContentTitle(book.title)
-                .setContentText(if (added == 1) "1 new chapter" else "$added new chapters")
+                .setContentText(Words.of(context, if (added == 1) "1 new chapter" else "$added new chapters"))
                 .setContentIntent(open)
                 .setAutoCancel(true)
                 .build()

@@ -66,7 +66,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -168,7 +167,7 @@ fun Chips(labels: List<String>, selected: Int, onSelect: (Int) -> Unit, describe
                 label, style = MaterialTheme.typography.labelLarge, color = if (on) palette.onAccent else palette.textPrimary,
                 modifier = Modifier.clip(CircleShape).background(if (on) palette.accent else palette.surfaceHigh)
                     .clickable { onSelect(index) }.heightIn(min = 36.dp).padding(horizontal = 14.dp, vertical = 9.dp)
-                    .semantics { contentDescription = describe(label) + if (on) ", selected" else "" },
+                    .semantics { contentDescription = tr(describe(label) + if (on) ", selected" else "") },
             )
         }
     }
@@ -321,7 +320,7 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.heightIn(min = 36.dp).clickable(enabled = hits.size > 1) { sourceMenu = true }
-                                    .semantics { contentDescription = "Source, ${installed?.info?.name ?: ""}" },
+                                    .semantics { contentDescription = tr("Source, ${installed?.info?.name ?: ""}") },
                             ) {
                                 Text(installed?.info?.name ?: "Source", style = MaterialTheme.typography.labelLarge, color = palette.accent)
                                 if (hits.size > 1) {
@@ -366,7 +365,7 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
                         ) {
                             Icon(
                                 if (book?.listed == true) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                                contentDescription = if (book?.listed == true) "Remove from the read list" else "Add to the read list",
+                                contentDescription = tr(if (book?.listed == true) "Remove from the read list" else "Add to the read list"),
                                 tint = palette.accent,
                             )
                         }
@@ -490,7 +489,7 @@ private fun DownloadsMenu(
         body()
     }
     Box {
-        IconButton(onClick = { open = true }) { Icon(Icons.Outlined.Download, contentDescription = "Downloads", tint = palette.accent) }
+        IconButton(onClick = { open = true }) { Icon(Icons.Outlined.Download, contentDescription = tr("Downloads"), tint = palette.accent) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             DropdownMenuItem(text = { Text("Download all chapters") }, onClick = { start(onAll) })
             DropdownMenuItem(text = { Text("Download from this chapter") }, onClick = { start(onFromHere) })
@@ -498,7 +497,7 @@ private fun DownloadsMenu(
             if (autoDownload != null) {
                 DropdownMenuItem(
                     text = { Text("Download new chapters") },
-                    trailingIcon = { if (autoDownload) Icon(Icons.Outlined.Check, contentDescription = "On") },
+                    trailingIcon = { if (autoDownload) Icon(Icons.Outlined.Check, contentDescription = tr("On")) },
                     onClick = { if (autoDownload) { open = false; onAutoDownload(false) } else start { onAutoDownload(true) } },
                 )
             }
@@ -518,14 +517,14 @@ private fun DownloadMark(state: Downloads.State, book: UUID, chapter: Int, onDev
         state.queue.firstOrNull() == job -> {
             val progress = state.progress
             if (progress != null && progress.second > 0) {
-                CircularProgressIndicator({ progress.first.toFloat() / progress.second }, modifier.semantics { contentDescription = "Downloading" }, color = palette.accent, strokeWidth = 2.dp)
+                CircularProgressIndicator({ progress.first.toFloat() / progress.second }, modifier.semantics { contentDescription = tr("Downloading") }, color = palette.accent, strokeWidth = 2.dp)
             } else {
-                CircularProgressIndicator(modifier.semantics { contentDescription = "Downloading" }, color = palette.accent, strokeWidth = 2.dp)
+                CircularProgressIndicator(modifier.semantics { contentDescription = tr("Downloading") }, color = palette.accent, strokeWidth = 2.dp)
             }
         }
-        job in state.failed -> Icon(Icons.Outlined.ErrorOutline, contentDescription = "Download failed", tint = palette.danger, modifier = modifier)
-        job in state.queue -> Icon(Icons.Outlined.Schedule, contentDescription = "Waiting to download", tint = palette.textSecondary, modifier = modifier)
-        onDevice -> Icon(Icons.Filled.CheckCircle, contentDescription = "Downloaded", tint = palette.accent, modifier = modifier)
+        job in state.failed -> Icon(Icons.Outlined.ErrorOutline, contentDescription = tr("Download failed"), tint = palette.danger, modifier = modifier)
+        job in state.queue -> Icon(Icons.Outlined.Schedule, contentDescription = tr("Waiting to download"), tint = palette.textSecondary, modifier = modifier)
+        onDevice -> Icon(Icons.Filled.CheckCircle, contentDescription = tr("Downloaded"), tint = palette.accent, modifier = modifier)
     }
 }
 
@@ -564,7 +563,7 @@ private fun ChapterRow(
                 if (facts.isNotEmpty()) Text(facts, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
             }
             mark()
-            if (current) Icon(Icons.Filled.Bookmark, contentDescription = "You read here", tint = palette.accent)
+            if (current) Icon(Icons.Filled.Bookmark, contentDescription = tr("You read here"), tint = palette.accent)
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             DropdownMenuItem(text = { Text("Mark as read up to here") }, onClick = { menu = false; onMarkRead() })
@@ -585,7 +584,7 @@ private fun VolumeCard(
                 Text(volume.name, style = MaterialTheme.typography.titleSmall)
                 Text(if (volume.chapters.size == 1) "1 chapter" else "${volume.chapters.size} chapters", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
             }
-            TextButton(onClick = onReadVolume, modifier = Modifier.semantics { contentDescription = "Read ${volume.name}" }) { Text("Read", color = palette.accent) }
+            TextButton(onClick = onReadVolume, modifier = Modifier.semantics { contentDescription = tr("Read ${volume.name}") }) { Text("Read", color = palette.accent) }
         }
         if (open) {
             (if (newestFirst) volume.chapters.reversed() else volume.chapters).forEach { index ->
@@ -660,9 +659,9 @@ fun OnlineSourceScreen(
 
     SubScreen(installed.info.name, onBack, actions = {
         if (filters.isNotEmpty()) IconButton(onClick = { showFilters = true }) {
-            Icon(if (applied.isEmpty()) Icons.Outlined.FilterList else Icons.Filled.FilterList, contentDescription = "Filters, " + if (applied.isEmpty()) "off" else "on", tint = palette.accent)
+            Icon(if (applied.isEmpty()) Icons.Outlined.FilterList else Icons.Filled.FilterList, contentDescription = tr("Filters, " + if (applied.isEmpty()) "off" else "on"), tint = palette.accent)
         }
-        if (hasSettings) IconButton(onClick = openSettings) { Icon(Icons.Outlined.Settings, contentDescription = "Source settings") }
+        if (hasSettings) IconButton(onClick = openSettings) { Icon(Icons.Outlined.Settings, contentDescription = tr("Source settings")) }
     }) {
         if (showFilters) {
             ModalBottomSheet(onDismissRequest = { showFilters = false }, containerColor = palette.surface) {

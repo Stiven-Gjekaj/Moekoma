@@ -24,7 +24,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -135,7 +134,7 @@ fun SeriesReaderScreen(container: AppContainer, bookId: UUID, onClose: () -> Uni
                     ) {
                         if (chapter > 0) PillButton("Previous chapter", { go(chapter - 1) })
                         FilledIconButton(onClick = { showChapters = true }, colors = IconButtonDefaults.filledIconButtonColors(containerColor = palette.accent, contentColor = palette.onAccent)) {
-                            Icon(Icons.AutoMirrored.Outlined.List, contentDescription = "Chapters")
+                            Icon(Icons.AutoMirrored.Outlined.List, contentDescription = tr("Chapters"))
                         }
                         if (chapter + 1 < count) PillButton("Next chapter", { go(chapter + 1) })
                     }
@@ -175,7 +174,7 @@ private fun ChapterList(titles: List<String?>, current: Int, onPick: (Int) -> Un
                             title ?: "Chapter ${index + 1}", style = MaterialTheme.typography.bodyLarge,
                             fontWeight = if (index == current) FontWeight.Bold else null, modifier = Modifier.weight(1f),
                         )
-                        if (index == current) Icon(Icons.Filled.Bookmark, contentDescription = "You read here", tint = palette.accent)
+                        if (index == current) Icon(Icons.Filled.Bookmark, contentDescription = tr("You read here"), tint = palette.accent)
                     }
                 }
             }

@@ -16,7 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -101,7 +100,7 @@ private fun UpdateRow(update: ChapterUpdate, book: Book, model: AppModel, downlo
             Text(book.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(update.title ?: "Chapter ${update.chapter + 1}", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (downloaded) Icon(Icons.Filled.CheckCircle, contentDescription = "Downloaded", tint = palette.accent)
+        if (downloaded) Icon(Icons.Filled.CheckCircle, contentDescription = tr("Downloaded"), tint = palette.accent)
     }
 }
 

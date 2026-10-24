@@ -31,7 +31,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -165,17 +164,17 @@ fun SearchScreen(container: AppContainer, model: SearchModel, openTitle: (TitleR
                     value = model.text, onValueChange = { model.text = it }, singleLine = true,
                     placeholder = { Text("Search titles") }, leadingIcon = { Icon(Icons.Outlined.Search, null) },
                     trailingIcon = {
-                        if (model.text.isNotEmpty()) IconButton(onClick = { model.clear() }) { Icon(Icons.Outlined.Cancel, contentDescription = "Clear the search") }
+                        if (model.text.isNotEmpty()) IconButton(onClick = { model.clear() }) { Icon(Icons.Outlined.Cancel, contentDescription = tr("Clear the search")) }
                     },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search, autoCorrectEnabled = false),
                     keyboardActions = KeyboardActions(onSearch = { run() }),
                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = palette.accent, unfocusedBorderColor = palette.outline, cursorColor = palette.accent),
-                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search titles" },
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = tr("Search titles") },
                 )
                 if (model.searching) {
                     LinearProgressIndicator(
                         progress = { model.answered.toFloat() / maxOf(model.asked, 1) }, color = palette.accent, trackColor = palette.surfaceHigh,
-                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Searching ${model.asked} sources" },
+                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = tr("Searching ${model.asked} sources") },
                     )
                 }
             }
@@ -205,7 +204,7 @@ fun SearchScreen(container: AppContainer, model: SearchModel, openTitle: (TitleR
                                 "Clear", style = MaterialTheme.typography.labelLarge, color = palette.textSecondary,
                                 modifier = Modifier.clip(CircleShape).clickable { RecentSearches.clear(container.app); recent = emptyList() }
                                     .heightIn(min = 36.dp).padding(horizontal = 12.dp, vertical = 8.dp)
-                                    .semantics { contentDescription = "Clear the recent searches" },
+                                    .semantics { contentDescription = tr("Clear the recent searches") },
                             )
                         }
                     }

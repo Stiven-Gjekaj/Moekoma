@@ -43,7 +43,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -129,7 +128,7 @@ fun SubScreen(title: String, onBack: () -> Unit, actions: @Composable () -> Unit
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().background(palette.background).statusBarsPadding()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back") }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = tr("Back")) }
             Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).semantics { heading() })
             actions()
         }
@@ -248,7 +247,7 @@ fun EditSourcesScreen(container: AppContainer, onBack: () -> Unit) {
                 textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = palette.textPrimary),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = palette.accent, unfocusedBorderColor = palette.outline, cursorColor = palette.accent),
-                modifier = Modifier.fillMaxWidth().height(220.dp).semantics { contentDescription = "Source list" },
+                modifier = Modifier.fillMaxWidth().height(220.dp).semantics { contentDescription = tr("Source list") },
             )
             Text(
                 "Save keeps the list. The new list replaces the old list. To remove a list and its sources, remove its line. " +

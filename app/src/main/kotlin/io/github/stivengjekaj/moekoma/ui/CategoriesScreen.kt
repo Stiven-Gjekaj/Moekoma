@@ -18,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -77,9 +76,9 @@ fun CategoriesScreen(model: AppModel, onBack: () -> Unit) {
                                 value = item.name, singleLine = true, modifier = Modifier.weight(1f).padding(vertical = 6.dp),
                                 onValueChange = { new -> model.change { lib -> lib.copy(categories = lib.categories.map { if (it.id == item.id) it.copy(name = new) else it }) } },
                             )
-                            IconButton(onClick = { move(index, -1) }, enabled = index > 0) { Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Move ${item.name} up") }
-                            IconButton(onClick = { move(index, 1) }, enabled = index < library.categories.size - 1) { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Move ${item.name} down") }
-                            IconButton(onClick = { model.change { it.removeCategory(item.id) } }) { Icon(Icons.Outlined.Delete, contentDescription = "Remove ${item.name}", tint = palette.danger) }
+                            IconButton(onClick = { move(index, -1) }, enabled = index > 0) { Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = tr("Move ${item.name} up")) }
+                            IconButton(onClick = { move(index, 1) }, enabled = index < library.categories.size - 1) { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = tr("Move ${item.name} down")) }
+                            IconButton(onClick = { model.change { it.removeCategory(item.id) } }) { Icon(Icons.Outlined.Delete, contentDescription = tr("Remove ${item.name}"), tint = palette.danger) }
                         }
                     }
                 }

@@ -32,7 +32,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -172,7 +171,7 @@ private fun FormRow(row: SourceForm.Row, enabled: Boolean, act: (FormInput) -> U
             }.padding(horizontal = 16.dp),
         ) {
             Text(row.title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = "Opens in the browser", tint = palette.textSecondary)
+            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = tr("Opens in the browser"), tint = palette.textSecondary)
         }
         SourceForm.Row.Kind.Login -> SignInRow(row, enabled, act)
         SourceForm.Row.Kind.Unsupported -> Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
@@ -201,8 +200,8 @@ private fun LabelRow(row: SourceForm.Row, onClick: (() -> Unit)?) {
             Text(it, style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary, maxLines = 2, modifier = Modifier.padding(start = 12.dp))
         }
         when (row.mark) {
-            "included" -> Icon(Icons.Outlined.Check, contentDescription = "Selected", tint = palette.accent, modifier = Modifier.padding(start = 8.dp))
-            "excluded" -> Icon(Icons.Outlined.Close, contentDescription = "Excluded", tint = palette.danger, modifier = Modifier.padding(start = 8.dp))
+            "included" -> Icon(Icons.Outlined.Check, contentDescription = tr("Selected"), tint = palette.accent, modifier = Modifier.padding(start = 8.dp))
+            "excluded" -> Icon(Icons.Outlined.Close, contentDescription = tr("Excluded"), tint = palette.danger, modifier = Modifier.padding(start = 8.dp))
         }
     }
 }
@@ -239,11 +238,11 @@ private fun StepperRow(row: SourceForm.Row, enabled: Boolean, change: (Double) -
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(start = 16.dp, end = 4.dp)) {
         Text(row.title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         IconButton(onClick = { change(value - step) }, enabled = enabled && value - step >= (row.minimum ?: Double.NEGATIVE_INFINITY)) {
-            Icon(Icons.Outlined.Remove, contentDescription = "Less")
+            Icon(Icons.Outlined.Remove, contentDescription = tr("Less"))
         }
         Text(text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.semantics { contentDescription = "${row.title}, $text" })
         IconButton(onClick = { change(value + step) }, enabled = enabled && value + step <= (row.maximum ?: Double.POSITIVE_INFINITY)) {
-            Icon(Icons.Outlined.Add, contentDescription = "More")
+            Icon(Icons.Outlined.Add, contentDescription = tr("More"))
         }
     }
 }

@@ -17,7 +17,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -120,6 +119,6 @@ private fun HistoryRow(entry: HistoryEntry, book: Book, chapter: String?, zone: 
             if (chapter != null) Text(chapter, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Text(entry.date.atZone(zone).toLocalTime().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
-        IconButton(onClick = onRemove) { Icon(Icons.Outlined.Close, contentDescription = "Remove from the history", tint = palette.textSecondary) }
+        IconButton(onClick = onRemove) { Icon(Icons.Outlined.Close, contentDescription = tr("Remove from the history"), tint = palette.textSecondary) }
     }
 }

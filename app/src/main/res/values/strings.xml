@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Moekoma</string>
+    <string name="app_name" translatable="false">Moekoma</string>
     <string name="widget_name">Continue reading</string>
     <string name="widget_description">The books that you read now.</string>
     <string name="widget_empty">Open a book in Moekoma to see it here.</string>

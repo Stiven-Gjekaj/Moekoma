@@ -12,6 +12,7 @@ import android.widget.RemoteViews
 import io.github.stivengjekaj.moekoma.core.Book
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.data.ChapterChecks
+import io.github.stivengjekaj.moekoma.ui.Words
 import java.io.File
 
 /** The widget of the books that the user reads now, with their covers, as in Asabunko. A tap on a book opens it in the app. */
@@ -42,8 +43,9 @@ class ContinueReadingWidget : AppWidgetProvider() {
                 views.setViewVisibility(cell, if (book == null) View.INVISIBLE else View.VISIBLE)
                 if (book == null) return@forEachIndexed
                 views.setTextViewText(title, book.title)
-                views.setTextViewText(place, placeText(book))
-                views.setContentDescription(cell, "${book.title}, ${placeText(book)}")
+                val where = Words.of(context, placeText(book))
+                views.setTextViewText(place, where)
+                views.setContentDescription(cell, "${book.title}, $where")
                 val bitmap = thumbnail(container.model.cover(book))
                 if (bitmap != null) views.setImageViewBitmap(cover, bitmap) else views.setImageViewResource(cover, R.drawable.widget_background)
                 val open = Intent(context, MainActivity::class.java).putExtra(ChapterChecks.EXTRA_BOOK, book.id.toString())

@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.animation.core.animateFloat
@@ -77,7 +76,7 @@ fun ProgressLine(value: Double, modifier: Modifier = Modifier) {
             .background(if (palette.isEInk) Color.White else palette.outline)
             .then(if (palette.isEInk) Modifier.border(1.dp, Color.Black, RoundedCornerShape(2.dp)) else Modifier)
             .semantics {
-                contentDescription = "Progress"
+                contentDescription = tr("Progress")
                 progressBarRangeInfo = ProgressBarRangeInfo(part, 0f..1f)
             },
     ) {

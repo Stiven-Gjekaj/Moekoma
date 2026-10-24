@@ -23,7 +23,6 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,7 +62,7 @@ fun BrowserCheckBanner(url: String, onOpen: () -> Unit, modifier: Modifier = Mod
             Text("Open the page and pass the check once.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
         }
         PillButton("Open", onOpen)
-        IconButton(onClick = BrowserChecks::dismiss) { Icon(Icons.Outlined.Close, contentDescription = "Close the check") }
+        IconButton(onClick = BrowserChecks::dismiss) { Icon(Icons.Outlined.Close, contentDescription = tr("Close the check")) }
     }
 }
 

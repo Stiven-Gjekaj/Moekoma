@@ -55,7 +55,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -329,7 +328,7 @@ fun NovelReaderScreen(
                                     go(mark.chapter, mark.position)
                                 }
                             }.padding(vertical = 8.dp).semantics(mergeDescendants = true) {
-                                contentDescription = (if (mark.kind == BookMark.Kind.Highlight) "Highlight: " else "Bookmark: ") + mark.text
+                                contentDescription = tr((if (mark.kind == BookMark.Kind.Highlight) "Highlight: " else "Bookmark: ") + mark.text)
                             },
                         ) {
                             Icon(if (mark.kind == BookMark.Kind.Highlight) Icons.Outlined.BorderColor else Icons.Filled.Bookmark, contentDescription = null, tint = palette.accent)
@@ -340,7 +339,7 @@ fun NovelReaderScreen(
                             IconButton(onClick = {
                                 model.change { it.copy(marks = it.marks.filterNot { m -> m.id == mark.id }) }
                                 showSavedMarks()
-                            }) { Icon(Icons.Outlined.Close, contentDescription = "Remove the mark", tint = palette.textSecondary) }
+                            }) { Icon(Icons.Outlined.Close, contentDescription = tr("Remove the mark"), tint = palette.textSecondary) }
                         }
                     }
                 }
@@ -552,7 +551,7 @@ private fun NovelChrome(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().background(barColor).statusBarsPadding().padding(horizontal = 4.dp, vertical = 2.dp),
         ) {
-            IconButton(onClick = onClose) { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Close") }
+            IconButton(onClick = onClose) { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = tr("Close")) }
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(chapterTitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -561,12 +560,12 @@ private fun NovelChrome(
                 onClick = onSpeech,
                 modifier = Modifier.semantics { if (speaking) stateDescription = "Sentence ${sentence + 1} of $sentences" },
             ) {
-                Icon(if (speaking) Icons.Outlined.StopCircle else Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = if (speaking) "Stop reading aloud" else "Read aloud")
+                Icon(if (speaking) Icons.Outlined.StopCircle else Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = tr(if (speaking) "Stop reading aloud" else "Read aloud"))
             }
-            IconButton(onClick = onSearch) { Icon(Icons.Outlined.Search, contentDescription = "Search the book") }
-            IconButton(onClick = onMarks) { Icon(Icons.Outlined.BookmarkBorder, contentDescription = "Marks") }
-            IconButton(onClick = onChapters) { Icon(Icons.AutoMirrored.Outlined.FormatListBulleted, contentDescription = "Chapters") }
-            IconButton(onClick = onStyle) { Icon(Icons.Outlined.FormatSize, contentDescription = "Text settings") }
+            IconButton(onClick = onSearch) { Icon(Icons.Outlined.Search, contentDescription = tr("Search the book")) }
+            IconButton(onClick = onMarks) { Icon(Icons.Outlined.BookmarkBorder, contentDescription = tr("Marks")) }
+            IconButton(onClick = onChapters) { Icon(Icons.AutoMirrored.Outlined.FormatListBulleted, contentDescription = tr("Chapters")) }
+            IconButton(onClick = onStyle) { Icon(Icons.Outlined.FormatSize, contentDescription = tr("Text settings")) }
         }
         Box(Modifier.weight(1f))
         Row(
@@ -574,12 +573,12 @@ private fun NovelChrome(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth().background(barColor).navigationBarsPadding().padding(horizontal = Gutter, vertical = 6.dp),
         ) {
-            IconButton(onClick = onPrevious, enabled = chapter > 0) { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, contentDescription = "Previous chapter") }
+            IconButton(onClick = onPrevious, enabled = chapter > 0) { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, contentDescription = tr("Previous chapter")) }
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 ProgressLine(progress)
                 Text("Chapter ${chapter + 1} of $count", style = MaterialTheme.typography.labelMedium, color = palette.textSecondary)
             }
-            IconButton(onClick = onNext, enabled = chapter + 1 < count) { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = "Next chapter") }
+            IconButton(onClick = onNext, enabled = chapter + 1 < count) { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = tr("Next chapter")) }
         }
     }
 }
@@ -612,7 +611,7 @@ private fun ChapterList(chapters: List<Novel.Chapter>, current: Int, onChoose: (
                         item.title ?: "Chapter ${index + 1}", style = MaterialTheme.typography.bodyLarge,
                         fontWeight = if (index == current) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.weight(1f),
                     )
-                    if (index == current) Icon(Icons.Filled.Bookmark, contentDescription = "Now", tint = palette.accent)
+                    if (index == current) Icon(Icons.Filled.Bookmark, contentDescription = tr("Now"), tint = palette.accent)
                 }
             }
         }
@@ -654,8 +653,8 @@ private fun StyleSheet(style: TextStyle, onChange: (TextStyle) -> Unit) {
 private fun Stepper(label: String, value: String, onLess: () -> Unit, onMore: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        IconButton(onClick = onLess) { Icon(Icons.Outlined.Remove, contentDescription = "Less $label") }
+        IconButton(onClick = onLess) { Icon(Icons.Outlined.Remove, contentDescription = tr("Less $label")) }
         Text(value, style = MaterialTheme.typography.titleSmall)
-        IconButton(onClick = onMore) { Icon(Icons.Outlined.Add, contentDescription = "More $label") }
+        IconButton(onClick = onMore) { Icon(Icons.Outlined.Add, contentDescription = tr("More $label")) }
     }
 }

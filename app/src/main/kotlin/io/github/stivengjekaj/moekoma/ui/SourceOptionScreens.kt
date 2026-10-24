@@ -20,7 +20,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -144,7 +143,7 @@ private fun ChoiceChips(labels: List<String>, selected: Int, onSelect: (Int) -> 
                 label, style = MaterialTheme.typography.labelLarge, color = if (on) palette.onAccent else palette.textPrimary,
                 modifier = Modifier.clip(CircleShape).background(if (on) palette.accent else palette.surfaceHigh).clickable { onSelect(index) }
                     .heightIn(min = 36.dp).padding(horizontal = 12.dp, vertical = 8.dp)
-                    .semantics { contentDescription = label + if (on) ", selected" else "" },
+                    .semantics { contentDescription = tr(label + if (on) ", selected" else "") },
             )
         }
     }

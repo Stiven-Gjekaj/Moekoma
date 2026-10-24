@@ -26,7 +26,6 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +40,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import io.github.stivengjekaj.moekoma.AppContainer
@@ -65,6 +66,10 @@ private enum class Tab(val label: String, val icon: ImageVector) {
 @Composable
 fun MoekomaRoot(container: AppContainer) {
     val prefs by container.settings.preferences.collectAsState()
+    // The words of the screens follow the language of the app.
+    val language = LocalConfiguration.current.locales[0].language
+    val context = LocalContext.current
+    remember(language) { Words.use(context, language) }
     MoekomaTheme(prefs.appearance) {
         var tab by rememberSaveable { mutableStateOf(Tab.Library) }
         var reading by rememberSaveable { mutableStateOf<String?>(null) }

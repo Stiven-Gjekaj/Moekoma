@@ -51,7 +51,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -446,7 +445,7 @@ private fun ZoomablePage(file: Any, index: Int, fit: PageFit, crop: Boolean, onT
                 }
             }
             .semantics {
-                contentDescription = "Page ${index + 1}"
+                contentDescription = tr("Page ${index + 1}")
                 stateDescription = if (loaded) "Loaded" else "Loading"
             },
     ) {
@@ -541,7 +540,7 @@ private fun VerticalReader(
             var loaded by remember { mutableStateOf(false) }
             AsyncImage(
                 model = pageRequest(file, strip = true),
-                contentDescription = "Page ${index + 1}",
+                contentDescription = tr("Page ${index + 1}"),
                 contentScale = ContentScale.FillWidth,
                 onState = { loaded = it is AsyncImagePainter.State.Success },
                 // Before the image loads, a page has the shape of a paperback, so that the list does not load each page at once.
@@ -629,34 +628,34 @@ private fun Chrome(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.fillMaxWidth().background(barColor).statusBarsPadding().padding(horizontal = 4.dp, vertical = 4.dp),
         ) {
-            IconButton(onClick = onClose) { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Close") }
+            IconButton(onClick = onClose) { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = tr("Close")) }
             Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             // The fit and the taps of the paged reader.
             if (mode != ReadingMode.Vertical) Box {
-                IconButton(onClick = { layoutMenu = true }) { Icon(Icons.Outlined.ViewAgenda, contentDescription = "Page layout") }
+                IconButton(onClick = { layoutMenu = true }) { Icon(Icons.Outlined.ViewAgenda, contentDescription = tr("Page layout")) }
                 DropdownMenu(expanded = layoutMenu, onDismissRequest = { layoutMenu = false }) {
                     MenuLabel("Fit")
                     PageFit.entries.forEach { fit ->
                         DropdownMenuItem(
                             text = { Text(fit.label) },
-                            trailingIcon = { if (fit == layout.fit) Icon(Icons.Outlined.Check, contentDescription = "Chosen", Modifier.size(18.dp)) },
+                            trailingIcon = { if (fit == layout.fit) Icon(Icons.Outlined.Check, contentDescription = tr("Chosen"), Modifier.size(18.dp)) },
                             onClick = { layoutMenu = false; onLayout(layout.copy(fit = fit)) },
                         )
                     }
                     DropdownMenuItem(
                         text = { Text("Crop the borders") },
-                        trailingIcon = { if (layout.crop) Icon(Icons.Outlined.Check, contentDescription = "On", Modifier.size(18.dp)) },
+                        trailingIcon = { if (layout.crop) Icon(Icons.Outlined.Check, contentDescription = tr("On"), Modifier.size(18.dp)) },
                         onClick = { layoutMenu = false; onLayout(layout.copy(crop = !layout.crop)) },
                     )
                     DropdownMenuItem(
                         text = { Text("Two pages on a wide screen") },
-                        trailingIcon = { if (layout.spreads) Icon(Icons.Outlined.Check, contentDescription = "On", Modifier.size(18.dp)) },
+                        trailingIcon = { if (layout.spreads) Icon(Icons.Outlined.Check, contentDescription = tr("On"), Modifier.size(18.dp)) },
                         onClick = { layoutMenu = false; onLayout(layout.copy(spreads = !layout.spreads)) },
                     )
                     if (layout.spreads) {
                         DropdownMenuItem(
                             text = { Text("Move the pairs by one page") },
-                            trailingIcon = { if (layout.shift) Icon(Icons.Outlined.Check, contentDescription = "On", Modifier.size(18.dp)) },
+                            trailingIcon = { if (layout.shift) Icon(Icons.Outlined.Check, contentDescription = tr("On"), Modifier.size(18.dp)) },
                             onClick = { layoutMenu = false; onLayout(layout.copy(shift = !layout.shift)) },
                         )
                     }
@@ -665,20 +664,20 @@ private fun Chrome(
                     TapZones.entries.forEach { taps ->
                         DropdownMenuItem(
                             text = { Text(taps.label) },
-                            trailingIcon = { if (taps == layout.taps) Icon(Icons.Outlined.Check, contentDescription = "Chosen", Modifier.size(18.dp)) },
+                            trailingIcon = { if (taps == layout.taps) Icon(Icons.Outlined.Check, contentDescription = tr("Chosen"), Modifier.size(18.dp)) },
                             onClick = { layoutMenu = false; onLayout(layout.copy(taps = taps)) },
                         )
                     }
                 }
             }
             Box {
-                IconButton(onClick = { modes = true }) { Icon(mode.icon, contentDescription = "Reading mode, ${mode.label}") }
+                IconButton(onClick = { modes = true }) { Icon(mode.icon, contentDescription = tr("Reading mode, ${tr(mode.label)}")) }
                 DropdownMenu(expanded = modes, onDismissRequest = { modes = false }) {
                     ReadingMode.entries.forEach { option ->
                         DropdownMenuItem(
                             text = { Text(option.label) },
                             leadingIcon = { Icon(option.icon, null) },
-                            trailingIcon = { if (option == mode) Icon(Icons.Outlined.Check, contentDescription = "Chosen", Modifier.size(18.dp)) },
+                            trailingIcon = { if (option == mode) Icon(Icons.Outlined.Check, contentDescription = tr("Chosen"), Modifier.size(18.dp)) },
                             onClick = { modes = false; onMode(option) },
                         )
                     }
@@ -702,7 +701,7 @@ private fun Chrome(
                             thumbColor = palette.accent, activeTrackColor = palette.accent, inactiveTrackColor = palette.outline,
                             activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent,
                         ),
-                        modifier = Modifier.semantics { contentDescription = "Page" },
+                        modifier = Modifier.semantics { contentDescription = tr("Page") },
                     )
                 }
             }

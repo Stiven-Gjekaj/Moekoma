@@ -65,7 +65,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -190,16 +189,16 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                         Text("Your library", style = MaterialTheme.typography.displaySmall)
                     }
                     IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
-                        Icon(if (searching) Icons.Outlined.SearchOff else Icons.Outlined.Search, contentDescription = if (searching) "Close the search" else "Search the library")
+                        Icon(if (searching) Icons.Outlined.SearchOff else Icons.Outlined.Search, contentDescription = tr(if (searching) "Close the search" else "Search the library"))
                     }
                     if (hasOnline) {
                         IconButton(onClick = { check(quiet = false) }, enabled = !checking) {
                             if (checking && !pulled) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = palette.accent)
-                            else Icon(Icons.Outlined.Refresh, contentDescription = "Check for new chapters")
+                            else Icon(Icons.Outlined.Refresh, contentDescription = tr("Check for new chapters"))
                         }
                     }
                     Box {
-                        IconButton(onClick = { importMenu = true }) { Icon(Icons.Outlined.Add, contentDescription = "Import") }
+                        IconButton(onClick = { importMenu = true }) { Icon(Icons.Outlined.Add, contentDescription = tr("Import")) }
                         DropdownMenu(expanded = importMenu, onDismissRequest = { importMenu = false }) {
                             DropdownMenuItem(text = { Text("Import files") }, onClick = { importMenu = false; pickFiles.launch(importTypes) })
                             DropdownMenuItem(text = { Text("Import a folder of images") }, onClick = { importMenu = false; pickFolder.launch(null) })
@@ -289,13 +288,13 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                                     onClick = { filterMenu = true },
                                     modifier = Modifier.semantics { stateDescription = if (filters.isEmpty()) "Off" else filters.joinToString(", ") { it.label } },
                                 ) {
-                                    Icon(Icons.Outlined.FilterList, contentDescription = "Filter the read list", tint = if (filters.isEmpty()) palette.textSecondary else palette.accent)
+                                    Icon(Icons.Outlined.FilterList, contentDescription = tr("Filter the read list"), tint = if (filters.isEmpty()) palette.textSecondary else palette.accent)
                                 }
                                 DropdownMenu(expanded = filterMenu, onDismissRequest = { filterMenu = false }) {
                                     LibraryFilter.entries.forEach { filter ->
                                         DropdownMenuItem(
                                             text = { Text(filter.label) },
-                                            trailingIcon = { if (filter in filters) Icon(Icons.Outlined.Check, contentDescription = "On") },
+                                            trailingIcon = { if (filter in filters) Icon(Icons.Outlined.Check, contentDescription = tr("On")) },
                                             onClick = { filters = if (filter in filters) filters - filter else filters + filter },
                                         )
                                     }
@@ -304,7 +303,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                             Box {
                                 TextButton(
                                     onClick = { orderMenu = true },
-                                    modifier = Modifier.semantics { contentDescription = "Order of the read list, ${prefs.readListOrder.label}" },
+                                    modifier = Modifier.semantics { contentDescription = tr("Order of the read list, ${tr(prefs.readListOrder.label)}") },
                                 ) {
                                     Icon(Icons.Outlined.SwapVert, contentDescription = null, modifier = Modifier.size(18.dp), tint = palette.accent)
                                     Text(prefs.readListOrder.label, style = MaterialTheme.typography.labelLarge, color = palette.accent, modifier = Modifier.padding(start = 4.dp))
@@ -313,7 +312,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                                     ReadListOrder.entries.forEach { order ->
                                         DropdownMenuItem(
                                             text = { Text(order.label) },
-                                            trailingIcon = { if (order == prefs.readListOrder) Icon(Icons.Outlined.Check, contentDescription = "Chosen") },
+                                            trailingIcon = { if (order == prefs.readListOrder) Icon(Icons.Outlined.Check, contentDescription = tr("Chosen")) },
                                             onClick = { orderMenu = false; settings.update { it.copy(readListOrder = order) } },
                                         )
                                     }
@@ -536,7 +535,7 @@ private fun BookTile(book: Book, model: AppModel) {
             CoverView(model.cover(book), book.title, Modifier.fillMaxWidth())
             if (book.finished) {
                 Icon(
-                    Icons.Filled.CheckCircle, contentDescription = "Finished", tint = palette.accent,
+                    Icons.Filled.CheckCircle, contentDescription = tr("Finished"), tint = palette.accent,
                     modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(22.dp).clip(CircleShape).background(palette.onAccent),
                 )
             }
