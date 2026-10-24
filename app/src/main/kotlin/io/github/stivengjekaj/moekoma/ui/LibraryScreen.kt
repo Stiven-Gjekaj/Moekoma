@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.BookmarkAdd
@@ -111,7 +112,7 @@ private val importTypes = arrayOf("*/*")
 /** The shelf: the books that the user reads now, and the read list. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloads: Downloads, onRead: (Book) -> Unit) {
+fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloads: Downloads, onTrack: (Book) -> Unit = {}, onRead: (Book) -> Unit) {
     val library by model.library.collectAsState()
     val prefs by settings.preferences.collectAsState()
     var orderMenu by remember { mutableStateOf(false) }
@@ -265,7 +266,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                             SectionTitle("Continue reading")
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                                 items(continuing, key = { it.id }) { book ->
-                                    BookMenu(book, model, downloads, onRead, onDelete = { deleting = it }) { ContinueCard(book, model) }
+                                    BookMenu(book, model, downloads, onRead, onTrack, onDelete = { deleting = it }) { ContinueCard(book, model) }
                                 }
                             }
                         }
@@ -331,7 +332,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                         }
                     }
                     items(readList, key = { it.id }) { book ->
-                        BookMenu(book, model, downloads, onRead, onDelete = { deleting = it }) { BookTile(book, model) }
+                        BookMenu(book, model, downloads, onRead, onTrack, onDelete = { deleting = it }) { BookTile(book, model) }
                     }
                 }
             }
@@ -430,7 +431,7 @@ private fun SectionTitle(text: String) {
 /** A long press opens the menu of a book. A tap reads it. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookMenu(book: Book, model: AppModel, downloads: Downloads, onRead: (Book) -> Unit, onDelete: (Book) -> Unit, content: @Composable () -> Unit) {
+private fun BookMenu(book: Book, model: AppModel, downloads: Downloads, onRead: (Book) -> Unit, onTrack: (Book) -> Unit, onDelete: (Book) -> Unit, content: @Composable () -> Unit) {
     var open by remember { mutableStateOf(false) }
     var choosing by remember { mutableStateOf(false) }
     val library by model.library.collectAsState()
@@ -467,6 +468,7 @@ private fun BookMenu(book: Book, model: AppModel, downloads: Downloads, onRead: 
             if (book.listed && library.categories.isNotEmpty()) {
                 DropdownMenuItem(text = { Text("Categories") }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Label, null) }, onClick = { open = false; choosing = true })
             }
+            DropdownMenuItem(text = { Text("Track") }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.TrendingUp, null) }, onClick = { open = false; onTrack(book) })
             DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { open = false; onDelete(book) })
         }
     }

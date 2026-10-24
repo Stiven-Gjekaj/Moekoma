@@ -17,7 +17,9 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -26,20 +28,20 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import io.github.stivengjekaj.moekoma.AppContainer
 import io.github.stivengjekaj.moekoma.BuildConfig
@@ -59,6 +61,7 @@ private enum class Tab(val label: String, val icon: ImageVector) {
     Settings("Settings", Icons.Outlined.Settings),
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoekomaRoot(container: AppContainer) {
     val prefs by container.settings.preferences.collectAsState()
@@ -80,6 +83,8 @@ fun MoekomaRoot(container: AppContainer) {
         var searchStack by remember { mutableStateOf(listOf<TitleRoute>()) }
         var settingsStack by remember { mutableStateOf(listOf<SettingsRoute>()) }
         val read: (UUID) -> Unit = { reading = it.toString() }
+        // The book whose trackers the Track sheet shows.
+        var tracking by remember { mutableStateOf<UUID?>(null) }
         val openSources = { tab = Tab.Settings; settingsStack = listOf(SettingsRoute.Sources) }
 
         // The readers cover the tabs, so that each tab keeps its open screens.
@@ -102,7 +107,7 @@ fun MoekomaRoot(container: AppContainer) {
             BoxWithConstraints(Modifier.fillMaxSize().background(palette.background).then(hidden)) {
                 val content: @Composable () -> Unit = {
                     when (tab) {
-                        Tab.Library -> LibraryScreen(container.model, container.settings, container.sources, container.downloads) { reading = it.id.toString() }
+                        Tab.Library -> LibraryScreen(container.model, container.settings, container.sources, container.downloads, onTrack = { tracking = it.id }) { reading = it.id.toString() }
                         Tab.Discover -> TitleStack(container, discoverStack, { discoverStack = it }, read) {
                             DiscoverScreen(container, { discoverStack = discoverStack + it }, openSources)
                         }
@@ -158,6 +163,12 @@ fun MoekomaRoot(container: AppContainer) {
                     BookFormat.Series -> SeriesReaderScreen(container, book.id) { reading = null }
                     else -> ReaderScreen(container.model, book.id, prefs, { layout -> container.settings.update { it.copy(layout = layout) } }) { reading = null }
                 }
+            }
+        }
+
+        tracking?.let { id ->
+            ModalBottomSheet(onDismissRequest = { tracking = null }, containerColor = palette.surface) {
+                TrackSheet(container, id) { tracking = null }
             }
         }
 

@@ -24,6 +24,9 @@ behind Cloudflare. The page of the check sets the cookie of a passed check.
 Under /cfm/, the check also sends the header cf-mitigated. Under /cfi/, the
 check also needs a tap on a button.
 
+Under /trackers/, it acts as AniList and MyAnimeList. A sign-in goes back to
+the app at once, and /trackers/state shows the progress that they got.
+
 /control/offline makes the server refuse the pages, and /control/online
 gives them again. /control/reset sets the state of the server back.
 
@@ -36,6 +39,7 @@ import io
 import json
 import struct
 import sys
+import urllib.parse
 import zipfile
 import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -309,13 +313,53 @@ def suwayomi(query, variables=None):
     return None
 
 
+# The progress that the fake trackers got, for the test of the trackers.
+TRACKED = {}
+TRACKER_TITLES = [{"id": 101, "title": "Aidoku Sunrise", "chapters": 1}, {"id": 102, "title": "Sunrise at Sea", "chapters": 30}]
+
+
+def tracker_search(words):
+    return [t for t in TRACKER_TITLES if words.lower() in t["title"].lower()]
+
+
 # The number of downloads of the Aidoku package, for the test of the source list.
 DOWNLOADS = {"aix": 0}
 OFFLINE = {"on": False}
 
 
 class Handler(BaseHTTPRequestHandler):
+    def form(self):
+        return {k: v[0] for k, v in urllib.parse.parse_qs(self.rfile.read(int(self.headers.get("Content-Length", "0"))).decode()).items()}
+
+    # MyAnimeList takes the progress in a PATCH of the list status of the title.
+    def do_PATCH(self):
+        path = self.path.split("?")[0]
+        if path.startswith("/trackers/myanimelist/manga/") and path.endswith("/my_list_status"):
+            if self.headers.get("Authorization") != "Bearer mal-token":
+                return self.reply(b'{"error": "invalid_token"}', "application/json", 401)
+            values = self.form()
+            TRACKED["myanimelist"] = {"id": int(path.split("/")[4]), "progress": int(values.get("num_chapters_read", "0")), "status": values.get("status")}
+            return self.reply(json.dumps({"status": values.get("status")}).encode(), "application/json")
+        self.send_response(404)
+        self.end_headers()
+
     def do_POST(self):
+        path = self.path.split("?")[0]
+        # AniList has one GraphQL endpoint: a search of titles, and a change of the list with a token.
+        if path == "/trackers/anilist/graphql":
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
+            query, variables = body.get("query", ""), body.get("variables") or {}
+            if "SaveMediaListEntry" in query:
+                if self.headers.get("Authorization") != "Bearer ani-token":
+                    return self.reply(json.dumps({"errors": [{"message": "Invalid token"}]}).encode(), "application/json")
+                TRACKED["anilist"] = {"id": variables.get("id"), "progress": variables.get("progress"), "status": variables.get("status")}
+                return self.reply(json.dumps({"data": {"SaveMediaListEntry": {"id": 1, "progress": variables.get("progress")}}}).encode(), "application/json")
+            media = [{"id": t["id"], "chapters": t["chapters"], "title": {"userPreferred": t["title"]}} for t in tracker_search(variables.get("search", ""))]
+            return self.reply(json.dumps({"data": {"Page": {"media": media}}}).encode(), "application/json")
+        if path == "/trackers/myanimelist/token":
+            ok = self.form().get("code") == "mal-code"
+            body = {"access_token": "mal-token", "token_type": "Bearer"} if ok else {"error": "invalid_grant"}
+            return self.reply(json.dumps(body).encode(), "application/json", 200 if ok else 400)
         if self.path.split("?")[0] != "/suwayomi/api/graphql":
             self.send_response(404)
             self.end_headers()
@@ -368,7 +412,28 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/control/offline", "/control/online"):
             OFFLINE["on"] = path.endswith("offline")
             return self.reply(b"ok", "text/plain")
+        # The sign-in pages of the fake trackers send the browser back to the app at once.
+        if path == "/trackers/anilist/authorize":
+            self.send_response(302)
+            self.send_header("Location", "moekoma://anilist#access_token=ani-token&token_type=Bearer&expires_in=31536000")
+            self.end_headers()
+            return
+        if path == "/trackers/myanimelist/authorize":
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            self.send_response(302)
+            self.send_header("Location", query["redirect_uri"][0] + "?" + urllib.parse.urlencode({"code": "mal-code", "state": query.get("state", [""])[0]}))
+            self.end_headers()
+            return
+        if path == "/trackers/myanimelist/manga":
+            if self.headers.get("Authorization") != "Bearer mal-token":
+                return self.reply(b'{"error": "invalid_token"}', "application/json", 401)
+            words = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("q", [""])[0]
+            data = [{"node": {"id": t["id"], "title": t["title"], "num_chapters": t["chapters"]}} for t in tracker_search(words)]
+            return self.reply(json.dumps({"data": data}).encode(), "application/json")
+        if path == "/trackers/state":
+            return self.reply(json.dumps(TRACKED).encode(), "application/json")
         if path == "/control/reset":
+            TRACKED.clear()
             OFFLINE["on"] = False
             SUWAYOMI["stars"] = False
             return self.reply(b"ok", "text/plain")
@@ -442,8 +507,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-    def reply(self, body, kind):
-        self.send_response(200)
+    def reply(self, body, kind, status=200):
+        self.send_response(status)
         self.send_header("Content-Type", kind)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()

@@ -5,6 +5,8 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import io.github.stivengjekaj.moekoma.data.networkFetcher
+import io.github.stivengjekaj.moekoma.data.Trackers
 import io.github.stivengjekaj.moekoma.data.ChapterChecks
 import io.github.stivengjekaj.moekoma.data.PdfPageFetcher
 import io.github.stivengjekaj.moekoma.data.PdfPageKeyer
@@ -75,6 +77,7 @@ class AppContainer(val app: Application, root: File = File(app.filesDir, "Moekom
             if (book.autoDownload && ChapterChecks.mayDownloadNow(app, settings.preferences.value.wifiOnly)) downloads.downloadChapters(book, first)
         }
     }
+    val trackers = Trackers(app, model, model.secrets, networkFetcher(http), scope).also { trackers -> model.onPlaceChange = trackers::sendProgress }
     val discover = DiscoverFeed(sources, { model.library.value.installed }, scope)
     val updates = UpdateChecker(http)
     val installer = UpdateInstaller(app, http, scope)

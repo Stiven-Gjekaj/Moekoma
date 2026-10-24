@@ -52,7 +52,7 @@ class AppModel(
     private val scope: CoroutineScope,
     val root: File = File(context.filesDir, "Moekoma"),
     private val http: OkHttpClient = OkHttpClient(),
-    private val secrets: Secrets = Secrets(context),
+    val secrets: Secrets = Secrets(context),
 ) {
     private val libraryFile = File(root, "library.json")
     private val booksFolder = File(root, "Books")
@@ -138,7 +138,18 @@ class AppModel(
     /** True while the private reading is on: a read does not go into the history or into Continue reading. */
     var privateReading: () -> Boolean = { false }
 
-    fun update(id: UUID, edit: (Book) -> Book) = change { library ->
+    /** Gets a book whose place changed, such as for the progress of its trackers. */
+    var onPlaceChange: (UUID) -> Unit = {}
+
+    fun update(id: UUID, edit: (Book) -> Book) {
+        val place = library.value.book(id)?.let { it.page to it.finished }
+        updateBook(id, edit)
+        val now = library.value.book(id)?.let { it.page to it.finished }
+        // A new place goes to the trackers of the book, except in private reading.
+        if (now != null && now != place && !privateReading()) onPlaceChange(id)
+    }
+
+    private fun updateBook(id: UUID, edit: (Book) -> Book) = change { library ->
         val before = library.book(id)?.lastRead
         val next = library.update(id, edit)
         val book = next.book(id)

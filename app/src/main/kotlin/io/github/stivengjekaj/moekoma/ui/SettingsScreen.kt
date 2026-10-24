@@ -89,6 +89,7 @@ fun SettingsScreen(
         is SettingsRoute.Publication -> PublicationScreen(container, route.source, route.publication, onRead, back)
         SettingsRoute.Storage -> StorageScreen(container, back)
         SettingsRoute.MoveBooks -> MoveBooksScreen(container, back)
+        SettingsRoute.Trackers -> TrackersScreen(container, back)
     }
 }
 
@@ -178,6 +179,8 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
             LinkRow("Move books to another source") { open(SettingsRoute.MoveBooks) }
             Divider()
             LinkRow("Storage") { open(SettingsRoute.Storage) }
+            Divider()
+            LinkRow("Trackers") { open(SettingsRoute.Trackers) }
         }
 
         Section(
