@@ -94,6 +94,7 @@ import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import io.github.stivengjekaj.moekoma.ui.theme.Palette
 import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -184,6 +185,16 @@ fun NovelReaderScreen(
             }
         }
         ready = chapter
+        // The next chapter downloads now, so that it opens with no wait, as in Asabunko. A fault here stays quiet.
+        val next = current.chapters.getOrNull(chapter + 1)
+        if (fetchChapter != null && next?.remote != null && !File(folder, next.path).isFile) {
+            try {
+                fetchChapter(chapter + 1)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+            }
+        }
     }
 
     fun go(index: Int, place: Double = 0.0) {
