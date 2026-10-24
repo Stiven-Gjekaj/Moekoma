@@ -178,4 +178,33 @@ class LibraryTest {
         // A book that left the library does not show its updates.
         assertEquals(emptyList<ChapterUpdate>(), library.copy(books = emptyList()).shownUpdates)
     }
+
+    @Test fun keepsTheCategoriesOfTheReadList() {
+        val reading = BookCategory(name = "Reading")
+        val hold = BookCategory(name = "On hold")
+        val a = Book(title = "A", fileName = "a", pageCount = 1, added = Instant.ofEpochSecond(2), categories = listOf(reading.id))
+        val b = Book(title = "B", fileName = "b", pageCount = 1, added = Instant.ofEpochSecond(1), categories = listOf(reading.id, hold.id))
+        var library = Library(books = listOf(a, b), categories = listOf(reading, hold))
+        assertEquals(listOf("A", "B"), library.readList(null, ReadListOrder.Added).map { it.title })
+        assertEquals(listOf("B"), library.readList(hold.id, ReadListOrder.Added).map { it.title })
+        library = library.removeCategory(reading.id)
+        assertEquals(listOf(hold), library.categories)
+        assertEquals("A removed category leaves each book.", listOf(emptyList(), listOf(hold.id)), library.books.map { it.categories })
+    }
+
+    @Test fun keepsOneEntryOfTheHistoryForEachPlaceOnADay() {
+        val book = Book(title = "A", fileName = "a", pageCount = 9)
+        val utc = java.time.ZoneOffset.UTC
+        val day = Instant.ofEpochSecond(86_400L * 100)
+        var library = Library(books = listOf(book))
+            .noteVisit(book.id, 1, day, utc)
+            .noteVisit(book.id, 2, day.plusSeconds(60), utc)
+            .noteVisit(book.id, 1, day.plusSeconds(120), utc)
+        assertEquals("The second visit of chapter 1 takes the place of the first one.", listOf(1, 2), library.history.map { it.place })
+        library = library.noteVisit(book.id, 1, day.plusSeconds(86_400), utc)
+        assertEquals("A visit on another day is a new entry.", listOf(1, 1, 2), library.history.map { it.place })
+        for (place in 0 until Library.HISTORY_LIMIT + 5) library = library.noteVisit(book.id, 1000 + place, day, utc)
+        assertEquals(Library.HISTORY_LIMIT, library.history.size)
+        assertEquals(emptyList<HistoryEntry>(), library.copy(books = emptyList()).shownHistory)
+    }
 }

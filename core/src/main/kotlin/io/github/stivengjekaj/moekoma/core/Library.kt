@@ -13,6 +13,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.time.Instant
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
@@ -136,7 +137,7 @@ data class Library(
     val updates: List<ChapterUpdate> = emptyList(),
     /** The categories of the read list, in their order. */
     val categories: List<BookCategory> = emptyList(),
-    /** The chapters and the books that the user opened. */
+    /** The chapters and the books that the user opened, the newest first. */
     val history: List<HistoryEntry> = emptyList(),
     /** The bookmarks and the highlights of the novels. */
     val marks: List<BookMark> = emptyList(),
@@ -213,10 +214,41 @@ data class Library(
             return updates.filter { it.book in ids }
         }
 
+    /**
+     * Keeps a visit of a book in the history. A visit of the same place of the same book on the same day takes the
+     * place of the older one, so that the turns of the pages of one chapter give one entry.
+     */
+    fun noteVisit(book: UUID, place: Int, at: Instant = now(), zone: ZoneId = ZoneId.systemDefault()): Library {
+        val day = at.atZone(zone).toLocalDate()
+        val kept = history.filterNot { it.book == book && it.place == place && it.date.atZone(zone).toLocalDate() == day }
+        return copy(history = (listOf(HistoryEntry(book = book, place = place, date = at)) + kept).take(HISTORY_LIMIT))
+    }
+
+    /** The history of the books that are in the library, the newest first. */
+    val shownHistory: List<HistoryEntry>
+        get() {
+            val ids = books.map { it.id }.toSet()
+            return history.filter { it.book in ids }
+        }
+
+    /** The books of a category of the read list. With null, all books of the read list. */
+    fun readList(category: UUID?, order: ReadListOrder): List<Book> {
+        val list = readList(order)
+        return if (category == null) list else list.filter { category in it.categories }
+    }
+
+    /** Removes a category, and takes it off each book. */
+    fun removeCategory(id: UUID): Library = copy(
+        categories = categories.filterNot { it.id == id },
+        books = books.map { book -> if (id in book.categories) book.copy(categories = book.categories - id) else book },
+    )
+
     companion object {
         const val CURRENT_FORM = 1
         /** The list of updates keeps at most this number of chapters. */
         const val UPDATE_LIMIT = 300
+        /** The history keeps at most this number of visits. */
+        const val HISTORY_LIMIT = 500
     }
 }
 
