@@ -484,12 +484,18 @@ class Sources(
         model.library.value.books.first { it.id == book.id }
     }
 
-    /** The result of a check for new chapters: the new chapters, the books whose source did not answer, and each book with new chapters. */
-    data class Check(val added: Int, val failed: Int, val found: List<Pair<Book, Int>>) {
+    /** The result of a check for new chapters: the new chapters, the titles of the books whose source did not answer, and each book with new chapters. */
+    data class Check(val added: Int, val failedTitles: List<String>, val found: List<Pair<Book, Int>>) {
+        val failed: Int get() = failedTitles.size
+
         /** The text for the user. With [quiet], a check with no news and no faults gives null. */
-        fun message(quiet: Boolean = false): String? = when {
-            added == 0 && failed == 0 -> if (quiet) null else "No new chapters."
-            else -> "$added new chapter${if (added == 1) "" else "s"}." + if (failed > 0) " $failed book${if (failed == 1) "" else "s"} did not update." else ""
+        fun message(quiet: Boolean = false): String? {
+            if (added == 0 && failed == 0) return if (quiet) null else "No new chapters."
+            val news = "$added new chapter${if (added == 1) "" else "s"}."
+            if (failed == 0) return news
+            // The names show which source to look at. A long list names three books.
+            val names = failedTitles.take(3).joinToString(", ") + if (failed > 3) ", and ${failed - 3} more" else ""
+            return "$news $failed book${if (failed == 1) "" else "s"} did not update: $names."
         }
     }
 
@@ -503,7 +509,7 @@ class Sources(
         val results = books.map { book -> async { gate.withPermit { book to runCatching { refresh(book) }.getOrNull() } } }.awaitAll()
         Check(
             added = results.sumOf { it.second ?: 0 },
-            failed = results.count { it.second == null },
+            failedTitles = results.filter { it.second == null }.map { it.first.title },
             found = results.mapNotNull { (book, added) -> if (added != null && added > 0) book to added else null },
         )
     }

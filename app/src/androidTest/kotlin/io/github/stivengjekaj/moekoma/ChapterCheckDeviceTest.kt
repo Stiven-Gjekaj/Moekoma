@@ -56,7 +56,7 @@ class ChapterCheckDeviceTest {
                 books = library.books + book.copy(id = UUID.randomUUID(), title = "Lost", origin = BookOrigin(lost.list, "en.lost", "/lost")),
             )
         }
-        assertEquals("0 new chapters. 1 book did not update.", container.sources.refreshAll().message())
+        assertEquals("0 new chapters. 1 book did not update: Lost.", container.sources.refreshAll().message())
         root.deleteRecursively()
         Unit
     }
