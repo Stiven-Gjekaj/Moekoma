@@ -107,4 +107,28 @@ class OpdsTest {
     @Test fun refusesAPageThatIsNotAFeed() {
         assertThrows(NotAFeedException::class.java) { Opds.parse("<html><body>Login</body></html>".toByteArray(), base) }
     }
+
+    @Test fun opensAStreamAtTheLastPageThatTheServerKeeps() {
+        val xml = """
+            <feed xmlns="http://www.w3.org/2005/Atom" xmlns:pse="http://vaemendis.net/opds-pse/ns"><title>x</title>
+              <entry><title>A</title><id>a</id>
+                <link rel="http://vaemendis.net/opds-pse/stream" type="image/jpeg" pse:count="20" pse:lastRead="7"
+                      href="/komga/opds/v1.2/books/0B1/pages/{pageNumber}?zero_based=true&amp;width={maxWidth}"/></entry>
+              <entry><title>B</title><id>b</id>
+                <link rel="http://vaemendis.net/opds-pse/stream" type="image/jpeg" pse:count="3" pse:lastRead="9"
+                      href="/api/opds/key/series/1/volume/2/chapter/3/image?pageNumber={pageNumber}"/></entry>
+            </feed>
+        """.trimIndent()
+        val list = Opds.parse(xml.toByteArray(), base).publications
+        val komga = list.first().stream!!
+        val kavita = list.last().stream!!
+        assertEquals(7, komga.startPage)
+        assertEquals("A last page after the end opens the last page.", 2, kavita.startPage)
+        val request = komga.komgaProgress(7)!!
+        assertEquals("PATCH", request.method)
+        assertEquals("The base path of the server stays.", "https://komga.local:25600/komga/api/v1/books/0B1/read-progress", request.url)
+        assertEquals("{\"page\":8,\"completed\":false}", request.body!!.decodeToString())
+        assertEquals("{\"page\":20,\"completed\":true}", komga.komgaProgress(19)!!.body!!.decodeToString())
+        assertEquals("Kavita keeps the progress by itself.", null, kavita.komgaProgress(1))
+    }
 }

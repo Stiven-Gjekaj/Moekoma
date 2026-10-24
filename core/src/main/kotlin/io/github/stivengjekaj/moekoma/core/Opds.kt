@@ -50,9 +50,35 @@ data class OpdsPublication(
         /** The URL with {pageNumber}, from 0, and maybe {maxWidth}. */
         val template: String,
         val count: Int,
+        /** The last page that the user read on the server, from 0. Komga and Kavita give it. */
+        val lastRead: Int? = null,
     ) {
         fun url(page: Int, maxWidth: Int = 1600): String =
             template.replace("{pageNumber}", page.toString()).replace("{maxWidth}", maxWidth.toString())
+
+        /** The page to open: the last page that the user read, or the first page. */
+        val startPage: Int get() = (lastRead ?: 0).coerceIn(0, maxOf(count - 1, 0))
+
+        /**
+         * The call that keeps the progress of a Komga book: a PATCH of its read progress, with the page from 1. A stream
+         * of Komga has "/books/{id}/pages/{pageNumber}" in its path. Kavita keeps the progress when it serves a page, so
+         * it needs no call.
+         */
+        fun komgaProgress(page: Int): HttpRequest? {
+            val uri = runCatching { java.net.URI(template.replace("{pageNumber}", "0").replace("{maxWidth}", "0")) }.getOrNull() ?: return null
+            val path = uri.rawPath?.split('/') ?: return null
+            val books = path.lastIndexOf("books")
+            if (books < 0 || books + 2 >= path.size || path[books + 2] != "pages") return null
+            val api = path.indexOfFirst { it == "api" || it == "opds" }
+            if (api < 0 || api >= books) return null
+            val target = (path.subList(0, api) + listOf("api", "v1", "books", path[books + 1], "read-progress")).joinToString("/")
+            val number = page.coerceIn(0, maxOf(count - 1, 0)) + 1
+            val origin = uri.scheme + "://" + uri.rawAuthority
+            return HttpRequest(
+                origin + target, "PATCH", mapOf("Content-Type" to "application/json"),
+                "{\"page\":$number,\"completed\":${number >= count}}".toByteArray(),
+            )
+        }
     }
 
     /** The first acquisition that the app can import, with the extension of its file. */
@@ -170,7 +196,10 @@ object Opds {
                     rel == "http://opds-spec.org/image" -> image = resolve(item["href"], base)
                     rel == "http://opds-spec.org/image/thumbnail" -> thumbnail = resolve(item["href"], base)
                     rel == STREAM_REL && item["href"] != null ->
-                        stream = OpdsPublication.Stream(absolute(item["href"]!!, base), (item["count"] ?: item["pse:count"])?.toIntOrNull() ?: 0)
+                        stream = OpdsPublication.Stream(
+                            absolute(item["href"]!!, base), (item["count"] ?: item["pse:count"])?.toIntOrNull() ?: 0,
+                            (item["lastRead"] ?: item["pse:lastRead"])?.toIntOrNull(),
+                        )
                     "application/atom+xml" in type || "opds-catalog" in type -> link = link ?: resolve(item["href"], base)
                 }
             }
