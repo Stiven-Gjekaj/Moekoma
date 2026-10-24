@@ -52,6 +52,7 @@ import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.Undo
 import androidx.compose.material3.AlertDialog
@@ -467,6 +468,9 @@ private fun BookMenu(book: Book, model: AppModel, downloads: Downloads, onRead: 
             }
             if (book.listed && library.categories.isNotEmpty()) {
                 DropdownMenuItem(text = { Text("Categories") }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Label, null) }, onClick = { open = false; choosing = true })
+            }
+            if (book.origin == null && model.canShare(book)) {
+                DropdownMenuItem(text = { Text("Share the file") }, leadingIcon = { Icon(Icons.Outlined.Share, null) }, onClick = { open = false; model.share(book) })
             }
             DropdownMenuItem(text = { Text("Track") }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.TrendingUp, null) }, onClick = { open = false; onTrack(book) })
             DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { open = false; onDelete(book) })

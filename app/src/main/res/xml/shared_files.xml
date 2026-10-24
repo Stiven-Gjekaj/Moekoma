@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The files of books that the user shares. They are copies in the cache, so the books stay as they are. -->
+<paths>
+    <cache-path name="shared" path="shared/" />
+</paths>

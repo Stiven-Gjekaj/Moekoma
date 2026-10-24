@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.DocumentsContract
+import io.github.stivengjekaj.moekoma.core.BookExport
 import io.github.stivengjekaj.moekoma.core.FolderScan
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
@@ -134,6 +135,29 @@ class AppModel(
 
     /** The PDF of a book, which the reader opens and closes. */
     fun pdf(book: Book): File = File(folder(book), PdfImporter.FILE_NAME)
+
+    /** True when the book has a file to share: the pages of a comic, a PDF, or the EPUB of a novel. */
+    fun canShare(book: Book): Boolean = BookExport.canShare(book.format, folder(book))
+
+    /** Shares the file of a book with another app, through the menu of Android. */
+    fun share(book: Book) {
+        scope.launch {
+            val file = withContext(Dispatchers.IO) {
+                val directory = File(context.cacheDir, "shared").apply { deleteRecursively() }
+                runCatching { BookExport.file(book.format, book.title, folder(book), directory) }.getOrNull()
+            }
+            if (file == null) {
+                fault.value = "This book has no file to share."
+                return@launch
+            }
+            val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".files", file)
+            val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+                .setType(android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension) ?: "application/octet-stream")
+                .putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            context.startActivity(android.content.Intent.createChooser(send, book.title).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+    }
 
     /** True while the private reading is on: a read does not go into the history or into Continue reading. */
     var privateReading: () -> Boolean = { false }

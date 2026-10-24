@@ -32,7 +32,7 @@ sealed class PdfException(message: String) : ImportException(message) {
 
 /** Copies a PDF into the folder of a book as book.pdf, with a cover from its first page. */
 object PdfImporter {
-    const val FILE_NAME = "book.pdf"
+    const val FILE_NAME = io.github.stivengjekaj.moekoma.core.BookExport.PDF_NAME
 
     data class Info(val title: String, val author: String?, val pageCount: Int)
 
