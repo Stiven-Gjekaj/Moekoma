@@ -60,4 +60,26 @@ class ChapterCheckDeviceTest {
         root.deleteRecursively()
         Unit
     }
+
+    @Test fun downloadsTheNewChaptersOfABookThatAsksForThem() = runBlocking {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("server") == "1")
+        withContext(Dispatchers.IO) { control("reset") }
+        val root = File(app.cacheDir, "check-download-test").apply { deleteRecursively() }
+        val container = withContext(Dispatchers.Main) { AppContainer(app, root) }
+        container.sources.save("http://10.0.2.2:8765/aidoku/index.min.json")
+        repeat(60) { if (container.model.library.value.installed.none { it.info.id == "en.test" }) delay(500) }
+        val installed = container.model.library.value.installed.first { it.info.id == "en.test" }
+        val source = container.sources.load(installed)
+        val book = container.sources.add(source.details(source.popular(1).items.single()), installed, listed = true)
+        container.model.update(book.id) { it.copy(autoDownload = true) }
+        val folder = container.model.folder(book)
+        Novel.load(folder).copy(chapters = emptyList()).save(folder)
+
+        assertEquals(1, container.sources.refreshAll().added)
+        // The new chapter goes into the queue of the downloads, and the test runs the queue here.
+        container.downloads.run { _, _, _ -> }
+        assertEquals(setOf(0), container.downloads.downloaded(container.model.library.value.book(book.id)!!))
+        root.deleteRecursively()
+        Unit
+    }
 }

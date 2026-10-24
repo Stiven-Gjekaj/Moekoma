@@ -69,7 +69,12 @@ class AppContainer(val app: Application, root: File = File(app.filesDir, "Moekom
     val folders = Folders(app, model, root, scope)
     val settings = Settings(app)
     val sources = Sources(app, model, settings, http, scope)
-    val downloads = Downloads(app, model, sources, root)
+    val downloads = Downloads(app, model, sources, root).also { downloads ->
+        // A book with "Download new chapters" downloads them after each check, on Wi-Fi only when the user asks for it.
+        sources.onNewChapters = { book, first ->
+            if (book.autoDownload && ChapterChecks.mayDownloadNow(app, settings.preferences.value.wifiOnly)) downloads.downloadChapters(book, first)
+        }
+    }
     val discover = DiscoverFeed(sources, { model.library.value.installed }, scope)
     val updates = UpdateChecker(http)
     val installer = UpdateInstaller(app, http, scope)

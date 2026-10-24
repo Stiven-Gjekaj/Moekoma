@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -69,6 +70,10 @@ object ChapterChecks {
             manager.notify("chapters", book.id.hashCode(), notification)
         }
     }
+
+    /** False when the user allows the downloads of new chapters only on Wi-Fi and the network of the device costs money. */
+    fun mayDownloadNow(context: Context, wifiOnly: Boolean): Boolean =
+        !wifiOnly || context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered == false
 }
 
 /** The check of the read list in the background. Each book with new chapters gets a notification. */

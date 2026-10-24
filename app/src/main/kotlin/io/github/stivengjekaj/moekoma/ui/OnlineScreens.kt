@@ -377,6 +377,8 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
                             onFromHere = { scope.launch { add(details, listed = book?.listed ?: false)?.let { container.downloads.downloadChapters(it, it.page) } } },
                             onRetry = { book?.let { container.downloads.retry(it.id) } },
                             onRemove = { book?.let { container.downloads.cancel(it.id); container.downloads.remove(it) } },
+                            autoDownload = book?.autoDownload,
+                            onAutoDownload = { on -> book?.let { container.model.update(it.id) { it.copy(autoDownload = on) } } },
                         )
                     }
                 }
@@ -471,7 +473,10 @@ fun OnlineSeriesScreen(container: AppContainer, route: TitleRoute, onRead: (UUID
 
 /** The downloads of a series: all chapters, the chapters from the place of the user, the failed ones again, or none. */
 @Composable
-private fun DownloadsMenu(failed: Int, hasDownloads: Boolean, onAll: () -> Unit, onFromHere: () -> Unit, onRetry: () -> Unit, onRemove: () -> Unit) {
+private fun DownloadsMenu(
+    failed: Int, hasDownloads: Boolean, onAll: () -> Unit, onFromHere: () -> Unit, onRetry: () -> Unit, onRemove: () -> Unit,
+    autoDownload: Boolean?, onAutoDownload: (Boolean) -> Unit,
+) {
     val palette = LocalPalette.current
     val context = LocalContext.current
     var open by remember { mutableStateOf(false) }
@@ -489,6 +494,14 @@ private fun DownloadsMenu(failed: Int, hasDownloads: Boolean, onAll: () -> Unit,
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             DropdownMenuItem(text = { Text("Download all chapters") }, onClick = { start(onAll) })
             DropdownMenuItem(text = { Text("Download from this chapter") }, onClick = { start(onFromHere) })
+            // A book of the library downloads its new chapters after each check when the user asks for it.
+            if (autoDownload != null) {
+                DropdownMenuItem(
+                    text = { Text("Download new chapters") },
+                    trailingIcon = { if (autoDownload) Icon(Icons.Outlined.Check, contentDescription = "On") },
+                    onClick = { if (autoDownload) { open = false; onAutoDownload(false) } else start { onAutoDownload(true) } },
+                )
+            }
             if (failed > 0) DropdownMenuItem(text = { Text("Try the failed downloads again ($failed)") }, onClick = { open = false; onRetry() })
             if (hasDownloads) DropdownMenuItem(text = { Text("Remove downloads", color = palette.danger) }, onClick = { open = false; onRemove() })
         }

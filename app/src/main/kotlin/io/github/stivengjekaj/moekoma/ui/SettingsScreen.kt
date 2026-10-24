@@ -177,13 +177,15 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
         Section(
             "New chapters",
             footer = "The books of your read list check for new chapters about every six hours, when the device has a network. " +
-                "A notification tells you about new chapters.",
+                "A notification tells you about new chapters. A book with \"Download new chapters\" on downloads them after the check.",
         ) {
             Toggle("Check in the background", prefs.backgroundChecks) { on ->
                 container.settings.update { it.copy(backgroundChecks = on) }
                 ChapterChecks.schedule(context, on)
                 if (on && !ChapterChecks.mayNotify(context) && Build.VERSION.SDK_INT >= 33) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+            Divider()
+            Toggle("Download only on Wi-Fi", prefs.wifiOnly) { on -> container.settings.update { it.copy(wifiOnly = on) } }
         }
 
         Section(

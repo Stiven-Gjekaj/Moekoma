@@ -439,6 +439,9 @@ class Sources(
         book
     }
 
+    /** Gets each book with new chapters and the index of its first new chapter, such as for the downloads of new chapters. */
+    var onNewChapters: (Book, Int) -> Unit = { _, _ -> }
+
     /** Asks the source for new chapters of a book. It gives the number of new chapters. */
     suspend fun refresh(book: Book): Int = withContext(Dispatchers.IO) {
         val source = installed(book) ?: return@withContext 0
@@ -452,6 +455,7 @@ class Sources(
             // The new chapters are at the end of the book. They go into the updates.
             val first = novel.chapters.size - added
             model.change { library -> library.record((first until novel.chapters.size).map { it to novel.chapters[it].title }, book.id) }
+            model.library.value.book(book.id)?.let { onNewChapters(it, first) }
         }
         added
     }
