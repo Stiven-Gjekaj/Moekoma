@@ -28,6 +28,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -58,7 +60,7 @@ fun SeriesReaderScreen(container: AppContainer, bookId: UUID, onClose: () -> Uni
     val book = library.books.firstOrNull { it.id == bookId } ?: return
     val novel = remember(bookId, book.pageCount) { container.model.novel(book) }
     var chapter by remember { mutableIntStateOf(book.page.coerceIn(0, maxOf((novel?.chapters?.size ?: 1) - 1, 0))) }
-    var pages by remember { mutableStateOf<ChapterContent.Pages?>(null) }
+    var pages by remember { mutableStateOf<List<Any>?>(null) }
     var start by remember { mutableIntStateOf(0) }
     var page by remember { mutableIntStateOf(0) }
     var fault by remember { mutableStateOf<String?>(null) }
@@ -73,17 +75,20 @@ fun SeriesReaderScreen(container: AppContainer, bookId: UUID, onClose: () -> Uni
         val item = novel?.chapters?.getOrNull(chapter)
         val origin = book.origin
         val source = container.sources.installed(book)
-        if (item?.remote == null || origin == null || source == null) {
+        if (item?.remote == null || origin == null || (source == null && container.downloads.pages(book, chapter) == null)) {
             fault = "The source of this series is not installed. Add its list again in Settings, Sources."
             return@LaunchedEffect
         }
         try {
-            val content = container.sources.load(source).content(OnlineChapter(item.remote!!, item.title ?: ""), OnlineSeries(origin.series, book.title))
-            val got = content as? ChapterContent.Pages ?: throw IllegalStateException("The source gave text for this chapter, not pages.")
-            if (got.pages.isEmpty()) throw IllegalStateException("The chapter has no pages.")
+            // A chapter on the device opens from its files, with no network.
+            val got: List<Any> = withContext(Dispatchers.IO) { container.downloads.pages(book, chapter) } ?: run {
+                val content = container.sources.load(source!!).content(OnlineChapter(item.remote!!, item.title ?: ""), OnlineSeries(origin.series, book.title))
+                (content as? ChapterContent.Pages ?: throw IllegalStateException("The source gave text for this chapter, not pages.")).pages
+            }
+            if (got.isEmpty()) throw IllegalStateException("The chapter has no pages.")
             // The book keeps the place in the chapter as a part from 0 to 1.
             val place = if (chapter == book.page) book.position else 0.0
-            start = (place * (got.pages.size - 1)).roundToInt().coerceIn(0, got.pages.size - 1)
+            start = (place * (got.size - 1)).roundToInt().coerceIn(0, got.size - 1)
             page = start
             pages = got
         } catch (e: Exception) {
@@ -112,17 +117,17 @@ fun SeriesReaderScreen(container: AppContainer, bookId: UUID, onClose: () -> Uni
             else -> key(chapter) {
                 val title = novel?.chapters?.getOrNull(chapter)?.title?.let { "${book.title} · $it" } ?: book.title
                 PageReader(
-                    title, shown.pages, start, library.mode(book), prefs,
+                    title, shown, start, library.mode(book), prefs,
                     onPage = { now ->
                         page = now
-                        val size = shown.pages.size
+                        val size = shown.size
                         container.model.update(bookId) { it.read(chapter = chapter, position = if (size > 1) now.toDouble() / (size - 1) else 1.0) }
                     },
                     onMode = { mode -> container.model.update(bookId) { it.copy(mode = mode) } },
                     onClose = onClose,
                 )
                 // The buttons for the chapters show on the last page.
-                if (page >= shown.pages.size - 1) {
+                if (page >= shown.size - 1) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 96.dp),
