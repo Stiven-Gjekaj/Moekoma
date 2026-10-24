@@ -137,6 +137,7 @@ class AidokuSource private constructor(
     private val baseUrl: String?,
     private val filterList: List<SourceOption>,
     private val settingList: List<SourceOption>,
+    private val settingsForm: AidokuSettings,
     private val fetcher: Fetcher,
 ) : AutoCloseable {
     /** The full data of each series and chapter that the source gave, because a source can need more than the key. */
@@ -161,7 +162,9 @@ class AidokuSource private constructor(
                         val ids = filters.map { it.id }.toSet()
                         filters = filters + runCatching { AidokuOptions.filtersOfPostcard(call("get_filters")) }.getOrDefault(emptyList()).filter { it.id !in ids }
                     }
-                    AidokuSource(info, host, listings, pack.baseUrl, filters, AidokuOptions.settings(pack.settings), fetcher)
+                    val dynamic = if ("get_settings" in exports) runCatching { call("get_settings") }.getOrNull() else null
+                    val form = AidokuSettings(pack.settings, dynamic, defaults, pack.languages, pack.multiLanguage)
+                    AidokuSource(info, host, listings, pack.baseUrl, filters, AidokuOptions.settings(pack.settings), form, fetcher)
                 }
             } catch (e: Exception) {
                 host.close()
@@ -198,6 +201,31 @@ class AidokuSource private constructor(
     fun setSetting(id: String, value: OptionValue) {
         val setting = settingList.firstOrNull { it.id == id } ?: return
         host.defaults[id] = AidokuOptions.encodeSetting(value, setting)
+    }
+
+    val hasSettingsForm: Boolean get() = !settingsForm.isEmpty
+
+    /** A form of the settings: "root" for the first form. */
+    suspend fun form(id: String): SourceForm {
+        if (settingsForm.isEmpty) throw SourceFormException.noForm()
+        return host.run { settingsForm.form(id) }
+    }
+
+    /** Does the action of a row, and gives the form again. */
+    suspend fun formAction(form: String, row: String, input: FormInput): SourceForm {
+        // An OAuth sign-in with PKCE changes its code into a token before the source gets it.
+        var token: String? = null
+        if (input is FormInput.Callback) {
+            settingsForm.tokenRequest(row, input.url)?.let { request ->
+                val response = fetcher(request)
+                if (response.status !in 200..299) throw SourceFormException.refused()
+                token = String(response.body, Charsets.UTF_8)
+            }
+        }
+        return host.run {
+            settingsForm.act(form, row, input, token, this)
+            settingsForm.form(form)
+        }
     }
 
     /** The listing for popular series, and the listing for the latest ones, by their names. */
