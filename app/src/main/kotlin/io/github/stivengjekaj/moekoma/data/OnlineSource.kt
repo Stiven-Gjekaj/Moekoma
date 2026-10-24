@@ -8,12 +8,15 @@ import coil3.fetch.Fetcher
 import coil3.fetch.SourceFetchResult
 import coil3.key.Keyer
 import coil3.request.Options
+import io.github.stivengjekaj.moekoma.core.FormInput
 import io.github.stivengjekaj.moekoma.core.OnlineChapter
 import io.github.stivengjekaj.moekoma.core.OnlineDetails
 import io.github.stivengjekaj.moekoma.core.OnlinePage
 import io.github.stivengjekaj.moekoma.core.OnlineSeries
 import io.github.stivengjekaj.moekoma.core.OptionValue
 import io.github.stivengjekaj.moekoma.core.SourceOption
+import io.github.stivengjekaj.moekoma.core.SourceForm
+import io.github.stivengjekaj.moekoma.core.SourceFormException
 import io.github.stivengjekaj.moekoma.core.SourceInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +62,15 @@ interface OnlineSource {
 
     /** Keeps a new value of a setting. */
     suspend fun setSetting(id: String, value: OptionValue) {}
+
+    /** True when the settings of the source are a form, such as the settings of an Aidoku source. */
+    suspend fun hasSettingsForm(): Boolean = false
+
+    /** A form of the settings: "root" for the first form. */
+    suspend fun form(id: String): SourceForm = throw SourceFormException.noForm()
+
+    /** Does the action of a row of a form, and gives the form again. */
+    suspend fun formAction(form: String, row: String, input: FormInput): SourceForm = throw SourceFormException.noForm()
 
     /** Frees what the source holds, such as a JavaScript context or a WebAssembly instance. */
     fun close() {}

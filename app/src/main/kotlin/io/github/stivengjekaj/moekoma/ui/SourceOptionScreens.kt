@@ -170,16 +170,20 @@ fun FilterSheet(options: List<SourceOption>, applied: Map<String, OptionValue>, 
 
 /** The settings of a source. Each change goes to the source at once. */
 @Composable
-fun SourceSettingsScreen(container: AppContainer, installed: InstalledSource, onBack: () -> Unit) {
+fun SourceSettingsScreen(container: AppContainer, installed: InstalledSource, open: (SettingsRoute) -> Unit, onBack: () -> Unit) {
     val palette = LocalPalette.current
     val scope = rememberCoroutineScope()
     var options by remember { mutableStateOf<List<SourceOption>?>(null) }
     var values by remember { mutableStateOf<Map<String, OptionValue>>(emptyMap()) }
+    var asForm by remember { mutableStateOf(false) }
     LaunchedEffect(installed.id) {
         val source = runCatching { container.sources.load(installed) }.getOrNull()
+        asForm = runCatching { source?.hasSettingsForm() == true }.getOrDefault(false)
         options = source?.settingOptions().orEmpty()
         values = source?.settingValues().orEmpty()
     }
+    // A source with a settings form shows the form, with its groups, pages, and sign-ins.
+    if (asForm) return SourceFormScreen(container, installed, "root", "${installed.info.name} settings", open, onBack)
     SubScreen("${installed.info.name} settings", onBack) {
         val list = options
         if (list == null) {

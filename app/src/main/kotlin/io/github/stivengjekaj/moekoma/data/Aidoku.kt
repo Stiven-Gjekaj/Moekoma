@@ -30,6 +30,7 @@ import io.github.stivengjekaj.moekoma.core.AidokuRect
 import io.github.stivengjekaj.moekoma.core.AidokuSource
 import io.github.stivengjekaj.moekoma.core.AidokuStroke
 import io.github.stivengjekaj.moekoma.core.AidokuWebView
+import io.github.stivengjekaj.moekoma.core.FormInput
 import io.github.stivengjekaj.moekoma.core.HttpRequest
 import io.github.stivengjekaj.moekoma.core.InstalledSource
 import io.github.stivengjekaj.moekoma.core.JsRuntime
@@ -73,6 +74,9 @@ class AidokuOnlineSource(
     override suspend fun settingOptions() = source.settingOptions()
     override suspend fun settingValues() = source.settingValues()
     override suspend fun setSetting(id: String, value: OptionValue) = source.setSetting(id, value)
+    override suspend fun hasSettingsForm() = source.hasSettingsForm
+    override suspend fun form(id: String) = source.form(id)
+    override suspend fun formAction(form: String, row: String, input: FormInput) = source.formAction(form, row, input)
     override fun close() = source.close()
 
     override suspend fun content(chapter: OnlineChapter, series: OnlineSeries): ChapterContent = when (val content = source.content(chapter, series)) {

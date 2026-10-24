@@ -102,6 +102,8 @@ sealed interface SettingsRoute {
     data class SourceList(val link: SourceLink) : SettingsRoute
     data object Installed : SettingsRoute
     data class SourceSettings(val source: InstalledSource) : SettingsRoute
+    /** A form of the settings of a source, such as a page of the settings of an Aidoku source. */
+    data class SourceForm(val source: InstalledSource, val form: String, val title: String) : SettingsRoute
     data class Source(val source: InstalledSource) : SettingsRoute
     data class Title(val route: TitleRoute) : SettingsRoute
 }

@@ -505,7 +505,7 @@ fun OnlineSourceScreen(
     LaunchedEffect(installed.id) {
         val source = runCatching { container.sources.load(installed) }.getOrNull() ?: return@LaunchedEffect
         filters = runCatching { source.filterOptions() }.getOrDefault(emptyList())
-        hasSettings = runCatching { source.settingOptions().isNotEmpty() }.getOrDefault(false)
+        hasSettings = runCatching { source.hasSettingsForm() || source.settingOptions().isNotEmpty() }.getOrDefault(false)
     }
 
     fun loadPage(number: Int) {

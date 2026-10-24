@@ -76,7 +76,8 @@ fun SettingsScreen(
         is SettingsRoute.Source -> key(route) {
             OnlineSourceScreen(container, route.source, { open(SettingsRoute.Title(it)) }, { open(SettingsRoute.SourceSettings(route.source)) }, back)
         }
-        is SettingsRoute.SourceSettings -> SourceSettingsScreen(container, route.source, back)
+        is SettingsRoute.SourceSettings -> SourceSettingsScreen(container, route.source, open, back)
+        is SettingsRoute.SourceForm -> key(route) { SourceFormScreen(container, route.source, route.form, route.title, open, back) }
         is SettingsRoute.Title -> key(stack.size, route) { OnlineSeriesScreen(container, route.route, read, back) }
         is SettingsRoute.Feed -> key(route) { OpdsFeedScreen(container, route.source, route.url, route.title, open, back) }
         is SettingsRoute.Publication -> PublicationScreen(container, route.source, route.publication, onRead, back)
