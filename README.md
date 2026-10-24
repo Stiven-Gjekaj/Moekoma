@@ -45,7 +45,10 @@ Moekoma has no sources in it. Your books stay on your device.
   of the chapters
 - PDF, page by page or in one column
 - A reader of pages from the right to the left, from the left to the right,
-  or in one vertical column, with zoom
+  or in one vertical column, with zoom, two pages on a wide screen, the fit,
+  the crop of the borders, and the taps at the edges
+- A novel that reads itself aloud, the search of the words of a novel, and
+  bookmarks and highlights
 - Continue reading: the books that you read now, with the page and the
   progress
 - The read list, in the order that you choose: date added, last read,

@@ -11,10 +11,6 @@ Each release keeps the backup that Asabunko of the same functions reads.
 
 ## Releases from 1.0.0 to 2.0.0
 
-- 1.3.0 The reader does more, as Asabunko 2.6.0: two pages side by side on a
-  wide screen, the page layout menu (the fit, "Crop the borders", the taps at
-  the edges), a novel that reads itself aloud with the text to speech of
-  Android, the search of the words of a novel, and bookmarks and highlights.
 - 1.4.0 Trackers and servers, as Asabunko 2.7.0: AniList and MyAnimeList,
   the Track action of a book, and the progress of Komga and Kavita.
 - 1.5.0 Moekoma fits into Android, as Asabunko 2.8.0: the app in Japanese, a

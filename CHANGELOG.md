@@ -7,6 +7,27 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 1.3.0 (2026-10-24)
+
+- The page layout button in the reader of pages chooses the fit (the
+  screen, the width, or the height), "Crop the borders", "Two pages on a
+  wide screen", and the taps at the edges (left and right, forward at each
+  edge, or no turns).
+- On a screen that is wider than it is tall, two pages show side by side.
+  The first page is alone, as the cover of a book is. A page of two pages
+  in one image is alone. "Move the pairs by one page" fixes a scan where
+  the pairs are on the other pages.
+- "Crop the borders" shows a scanned page with no plain white or black
+  frame.
+- A novel reads itself aloud with the text to speech of Android. The
+  reader shows the sentence that it reads, and the speech goes on into the
+  next chapter.
+- Search the words of a novel. A result opens its chapter and shows the
+  words.
+- Keep bookmarks and highlights in a novel. Select words and choose
+  Highlight. The Marks button adds a bookmark and lists the marks of the
+  book.
+
 ## 1.2.0 (2026-10-24)
 
 - Put the books of your read list in categories, such as "Reading" or "On
