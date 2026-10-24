@@ -80,5 +80,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test)
+    // Runs the Accessibility Test Framework on a screen, as the accessibility audit of Xcode does in Asabunko.
+    androidTestImplementation(libs.androidx.compose.ui.test.accessibility)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
