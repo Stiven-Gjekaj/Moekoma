@@ -81,7 +81,8 @@ class NovelToolsUiTest {
     @Test fun readsAloudIntoTheNextChapter() {
         val (container, book) = openNovel()
         compose.onNodeWithContentDescription("Read aloud").performClick()
-        compose.waitUntil(10_000) { compose.onAllNodes(androidx.compose.ui.test.hasContentDescription("Stop reading aloud")).fetchSemanticsNodes().isNotEmpty() }
+        // The first start of the speech engine after a boot of the device can take more than 10 seconds.
+        compose.waitUntil(30_000) { compose.onAllNodes(androidx.compose.ui.test.hasContentDescription("Stop reading aloud")).fetchSemanticsNodes().isNotEmpty() }
         // At the end of the chapter, the speech goes on in the next chapter.
         compose.waitUntil(60_000) { container.model.library.value.book(book.id)!!.page == 1 }
         compose.waitUntil(10_000) { compose.onAllNodes(androidx.compose.ui.test.hasContentDescription("Stop reading aloud")).fetchSemanticsNodes().isNotEmpty() }
