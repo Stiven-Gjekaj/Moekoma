@@ -433,6 +433,7 @@ private fun SectionTitle(text: String) {
 private fun BookMenu(book: Book, model: AppModel, downloads: Downloads, onRead: (Book) -> Unit, onDelete: (Book) -> Unit, content: @Composable () -> Unit) {
     var open by remember { mutableStateOf(false) }
     var choosing by remember { mutableStateOf(false) }
+    val library by model.library.collectAsState()
     Box(Modifier.combinedClickable(onClickLabel = "Read", onLongClickLabel = "Open the menu", onLongClick = { open = true }) { onRead(book) }) {
         content()
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
@@ -463,14 +464,13 @@ private fun BookMenu(book: Book, model: AppModel, downloads: Downloads, onRead: 
                     })
                 }
             }
-            if (book.listed && model.library.value.categories.isNotEmpty()) {
+            if (book.listed && library.categories.isNotEmpty()) {
                 DropdownMenuItem(text = { Text("Categories") }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Label, null) }, onClick = { open = false; choosing = true })
             }
             DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = { open = false; onDelete(book) })
         }
     }
     if (choosing) {
-        val library by model.library.collectAsState()
         val chosen = library.book(book.id)?.categories.orEmpty()
         AlertDialog(
             onDismissRequest = { choosing = false },
