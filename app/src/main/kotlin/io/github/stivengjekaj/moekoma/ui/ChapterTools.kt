@@ -1,5 +1,11 @@
 package io.github.stivengjekaj.moekoma.ui
 
+import android.content.Context
+import android.graphics.Rect
+import android.view.ActionMode
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 import android.webkit.WebView
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONArray
@@ -121,5 +127,44 @@ class ChapterControl {
             ::highlight(moekoma-marks) { background-color: rgba(255, 214, 10, 0.45); }
             ::highlight(moekoma-find) { background-color: rgba(60, 150, 255, 0.35); }
         """
+    }
+}
+
+/** A web view of a chapter with "Highlight" in the menu of a selection. */
+class ChapterWebView(context: Context) : WebView(context) {
+    /** Gets the words of a highlight that the user made from a selection. */
+    var onHighlight: ((String) -> Unit)? = null
+
+    override fun startActionMode(callback: ActionMode.Callback, type: Int): ActionMode? = super.startActionMode(withHighlight(callback), type)
+
+    private fun withHighlight(callback: ActionMode.Callback) = object : ActionMode.Callback2() {
+        override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
+            val shown = callback.onCreateActionMode(mode, menu)
+            menu.add(Menu.NONE, HIGHLIGHT, 0, "Highlight")
+            return shown
+        }
+
+        override fun onPrepareActionMode(mode: ActionMode, menu: Menu) = callback.onPrepareActionMode(mode, menu)
+
+        override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+            if (item.itemId != HIGHLIGHT) return callback.onActionItemClicked(mode, item)
+            // The page reads the selection before the menu closes, because the close clears the selection.
+            evaluateJavascript("String(window.getSelection() || '').trim()") { json ->
+                val words = runCatching { JSONArray("[$json]").getString(0) }.getOrNull().orEmpty()
+                mode.finish()
+                if (words.isNotBlank()) onHighlight?.invoke(words)
+            }
+            return true
+        }
+
+        override fun onDestroyActionMode(mode: ActionMode) = callback.onDestroyActionMode(mode)
+
+        override fun onGetContentRect(mode: ActionMode, view: View, outRect: Rect) {
+            if (callback is ActionMode.Callback2) callback.onGetContentRect(mode, view, outRect) else super.onGetContentRect(mode, view, outRect)
+        }
+    }
+
+    private companion object {
+        const val HIGHLIGHT = 0x6d6b
     }
 }

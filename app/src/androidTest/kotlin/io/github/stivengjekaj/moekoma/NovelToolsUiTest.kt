@@ -13,6 +13,8 @@ import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.Novel
 import io.github.stivengjekaj.moekoma.ui.MoekomaRoot
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,5 +54,27 @@ class NovelToolsUiTest {
         compose.waitUntil(5_000) { compose.onAllNodes(androidx.compose.ui.test.hasText("lanterns of the quay", substring = true)).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("lanterns of the quay", substring = true).performClick()
         compose.waitUntil(5_000) { container.model.library.value.book(book.id)!!.page == 1 }
+    }
+
+    @Test fun keepsABookmarkAndOpensItsPlace() {
+        val (container, book) = openNovel()
+        compose.onNodeWithContentDescription("Marks").performClick()
+        compose.onNodeWithText("Add a bookmark here").performClick()
+        compose.waitUntil(5_000) { container.model.library.value.marks(book.id).isNotEmpty() }
+        val mark = container.model.library.value.marks(book.id).single()
+        assertEquals(0, mark.chapter)
+        // The bookmark has the first words at the top of the screen.
+        assertTrue(mark.text, mark.text == "Arrival" || mark.text.startsWith("The train"))
+
+        // From another chapter, a tap on the bookmark opens its chapter.
+        compose.onNodeWithContentDescription("Next chapter").performClick()
+        compose.waitUntil(5_000) { container.model.library.value.book(book.id)!!.page == 1 }
+        compose.onNodeWithContentDescription("Marks").performClick()
+        compose.onNodeWithContentDescription("Bookmark: ${mark.text}").performClick()
+        compose.waitUntil(5_000) { container.model.library.value.book(book.id)!!.page == 0 }
+
+        compose.onNodeWithContentDescription("Marks").performClick()
+        compose.onNodeWithContentDescription("Remove the mark").performClick()
+        compose.waitUntil(5_000) { container.model.library.value.marks(book.id).isEmpty() }
     }
 }

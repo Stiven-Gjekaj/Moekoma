@@ -37,6 +37,9 @@ import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.BorderColor
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -50,6 +53,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -75,6 +79,7 @@ import io.github.stivengjekaj.moekoma.R
 import io.github.stivengjekaj.moekoma.VolumeKeys
 import io.github.stivengjekaj.moekoma.core.Novel
 import io.github.stivengjekaj.moekoma.core.NovelSearch
+import io.github.stivengjekaj.moekoma.core.BookMark
 import io.github.stivengjekaj.moekoma.data.AppModel
 import io.github.stivengjekaj.moekoma.data.Settings
 import io.github.stivengjekaj.moekoma.data.TextStyle
@@ -87,6 +92,8 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
 import java.util.UUID
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 /** The host that serves the files of a book to the web view. It is not a real host. */
 private const val BOOK_HOST = "book.moekoma.invalid"
@@ -120,6 +127,13 @@ fun NovelReaderScreen(
     var found by remember { mutableStateOf(NovelSearch.Found(emptyList(), 0)) }
     // Words to show when the chapter opens, from a search or a highlight.
     var pendingFind by remember { mutableStateOf<String?>(null) }
+    var showMarks by remember { mutableStateOf(false) }
+    // The place that the page reported last, for a bookmark and a highlight.
+    var place by remember { mutableStateOf(book.position) }
+    fun showSavedMarks() {
+        val texts = model.library.value.marks(bookId).filter { it.chapter == chapter && it.kind == BookMark.Kind.Highlight }.map { it.text }
+        scope.launch { control.showMarks(texts) }
+    }
 
     BackHandler(onBack = onClose)
     SystemBars(visible = bars)
@@ -178,16 +192,21 @@ fun NovelReaderScreen(
                 start = start,
                 eInk = palette.isEInk,
                 background = palette.background,
-                onPosition = { value -> model.update(bookId) { it.read(chapter = chapter, position = value) } },
+                onPosition = { value -> place = value; model.update(bookId) { it.read(chapter = chapter, position = value) } },
                 onTap = { bars = !bars },
                 onLink = { path -> current.chapters.indexOfFirst { File(folder, it.path).canonicalPath == path }.takeIf { it >= 0 }?.let { go(it) } },
                 onEnd = { forward -> go(chapter + if (forward) 1 else -1, if (forward) 0.0 else 1.0) },
                 onReady = { webView = it },
                 control = control,
                 onLoaded = {
+                    showSavedMarks()
                     scope.launch {
                         pendingFind?.let { words -> pendingFind = null; control.find(words) }
                     }
+                },
+                onHighlight = { words ->
+                    model.change { it.copy(marks = it.marks + BookMark.at(bookId, chapter, place, words, BookMark.Kind.Highlight)) }
+                    showSavedMarks()
                 },
             )
         }
@@ -196,7 +215,7 @@ fun NovelReaderScreen(
         val chrome: @Composable () -> Unit = {
             NovelChrome(
                 book.title, title, chapter, current?.chapters?.size ?: 0, book.progress,
-                onClose = onClose, onChapters = { showChapters = true }, onStyle = { showStyle = true }, onSearch = { showSearch = true },
+                onClose = onClose, onChapters = { showChapters = true }, onStyle = { showStyle = true }, onSearch = { showSearch = true }, onMarks = { showMarks = true },
                 onPrevious = { go(chapter - 1) }, onNext = { go(chapter + 1) },
             )
         }
@@ -242,6 +261,54 @@ fun NovelReaderScreen(
             }
         }
     }
+    if (showMarks) {
+        val chapters = novel?.chapters.orEmpty()
+        fun title(index: Int) = chapters.getOrNull(index)?.title ?: "Chapter ${index + 1}"
+        ModalBottomSheet(onDismissRequest = { showMarks = false }, containerColor = palette.surface) {
+            Column(Modifier.padding(horizontal = Gutter).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = {
+                    scope.launch {
+                        val words = control.visibleText()
+                        model.change { it.copy(marks = it.marks + BookMark.at(bookId, chapter, place, words.ifEmpty { title(chapter) }, BookMark.Kind.Bookmark)) }
+                    }
+                }) {
+                    Icon(Icons.Filled.Bookmark, contentDescription = null, tint = palette.accent)
+                    Text("Add a bookmark here", color = palette.accent, modifier = Modifier.padding(start = 8.dp))
+                }
+                Text("Select words in the chapter and choose Highlight to keep them.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                val marks = library.marks(bookId)
+                if (marks.isNotEmpty()) Text("In this book", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                LazyColumn(Modifier.heightIn(max = 480.dp)) {
+                    items(marks, key = { it.id }) { mark ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                showMarks = false
+                                if (mark.kind == BookMark.Kind.Highlight) pendingFind = mark.text
+                                if (mark.chapter == chapter && mark.kind == BookMark.Kind.Highlight) {
+                                    scope.launch { pendingFind?.let { words -> pendingFind = null; control.find(words) } }
+                                } else {
+                                    go(mark.chapter, mark.position)
+                                }
+                            }.padding(vertical = 8.dp).semantics(mergeDescendants = true) {
+                                contentDescription = (if (mark.kind == BookMark.Kind.Highlight) "Highlight: " else "Bookmark: ") + mark.text
+                            },
+                        ) {
+                            Icon(if (mark.kind == BookMark.Kind.Highlight) Icons.Outlined.BorderColor else Icons.Filled.Bookmark, contentDescription = null, tint = palette.accent)
+                            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                Text(mark.text, style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                Text(title(mark.chapter), style = MaterialTheme.typography.labelSmall, color = palette.textSecondary)
+                            }
+                            IconButton(onClick = {
+                                model.change { it.copy(marks = it.marks.filterNot { m -> m.id == mark.id }) }
+                                showSavedMarks()
+                            }) { Icon(Icons.Outlined.Close, contentDescription = "Remove the mark", tint = palette.textSecondary) }
+                        }
+                    }
+                }
+            }
+        }
+    }
     if (showStyle) {
         ModalBottomSheet(onDismissRequest = { showStyle = false }, containerColor = palette.surface) {
             StyleSheet(prefs.text) { style -> settings.update { it.copy(text = style) } }
@@ -261,8 +328,9 @@ private fun Color.hex() = "#%06X".format(toArgb() and 0xFFFFFF)
 private fun ChapterView(
     folder: File, path: String, css: String, start: Double, eInk: Boolean, background: Color,
     onPosition: (Double) -> Unit, onTap: () -> Unit, onLink: (String) -> Unit, onEnd: (forward: Boolean) -> Unit,
-    onReady: (WebView) -> Unit, control: ChapterControl, onLoaded: () -> Unit,
+    onReady: (WebView) -> Unit, control: ChapterControl, onLoaded: () -> Unit, onHighlight: (String) -> Unit,
 ) {
+    val highlight by rememberUpdatedState(onHighlight)
     val loaded by rememberUpdatedState(onLoaded)
     val context = LocalContext.current
     val position by rememberUpdatedState(onPosition)
@@ -313,7 +381,8 @@ private fun ChapterView(
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = {
-            WebView(context).apply {
+            ChapterWebView(context).apply {
+                this.onHighlight = { words -> highlight(words) }
                 setBackgroundColor(background.toArgb())
                 settings.javaScriptEnabled = true
                 settings.allowFileAccess = false
@@ -435,7 +504,7 @@ private fun mime(name: String): String = when (name.substringAfterLast('.', "").
 @Composable
 private fun NovelChrome(
     title: String, chapterTitle: String, chapter: Int, count: Int, progress: Double,
-    onClose: () -> Unit, onChapters: () -> Unit, onStyle: () -> Unit, onSearch: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit,
+    onClose: () -> Unit, onChapters: () -> Unit, onStyle: () -> Unit, onSearch: () -> Unit, onMarks: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit,
 ) {
     val palette = LocalPalette.current
     val barColor = palette.surface
@@ -450,6 +519,7 @@ private fun NovelChrome(
                 Text(chapterTitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             IconButton(onClick = onSearch) { Icon(Icons.Outlined.Search, contentDescription = "Search the book") }
+            IconButton(onClick = onMarks) { Icon(Icons.Outlined.BookmarkBorder, contentDescription = "Marks") }
             IconButton(onClick = onChapters) { Icon(Icons.AutoMirrored.Outlined.FormatListBulleted, contentDescription = "Chapters") }
             IconButton(onClick = onStyle) { Icon(Icons.Outlined.FormatSize, contentDescription = "Text settings") }
         }
