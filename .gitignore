@@ -24,3 +24,4 @@ captures/
 # Local tool state
 .claude/
 js/node_modules/
+__pycache__/
