@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
 import androidx.compose.ui.geometry.Offset
@@ -55,7 +56,7 @@ class LibraryUiTest {
         compose.onNodeWithText("Continue reading").assertIsDisplayed()
         compose.onNodeWithText("Read list").assertIsDisplayed()
         compose.onNodeWithText("Settings").performClick()
-        compose.onNodeWithText("Paper").performClick()
+        compose.onNodeWithText("Paper").performScrollTo().performClick()
         assertEquals("Paper", container.settings.preferences.value.appearance.label)
         container.settings.update { it.copy(appearance = io.github.stivengjekaj.moekoma.ui.theme.Appearance.System) }
         root.deleteRecursively()
