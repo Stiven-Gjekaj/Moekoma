@@ -1,5 +1,8 @@
 package io.github.stivengjekaj.moekoma.ui
 
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import io.github.stivengjekaj.moekoma.core.Backup
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -101,6 +104,37 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
     val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri?.let { container.folders.add(it) }
     }
+    val context = LocalContext.current
+    /** The message after a backup, a restore, or an import. */
+    var report by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    fun work(title: String, body: suspend () -> String) {
+        busy = true
+        scope.launch {
+            report = title to try { body() } catch (e: Exception) { e.message ?: e.javaClass.simpleName }
+            busy = false
+        }
+    }
+    val writeBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        work("Backup") {
+            val bytes = container.model.backup("Moekoma ${BuildConfig.VERSION_NAME}")
+            withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } ?: throw java.io.IOException("The file cannot be written.") }
+            "The backup has ${library.books.size} book${if (library.books.size == 1) "" else "s"}, the source list with no passwords, and the installed sources."
+        }
+    }
+    val readBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        work("Restore") {
+            val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } } ?: throw java.io.IOException("The file cannot be read.")
+            val (plan, failed) = container.sources.restore(Backup.decode(bytes))
+            listOfNotNull(
+                "The library has ${plan.library.books.size} book${if (plan.library.books.size == 1) "" else "s"} now.",
+                plan.skipped.takeIf { it.isNotEmpty() }?.let { "These books need their files again: ${it.joinToString(", ")}. Import them again." },
+                failed.takeIf { it.isNotEmpty() }?.let { "These sources did not install: ${it.joinToString(", ")}. Save the source list again with a network." },
+            ).joinToString("\n\n")
+        }
+    }
 
     Column(
         Modifier.fillMaxSize().background(palette.background).statusBarsPadding().verticalScroll(rememberScrollState())
@@ -111,12 +145,24 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
 
         if (locked) {
             Section("The library did not load", footer = "Moekoma does not save while the library file cannot be read, so the file stays as it is. Start a new, empty library. A copy of the old file stays next to it.") {
+                LinkRow("Restore a backup", bold = true, color = palette.accent) { readBackup.launch(arrayOf("application/json", "*/*")) }
+                Divider()
                 LinkRow("Start a new library", bold = true, color = palette.danger) { startingOver = true }
             }
         }
 
         Section("Sources", footer = "Mihon extensions, Kotatsu parsers, LNReader plugins, Aidoku sources, Paperback extensions, Suwayomi servers, and OPDS catalogs such as Komga, Kavita, and Calibre-web.") {
             LinkRow(if (library.sources.isEmpty()) "Add sources" else "${library.sources.size} source" + (if (library.sources.size == 1) "" else "s")) { open(SettingsRoute.Sources) }
+        }
+
+        Section(
+            "Backup",
+            footer = "A backup is one file with your books, their places, the source list with no passwords, and the installed sources. " +
+                "Asabunko restores it too. The files of the books are not in it.",
+        ) {
+            LinkRow(if (busy) "Working" else "Back up the library", bold = true, color = palette.accent) { if (!busy) writeBackup.launch(Backup.fileName()) }
+            Divider()
+            LinkRow("Restore a backup") { if (!busy) readBackup.launch(arrayOf("application/json", "*/*")) }
         }
 
         Section(
@@ -215,6 +261,15 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
             }
         }
         Spacer(Modifier.width(1.dp))
+    }
+
+    report?.let { (title, text) ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { report = null },
+            title = { Text(title) },
+            text = { Text(text) },
+            confirmButton = { TextButton(onClick = { report = null }) { Text("OK") } },
+        )
     }
 
     if (startingOver) {

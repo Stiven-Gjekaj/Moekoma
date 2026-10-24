@@ -166,6 +166,27 @@ class Sources(
         store
     }
 
+    /**
+     * Restores a backup, and installs the code of each source of the backup again. It gives the plan of the restore and
+     * the names of the sources that did not install, such as with no network. A source of a kind that Moekoma cannot
+     * run, or the source of a server, stays as it is.
+     */
+    suspend fun restore(backup: io.github.stivengjekaj.moekoma.core.Backup): Pair<io.github.stivengjekaj.moekoma.core.Backup.Plan, List<String>> {
+        val plan = model.restore(backup)
+        val failed = mutableListOf<String>()
+        for (source in plan.library.installed) {
+            val link = plan.library.sources.firstOrNull { it.id == source.list } ?: continue
+            if (link.kind == null || link.kind == SourceKind.Suwayomi || link.kind == SourceKind.Opds) continue
+            try {
+                if (link.kind == SourceKind.Mihon) store(link)
+                install(source.info, link)
+            } catch (e: Exception) {
+                failed += source.info.name
+            }
+        }
+        return plan to failed
+    }
+
     fun isInstalled(info: SourceInfo, link: SourceLink) = installed.any { it.list == link.id && it.info.id == info.id }
 
     /** Installs some sources, four at the same time, and counts them. A source that does not install stays out. */

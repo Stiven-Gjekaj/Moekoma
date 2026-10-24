@@ -8,6 +8,7 @@ import android.provider.DocumentsContract
 import io.github.stivengjekaj.moekoma.core.FolderScan
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
+import io.github.stivengjekaj.moekoma.core.Backup
 import io.github.stivengjekaj.moekoma.core.Book
 import io.github.stivengjekaj.moekoma.core.BrowserCheck
 import io.github.stivengjekaj.moekoma.core.BookFormat
@@ -87,6 +88,32 @@ class AppModel(
             fault.value = "The library file cannot be read. Moekoma does not change it" + (copy?.let { ", and keeps a copy as ${it.name}" } ?: "") +
                 ". Start a new library in Settings."
         }
+    }
+
+    /** A backup of the library, with the chapters of each online book. */
+    suspend fun backup(writer: String): ByteArray = withContext(Dispatchers.IO) {
+        val library = state.value
+        val chapters = library.books.filter { it.origin != null }.mapNotNull { book -> novel(book)?.let { book.id to it } }.toMap()
+        Backup(library = library, chapters = chapters, writer = writer).encoded()
+    }
+
+    /**
+     * Puts the backup in the place of the library, and writes the chapters of each online book that comes back. It gives
+     * the plan, with the titles of the books from files that are not on this device. A restore is the way out of a library
+     * file that did not load.
+     */
+    suspend fun restore(backup: Backup): Backup.Plan = withContext(Dispatchers.IO) {
+        val plan = backup.plan { File(booksFolder, it.toString().uppercase()).isDirectory }
+        for ((id, novel) in plan.chapters) {
+            val folder = File(booksFolder, id.toString().uppercase())
+            File(folder, "chapters").mkdirs()
+            if (!File(folder, Novel.FILE_NAME).isFile) novel.save(folder)
+        }
+        withContext(Dispatchers.Main) {
+            lockedState.value = false
+            change { plan.library }
+        }
+        plan
     }
 
     /** Starts an empty library in place of a file that did not load. The copy of the old file stays. */
