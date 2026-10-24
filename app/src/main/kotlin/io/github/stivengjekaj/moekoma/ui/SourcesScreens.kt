@@ -29,9 +29,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Dns
-import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -137,7 +137,7 @@ fun SubScreen(title: String, onBack: () -> Unit, actions: @Composable () -> Unit
 }
 
 private val SourceKind?.icon: ImageVector
-    get() = if (this == null) Icons.Outlined.HelpOutline else Icons.Outlined.Dns
+    get() = if (this == null) Icons.AutoMirrored.Outlined.HelpOutline else Icons.Outlined.Dns
 
 /** The sources of the user, in Settings: the source list and the lists by kind. */
 @Composable
