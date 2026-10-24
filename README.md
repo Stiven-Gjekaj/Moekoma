@@ -67,6 +67,8 @@ Moekoma has no sources in it. Your books stay on your device.
   as Gekkoushi, and Moekoma adds its English sources
 - LNReader plugins for novels, with their filters and their settings
 - The sources of a Suwayomi server, with their filters and their settings
+- Aidoku sources, with their filters, their settings forms, and their
+  sign-ins
 - A title page that compares the sources of a title and chooses the source
   with the most chapters, with the chapters by volume or in parts of 50
 - The browser check of Cloudflare: Moekoma passes most checks with no
@@ -78,7 +80,7 @@ Moekoma has no sources in it. Your books stay on your device.
 - A layout for phones, and a side bar for tablets
 - The app downloads and installs its own updates
 
-The next functions are in [TODO.md](TODO.md): Aidoku and Paperback.
+The next functions are in [TODO.md](TODO.md).
 
 ## Install
 
@@ -149,4 +151,6 @@ and change the look.
 GPL 3.0. See [LICENSE](LICENSE). Karla is under the SIL Open Font License,
 in [licenses/](licenses/Karla-OFL.txt). The archives open with libarchive,
 under the BSD License, through the Android library of Hai Zhang, under the
-Apache License 2.0.
+Apache License 2.0. The Aidoku sources run in Chicory, under the Apache
+License 2.0. The JavaScript sources run in QuickJS through quickjs-kt, under
+the Apache License 2.0.

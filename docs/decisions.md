@@ -649,3 +649,41 @@ the form of a function before you write it again here. Do not guess it.
   Moekoma 2 that is faster and has fewer faults.
 - "Parity with Asabunko 2.2.0" stays: 1.0.0 has the functions of Asabunko
   2.2.0. This decision adds the target of 2.0.0.
+
+## 2026-10-24: The Aidoku sources in Chicory
+
+- The Aidoku sources run in Chicory 1.7.5, a WebAssembly interpreter in
+  Java, under the Apache License 2.0. The host is the host of Asabunko: the
+  env, std, net, html, defaults, canvas, and js modules, the postcard data,
+  and the result buffers of the exports. Each source has its own thread.
+- The html module uses jsoup, which the sources expect.
+- The core module is a JVM module, so the canvas and the web view are in an
+  interface, AidokuPlatform. The app gives the Bitmap, the Canvas, the fonts,
+  and a WebView with no window of Android. The JVM tests give the images of
+  Java. A plain JavaScript context of the js module runs in QuickJS, under
+  the same lock as the other QuickJS contexts.
+- The app keeps the .aix package of a source in its code file, and the
+  values of its settings in its settings file, as an LNReader plugin.
+- The settings of a source are a form, SourceForm, as in Asabunko. The
+  Paperback extensions of the next release use the same form.
+- A web sign-in and an OAuth sign-in open in a web view of the app. An OAuth
+  sign-in ends when the page goes to the callback scheme of the source.
+  Reason: a Custom Tab needs an intent filter for each scheme.
+- The speed on the emulator, release build, MangaBat: the load of the
+  source 0.4 s, the popular list 0.9 s, and the title page of Martial Peak
+  with 3877 chapters 11 s. On the JVM of the computer, the same work takes
+  about 3 s. Chicory has no compiler on Android, and its interpreter checks
+  the interruption of its thread at each call and loop. A faster engine is a
+  task of 2.0.0.
+- A title page asks at most four sources for the title at the same time,
+  so that slow sources do not take the processor from the chosen source.
+- A source that leaves the memory of the loaded sources closes a minute
+  later. Before, its QuickJS context or its Chicory thread and memory
+  stayed until the app stopped.
+- The checks: core tests of the postcard data, the host with WAT modules
+  (wat2wasm of Chicory), the canvas and the js modules, the options, and the
+  settings form; live tests of Guya, MangaBat, Kagane (filters in code),
+  MangaFire (a range), MANGA Plus (pages that the canvas decrypts), and the
+  settings forms of the 48 English sources; device tests of the test server
+  source, the canvas, and the web view; on the emulator, MangaBat, Madokami,
+  and Comix in the debug and the release builds.

@@ -7,6 +7,25 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.13.0 (2026-10-24)
+
+- Run the Aidoku sources. Paste the URL of a list of Aidoku sources, such as
+  https://aidoku-community.github.io/sources/index.min.json, in Settings,
+  Sources. Moekoma adds its English sources.
+- A source that draws its pages again, such as MANGA Plus, gives its pages.
+- The filters of an Aidoku source show, also the filters that it makes in
+  code and the range filters, such as the release year of MangaFire.
+- The gear of an Aidoku source opens its settings form: groups, pages,
+  choices, lists that you edit, buttons, links, steppers, and the sign-in
+  with a password, a web page, or OAuth.
+
+Fixes:
+
+- A source that leaves the memory of the app closes. Before, its JavaScript
+  context or its WebAssembly instance stayed.
+- A title page asks at most four sources for the title at the same time.
+- The footer of Sources in Settings names all kinds of source.
+
 ## 0.12.0 (2026-10-24)
 
 - Read the sources of a Suwayomi server. Paste the URL of the server, such

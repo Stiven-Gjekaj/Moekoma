@@ -11,10 +11,6 @@ Each release keeps the backup that Asabunko of the same functions reads.
 
 ## Releases up to 1.0.0
 
-- 0.13.0 Aidoku sources, with their filters (also the filters that a source
-  makes in code, and the range filters), all their settings forms, the
-  sign-in with a password, a web page, or OAuth, and the canvas and js
-  modules. As Asabunko 2.1.0 and 2.3.0.
 - 0.14.0 Paperback 0.9 extensions, with their filters, their settings forms,
   the sign-in with OAuth, and the pages that run in a web view. As Asabunko
   2.2.0 and 2.3.0.
