@@ -54,6 +54,9 @@ class JsRuntime private constructor(private val fetcher: Fetcher) : Closeable {
          */
         private val starting = Mutex()
 
+        /** Runs the start of another QuickJS context, such as one of the js module of Aidoku, under the same lock. */
+        internal suspend fun <T> startLocked(block: suspend () -> T): T = starting.withLock { block() }
+
         /** A runtime with the libraries and the host functions. */
         suspend fun create(fetcher: Fetcher): JsRuntime = starting.withLock { JsRuntime(fetcher).apply { start() } }
 

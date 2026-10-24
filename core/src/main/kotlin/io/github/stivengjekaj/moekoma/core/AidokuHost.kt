@@ -366,6 +366,8 @@ class AidokuHost(name: String, wasm: ByteArray, val defaults: AidokuDefaults, in
 
         installNet(define)
         installHtml(define)
+        installCanvas(define)
+        installScript(define)
     }
 
     private fun installNet(define: Define) {
