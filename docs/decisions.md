@@ -687,3 +687,31 @@ the form of a function before you write it again here. Do not guess it.
   settings forms of the 48 English sources; device tests of the test server
   source, the canvas, and the web view; on the emulator, MangaBat, Madokami,
   and Comix in the debug and the release builds.
+
+## 2026-10-24: The Paperback extensions in QuickJS
+
+- The Paperback 0.9 extensions run in QuickJS with paperback.js of
+  Asabunko, the Application global and the calls of the host. The native
+  functions of paperback.js are bindings of Kotlin: the state, Base64, the
+  digests, AES-CBC and AES-GCM of javax.crypto, the HTML entities of jsoup,
+  random bytes, and UUIDs. The bytes cross as Int8Array, and come back as an
+  ArrayBuffer.
+- The state of an extension stays in its settings file, in the form of
+  Asabunko: a plain map and a secure map of JSON text.
+- `Application.executeInWebView` runs in a WebView of Android with no
+  window. The app sets the cookies of the extension, loads the HTML, and
+  runs the script of the extension again until it gives a value or 15
+  seconds end.
+- The fetch of a JavaScript source gives the cookies of each Set-Cookie
+  header, as Asabunko does. The answer of the network keeps each Set-Cookie
+  header, because one map cannot hold two headers with the same name.
+- A settings form can ask for a Save. Its changes go to the extension only
+  then. The form of a Paperback extension is the JSON of SourceForm from
+  paperback.js.
+- The checks: core tests of a test extension (the interceptors, the filters,
+  the forms with a Save, OAuth with PKCE, the state, AES-CBC, and a web view
+  that the test gives), of the cookies of the runtime, and of the
+  repository; live tests of WeebCentral and MangaDex; device tests of the
+  test server extension and of the web view of Android; on the emulator,
+  WeebCentral and MangaDex with its forms, in the debug and the release
+  builds.

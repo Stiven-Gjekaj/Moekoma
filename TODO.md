@@ -11,9 +11,6 @@ Each release keeps the backup that Asabunko of the same functions reads.
 
 ## Releases up to 1.0.0
 
-- 0.14.0 Paperback 0.9 extensions, with their filters, their settings forms,
-  the sign-in with OAuth, and the pages that run in a web view. As Asabunko
-  2.2.0 and 2.3.0.
 - 0.15.0 Chapter downloads in the background, with WorkManager.
 - 1.0.0 The backup of Asabunko in both directions, the import of a Mihon
   backup, the check for new chapters, the move of a book to another source,

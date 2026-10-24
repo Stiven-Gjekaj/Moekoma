@@ -69,6 +69,8 @@ Moekoma has no sources in it. Your books stay on your device.
 - The sources of a Suwayomi server, with their filters and their settings
 - Aidoku sources, with their filters, their settings forms, and their
   sign-ins
+- Paperback 0.9 extensions, with their filters, their settings forms,
+  OAuth, and the pages that they run in a web view
 - A title page that compares the sources of a title and chooses the source
   with the most chapters, with the chapters by volume or in parts of 50
 - The browser check of Cloudflare: Moekoma passes most checks with no

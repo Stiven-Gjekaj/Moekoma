@@ -7,6 +7,25 @@ updates" in the decisions.
 A tag such as `v0.1.0` builds the signed APK and attaches it to a release on
 GitHub as `Moekoma.apk`.
 
+## 0.14.0 (2026-10-24)
+
+- Run the Paperback 0.9 extensions. Paste the URL of a repository, such as
+  https://inkdex.github.io/extensions/0.9/stable/versioning.json, in
+  Settings, Sources. Moekoma adds its English extensions. A tracker, such
+  as AniList, is not a reader and does not install.
+- The filters of an extension show, and the gear opens its settings form,
+  such as the languages and the content filters of MangaDex. A form that has
+  a Save button keeps its changes only when you tap Save.
+- An extension can sign in with OAuth, such as MangaDex.
+- An extension that runs a page in a web view works, such as MangaFire.
+- A JavaScript source gets the cookies of each answer.
+
+Fixes:
+
+- A row of a settings form does not show its value two times.
+- A title of a Paperback extension has no spaces or invisible marks at its
+  ends.
+
 ## 0.13.0 (2026-10-24)
 
 - Run the Aidoku sources. Paste the URL of a list of Aidoku sources, such as
