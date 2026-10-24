@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Add
@@ -38,6 +40,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FolderDelete
+import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.Undo
@@ -58,6 +61,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -113,6 +117,12 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
         }
     }
 
+    var showingUpdates by rememberSaveable { mutableStateOf(false) }
+    if (showingUpdates) {
+        UpdatesScreen(model, downloads, onRead) { showingUpdates = false }
+        return
+    }
+
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { model.importDocuments(it) }
     val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(model::importFolder) }
 
@@ -146,6 +156,22 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                         DropdownMenu(expanded = importMenu, onDismissRequest = { importMenu = false }) {
                             DropdownMenuItem(text = { Text("Import files") }, onClick = { importMenu = false; pickFiles.launch(importTypes) })
                             DropdownMenuItem(text = { Text("Import a folder of images") }, onClick = { importMenu = false; pickFolder.launch(null) })
+                        }
+                    }
+                }
+            }
+            // The new chapters of the checks, in one list.
+            val updates = library.shownUpdates.size
+            if (updates > 0) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Card(Modifier.clickable(onClickLabel = "Open") { showingUpdates = true }.semantics(mergeDescendants = true) {}) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Icon(Icons.Outlined.NewReleases, contentDescription = null, tint = palette.accent)
+                            Column(Modifier.weight(1f)) {
+                                Text("Updates", style = MaterialTheme.typography.titleSmall)
+                                Text(if (updates == 1) "1 new chapter" else "$updates new chapters", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                            }
+                            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = palette.textSecondary)
                         }
                     }
                 }
