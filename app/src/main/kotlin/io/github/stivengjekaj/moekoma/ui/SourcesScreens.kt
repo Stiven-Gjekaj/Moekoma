@@ -75,7 +75,6 @@ import coil3.compose.AsyncImage
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
-import io.github.stivengjekaj.moekoma.data.BrowserChecks
 import io.github.stivengjekaj.moekoma.AppContainer
 import io.github.stivengjekaj.moekoma.core.InstalledSource
 import io.github.stivengjekaj.moekoma.core.NotAFeedException
@@ -87,10 +86,16 @@ import io.github.stivengjekaj.moekoma.core.OpdsSearch
 import io.github.stivengjekaj.moekoma.core.SourceKind
 import io.github.stivengjekaj.moekoma.core.SourceLink
 import io.github.stivengjekaj.moekoma.core.SourceList
+import io.github.stivengjekaj.moekoma.data.BrowserChecks
 import io.github.stivengjekaj.moekoma.ui.theme.Corner
 import io.github.stivengjekaj.moekoma.ui.theme.Gutter
 import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /** A screen of Settings below the root. The screens of the sources open as a stack. */
 sealed interface SettingsRoute {
@@ -111,8 +116,11 @@ sealed interface SettingsRoute {
     data object Trackers : SettingsRoute
 }
 
-/** The pages of a book that Moekoma reads from the network and does not keep. */
-data class RemoteBook(val title: String, val pages: List<RemotePage>)
+/**
+ * The pages of a book that Moekoma reads from the network and does not keep. It opens at [start], and [onPage] gets
+ * each page that the user reads, such as for the progress of a server.
+ */
+data class RemoteBook(val title: String, val pages: List<RemotePage>, val start: Int = 0, val onPage: (Int) -> Unit = {})
 
 /** The bar of a screen below the root, with its title and a back button. */
 @Composable
@@ -449,7 +457,27 @@ fun PublicationScreen(container: AppContainer, source: SourceLink, book: OpdsPub
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (stream != null) PillButton("Read now", { onRead(RemoteBook(book.title, List(stream.count) { RemotePage(stream.url(it), container.model.headers(stream.url(it), source)) })) })
+                if (stream != null) PillButton("Read now", {
+                    // The stream opens at the last page that the server keeps for the user. A short time after the last
+                    // turn, a Komga server gets the page. Kavita keeps it by itself.
+                    var sending: Job? = null
+                    onRead(
+                        RemoteBook(
+                            book.title, List(stream.count) { RemotePage(stream.url(it), container.model.headers(stream.url(it), source)) }, stream.startPage,
+                        ) { page ->
+                            val call = stream.komgaProgress(page) ?: return@RemoteBook
+                            sending?.cancel()
+                            sending = container.scope.launch(Dispatchers.IO) {
+                                delay(1_000)
+                                val request = Request.Builder().url(call.url)
+                                    .apply { (container.model.headers(call.url, source) + call.headers).forEach { (k, v) -> header(k, v) } }
+                                    .method(call.method, call.body!!.toRequestBody())
+                                    .build()
+                                runCatching { container.http.newCall(request).execute().close() }
+                            }
+                        },
+                    )
+                })
                 book.download?.let { (url, ext) ->
                     PillButton(
                         if (downloaded) "In the library" else if (downloading) "Downloading" else "Download",

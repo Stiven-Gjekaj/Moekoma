@@ -189,7 +189,7 @@ fun MoekomaRoot(container: AppContainer) {
         // The reader of a remote book covers the tabs too.
         remote?.let { open ->
             PageReader(
-                open.title, open.pages, 0, remoteMode, prefs, onPage = {}, onMode = { remoteMode = it }, onClose = { remote = null },
+                open.title, open.pages, open.start, remoteMode, prefs, onPage = open.onPage, onMode = { remoteMode = it }, onClose = { remote = null },
                 onLayout = { layout -> container.settings.update { it.copy(layout = layout) } },
             )
         }
