@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.BorderColor
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.StopCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -94,6 +96,7 @@ import java.io.File
 import java.util.UUID
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 
 /** The host that serves the files of a book to the web view. It is not a real host. */
 private const val BOOK_HOST = "book.moekoma.invalid"
@@ -128,8 +131,24 @@ fun NovelReaderScreen(
     // Words to show when the chapter opens, from a search or a highlight.
     var pendingFind by remember { mutableStateOf<String?>(null) }
     var showMarks by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val speaker = remember { Speaker(context) }
+    // True while the speech goes on into the next chapter.
+    var speakNext by remember { mutableStateOf(false) }
+    DisposableEffect(Unit) { onDispose { speaker.shutdown() } }
     // The place that the page reported last, for a bookmark and a highlight.
     var place by remember { mutableStateOf(book.position) }
+    fun startSpeech() {
+        scope.launch { speaker.start(control.sentences()) }
+    }
+    fun toggleSpeech() {
+        if (speaker.speaking) {
+            speaker.stop()
+            scope.launch { control.clearSentence() }
+        } else {
+            startSpeech()
+        }
+    }
     fun showSavedMarks() {
         val texts = model.library.value.marks(bookId).filter { it.chapter == chapter && it.kind == BookMark.Kind.Highlight }.map { it.text }
         scope.launch { control.showMarks(texts) }
@@ -173,6 +192,15 @@ fun NovelReaderScreen(
         model.update(bookId) { it.read(chapter = index, position = place) }
     }
 
+    speaker.onSentence = { index -> scope.launch { control.markSentence(index) } }
+    speaker.onEnd = {
+        val count = novel?.chapters?.size ?: 0
+        if (chapter + 1 < count) {
+            speakNext = true
+            go(chapter + 1)
+        }
+    }
+
     val css = prefs.text.css(palette.background.hex(), palette.textPrimary.hex(), palette.accent.hex(), palette.isEInk)
 
     Box(Modifier.fillMaxSize().background(palette.background)) {
@@ -200,6 +228,7 @@ fun NovelReaderScreen(
                 control = control,
                 onLoaded = {
                     showSavedMarks()
+                    if (speakNext) { speakNext = false; startSpeech() }
                     scope.launch {
                         pendingFind?.let { words -> pendingFind = null; control.find(words) }
                     }
@@ -216,6 +245,7 @@ fun NovelReaderScreen(
             NovelChrome(
                 book.title, title, chapter, current?.chapters?.size ?: 0, book.progress,
                 onClose = onClose, onChapters = { showChapters = true }, onStyle = { showStyle = true }, onSearch = { showSearch = true }, onMarks = { showMarks = true },
+                speaking = speaker.speaking, sentence = speaker.index, sentences = speaker.count, onSpeech = ::toggleSpeech,
                 onPrevious = { go(chapter - 1) }, onNext = { go(chapter + 1) },
             )
         }
@@ -505,6 +535,7 @@ private fun mime(name: String): String = when (name.substringAfterLast('.', "").
 private fun NovelChrome(
     title: String, chapterTitle: String, chapter: Int, count: Int, progress: Double,
     onClose: () -> Unit, onChapters: () -> Unit, onStyle: () -> Unit, onSearch: () -> Unit, onMarks: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit,
+    speaking: Boolean, sentence: Int, sentences: Int, onSpeech: () -> Unit,
 ) {
     val palette = LocalPalette.current
     val barColor = palette.surface
@@ -517,6 +548,12 @@ private fun NovelChrome(
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(chapterTitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            IconButton(
+                onClick = onSpeech,
+                modifier = Modifier.semantics { if (speaking) stateDescription = "Sentence ${sentence + 1} of $sentences" },
+            ) {
+                Icon(if (speaking) Icons.Outlined.StopCircle else Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = if (speaking) "Stop reading aloud" else "Read aloud")
             }
             IconButton(onClick = onSearch) { Icon(Icons.Outlined.Search, contentDescription = "Search the book") }
             IconButton(onClick = onMarks) { Icon(Icons.Outlined.BookmarkBorder, contentDescription = "Marks") }

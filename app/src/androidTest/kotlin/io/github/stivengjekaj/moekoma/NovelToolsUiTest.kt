@@ -77,4 +77,15 @@ class NovelToolsUiTest {
         compose.onNodeWithContentDescription("Remove the mark").performClick()
         compose.waitUntil(5_000) { container.model.library.value.marks(book.id).isEmpty() }
     }
+
+    @Test fun readsAloudIntoTheNextChapter() {
+        val (container, book) = openNovel()
+        compose.onNodeWithContentDescription("Read aloud").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodes(androidx.compose.ui.test.hasContentDescription("Stop reading aloud")).fetchSemanticsNodes().isNotEmpty() }
+        // At the end of the chapter, the speech goes on in the next chapter.
+        compose.waitUntil(60_000) { container.model.library.value.book(book.id)!!.page == 1 }
+        compose.waitUntil(10_000) { compose.onAllNodes(androidx.compose.ui.test.hasContentDescription("Stop reading aloud")).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription("Stop reading aloud").performClick()
+        compose.onNodeWithContentDescription("Read aloud").assertExists()
+    }
 }

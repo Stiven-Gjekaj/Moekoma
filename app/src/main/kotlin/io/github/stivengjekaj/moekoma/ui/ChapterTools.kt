@@ -7,6 +7,10 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.webkit.WebView
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONArray
 import org.json.JSONObject
@@ -166,5 +170,65 @@ class ChapterWebView(context: Context) : WebView(context) {
 
     private companion object {
         const val HIGHLIGHT = 0x6d6b
+    }
+}
+
+/** Reads the sentences of a chapter aloud, one at a time, with the text to speech of Android. The reader shows the sentence that it reads. */
+class Speaker(context: Context) {
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+    private var ready = false
+    private var waiting: List<String>? = null
+    private var sentences: List<String> = emptyList()
+    var speaking by mutableStateOf(false)
+        private set
+    var index by mutableIntStateOf(0)
+        private set
+    val count: Int get() = sentences.size
+    var onSentence: (Int) -> Unit = {}
+    var onEnd: () -> Unit = {}
+
+    private val tts = android.speech.tts.TextToSpeech(context.applicationContext) { status ->
+        main.post {
+            ready = status == android.speech.tts.TextToSpeech.SUCCESS
+            waiting?.let { waiting = null; if (ready) start(it) else speaking = false }
+        }
+    }.apply {
+        setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(id: String) {
+                main.post { if (speaking) { index = id.toInt(); onSentence(index) } }
+            }
+
+            override fun onDone(id: String) {
+                main.post { if (speaking && id.toInt() == sentences.size - 1) { speaking = false; onEnd() } }
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onError(id: String) {
+                main.post { speaking = false }
+            }
+        })
+    }
+
+    fun start(list: List<String>) {
+        stop()
+        sentences = list
+        if (list.isEmpty()) { onEnd(); return }
+        speaking = true
+        // The engine starts after a moment. The first sentences wait for it.
+        if (!ready) { waiting = list; return }
+        list.forEachIndexed { i, sentence ->
+            tts.speak(sentence, if (i == 0) android.speech.tts.TextToSpeech.QUEUE_FLUSH else android.speech.tts.TextToSpeech.QUEUE_ADD, null, i.toString())
+        }
+    }
+
+    fun stop() {
+        speaking = false
+        waiting = null
+        if (ready) tts.stop()
+    }
+
+    fun shutdown() {
+        stop()
+        tts.shutdown()
     }
 }
