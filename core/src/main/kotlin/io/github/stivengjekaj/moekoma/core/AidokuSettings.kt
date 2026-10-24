@@ -353,7 +353,8 @@ class AidokuSettings(json: ByteArray?, dynamic: ByteArray?, private val defaults
         val parameters = sortedMapOf("grant_type" to "authorization_code", "code" to code, "code_verifier" to verifier)
         val asked = item.text("url")?.let(::query).orEmpty()
         for (name in listOf("redirect_uri", "client_id")) asked[name]?.let { parameters[name] = it }
-        val body = parameters.entries.joinToString("&") { "${it.key}=${URLEncoder.encode(it.value, "UTF-8").replace("+", "%20")}" }
+        // The characters that RFC 3986 does not reserve, such as "~" of a code verifier, stay as they are.
+        val body = parameters.entries.joinToString("&") { "${it.key}=${URLEncoder.encode(it.value, "UTF-8").replace("+", "%20").replace("%7E", "~")}" }
         return HttpRequest(token, "POST", mapOf("Content-Type" to "application/x-www-form-urlencoded"), body.toByteArray())
     }
 

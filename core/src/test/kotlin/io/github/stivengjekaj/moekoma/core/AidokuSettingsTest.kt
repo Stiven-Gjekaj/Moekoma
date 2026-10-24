@@ -132,6 +132,8 @@ class AidokuSettingsTest {
               "pkce": true, "callbackScheme": "neko"}]
         """.trimIndent().toByteArray()
         val defaults = empty()
+        // A verifier with each character that a verifier can have, so that the test does not depend on a random verifier.
+        defaults["login.codeVerifier"] = PostcardWriter.write { string("Az09-._~Az09-._~Az09-._~Az09-._~Az09-._~Az09-._~Az09-._~Az09-._~") }
         val settings = AidokuSettings(oauth, null, defaults, emptyList(), false)
         val login = settings.form("root").sections[0].rows[0].login!!
         assertEquals("neko", login.callbackScheme)
