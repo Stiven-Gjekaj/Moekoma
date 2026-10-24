@@ -24,7 +24,12 @@ dependencies {
     // The JavaScript sources, such as the LNReader plugins, run in QuickJS. The JVM and Android each take their own build.
     api(libs.quickjs.kt)
     implementation(libs.kotlinx.coroutines.core)
+    // The Aidoku sources are WebAssembly. Chicory runs them in Java, and its html module uses jsoup.
+    implementation(libs.chicory.runtime)
+    implementation(libs.jsoup)
     testImplementation(libs.junit)
+    // The tests make small sources from the text form of WebAssembly.
+    testImplementation(libs.chicory.wabt)
 }
 
 // The live tests read real sources from the web. They run only with MOEKOMA_LIVE=1.
