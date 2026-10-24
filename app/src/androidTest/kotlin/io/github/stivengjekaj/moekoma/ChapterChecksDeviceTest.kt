@@ -39,7 +39,9 @@ class ChapterChecksDeviceTest {
         val tea = Book(title = "Dawn Tea", fileName = "Quiet", pageCount = 3)
         val sea = Book(title = "Sea Glass", fileName = "Quiet", pageCount = 3)
         ChapterChecks.notify(app, listOf(tea to 2, sea to 0))
-        val shown = manager.activeNotifications.filter { it.tag == "chapters" }
+        // Android posts a notification on its own thread, so the test waits for it.
+        var shown = manager.activeNotifications.filter { it.tag == "chapters" }
+        repeat(50) { if (shown.isEmpty()) { Thread.sleep(100); shown = manager.activeNotifications.filter { it.tag == "chapters" } } }
         assertEquals(listOf("Dawn Tea"), shown.map { it.notification.extras.getString("android.title") })
         assertEquals("2 new chapters", shown.single().notification.extras.getCharSequence("android.text").toString())
         manager.cancel("chapters", tea.id.hashCode())
