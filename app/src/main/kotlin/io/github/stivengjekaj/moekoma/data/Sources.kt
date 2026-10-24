@@ -16,6 +16,8 @@ import io.github.stivengjekaj.moekoma.core.MihonStore
 import io.github.stivengjekaj.moekoma.core.Novel
 import io.github.stivengjekaj.moekoma.core.OnlineDetails
 import io.github.stivengjekaj.moekoma.core.OnlineSeries
+import io.github.stivengjekaj.moekoma.core.PaperbackExtension
+import io.github.stivengjekaj.moekoma.core.PaperbackIndex
 import io.github.stivengjekaj.moekoma.core.SourceInfo
 import io.github.stivengjekaj.moekoma.core.SourceKind
 import io.github.stivengjekaj.moekoma.core.SourceLanguages
@@ -61,6 +63,7 @@ class Sources(
     private val code = SourceCode(model.root)
     private val context = context.applicationContext
     private val aidokuPlatform by lazy { AndroidAidokuPlatform(this.context) }
+    private val paperbackWebView by lazy { PaperbackWebView(this.context) }
 
     init {
         // The Kotatsu parsers use the network helper of the Mihon extensions, so Injekt is ready before each kind.
@@ -137,6 +140,7 @@ class Sources(
         SourceKind.LnReader -> LnReaderIndex.parse(model.fetch(link.url, link))
         SourceKind.Suwayomi -> server(link).sources()
         SourceKind.Aidoku -> AidokuIndex.parse(model.fetch(link.url, link), link.url)
+        SourceKind.Paperback -> PaperbackIndex.parse(model.fetch(link.url, link), link.url)
         SourceKind.Kotatsu -> {
             val jar = kotatsu.jar(link.url) { url -> model.fetch(url, null) }
             // The list has no name, so it takes the name of the owner of the repository, such as "Gekkoushi".
@@ -196,7 +200,7 @@ class Sources(
                 mihon.install(info, key)
             }
             SourceKind.Kotatsu -> kotatsu.sources(io.github.stivengjekaj.moekoma.core.KotatsuPlugin.Jar(info.code, info.version))
-            SourceKind.LnReader, SourceKind.Aidoku -> code.install(InstalledSource(link.id, info), http)
+            SourceKind.LnReader, SourceKind.Aidoku, SourceKind.Paperback -> code.install(InstalledSource(link.id, info), http)
             // The server runs the source, so the app keeps no code for it.
             SourceKind.Suwayomi -> {}
             else -> throw MihonException("Moekoma cannot install this kind of source yet.")
@@ -216,7 +220,7 @@ class Sources(
         val others = installed.filter { it.id != source.id }.map { it.info }
         when (kind(source)) {
             SourceKind.Kotatsu -> kotatsu.uninstall(source.info, others)
-            SourceKind.LnReader, SourceKind.Aidoku -> code.remove(source)
+            SourceKind.LnReader, SourceKind.Aidoku, SourceKind.Paperback -> code.remove(source)
             SourceKind.Mihon, null -> mihon.uninstall(source.info, others)
             else -> {}
         }
@@ -258,6 +262,14 @@ class Sources(
             if (!file.isFile) throw MihonException("The code of ${source.info.name} is not on this device. Save the source list again.")
             val loaded = AidokuSource.load(source.info, file, code.settings(source), networkFetcher(), aidokuPlatform)
             AidokuOnlineSource(source, loaded, http, File(context.cacheDir, "aidoku-pages/" + source.info.id.replace('/', '_')))
+        }
+        SourceKind.Paperback -> {
+            val file = code.file(source)
+            if (!file.isFile) throw MihonException("The code of ${source.info.name} is not on this device. Save the source list again.")
+            val extension = PaperbackExtension.load(
+                source.info, file.readText(), code.settings(source), BrowserChecks.userAgent(context), networkFetcher(), paperbackWebView::run,
+            )
+            PaperbackSource(source, extension, http)
         }
         SourceKind.Suwayomi -> {
             val link = model.library.value.sources.firstOrNull { it.id == source.list } ?: throw MihonException("The server of ${source.info.name} is not in the source list.")
