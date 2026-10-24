@@ -92,6 +92,9 @@ import coil3.compose.AsyncImagePainter
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
+import coil3.request.maxBitmapSize
+import coil3.size.Dimension
+import coil3.size.Size
 import io.github.stivengjekaj.moekoma.VolumeKeys
 import io.github.stivengjekaj.moekoma.core.BookFormat
 import io.github.stivengjekaj.moekoma.core.ReadingMode
@@ -444,7 +447,7 @@ private fun VerticalReader(
         itemsIndexed(pages, key = { index, _ -> index }) { index, file ->
             var loaded by remember { mutableStateOf(false) }
             AsyncImage(
-                model = pageRequest(file, half = true),
+                model = pageRequest(file, strip = true),
                 contentDescription = "Page ${index + 1}",
                 contentScale = ContentScale.FillWidth,
                 onState = { loaded = it is AsyncImagePainter.State.Success },
@@ -455,16 +458,23 @@ private fun VerticalReader(
     }
 }
 
-/** The image of a page at two times the long side of the screen, for the zoom. A large page keeps the memory low. */
+/**
+ * The image of a page at two times the long side of the screen, for the zoom. A large page keeps the memory low. In
+ * the vertical reader, a page is a [strip] that fills the width of the screen. A strip of a webtoon is much taller than
+ * it is wide, so its width, not its long side, sets its size, and the strip stays sharp.
+ */
 @Composable
-private fun pageRequest(file: Any, half: Boolean = false): ImageRequest {
+private fun pageRequest(file: Any, strip: Boolean = false): ImageRequest {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val longSide = with(density) { maxOf(configuration.screenWidthDp, configuration.screenHeightDp).dp.roundToPx() }
-    val pixels = (longSide * if (half) 1 else 2).coerceAtMost(4096)
-    return remember(file, pixels) {
-        val builder = ImageRequest.Builder(context).size(pixels, pixels)
+    val width = with(density) { configuration.screenWidthDp.dp.roundToPx() }
+    val pixels = (longSide * 2).coerceAtMost(4096)
+    return remember(file, pixels, width, strip) {
+        val builder = ImageRequest.Builder(context)
+        // Coil keeps a bitmap at 4096 pixels on each side. A strip can be taller, up to the limit of a bitmap that Android draws.
+        if (strip) builder.size(Size(Dimension(width), Dimension.Undefined)).maxBitmapSize(Size(width, 16384)) else builder.size(pixels, pixels)
         if (file is RemotePage) {
             builder.data(file.url).httpHeaders(NetworkHeaders.Builder().apply { file.headers.forEach { (key, value) -> set(key, value) } }.build())
         } else {
