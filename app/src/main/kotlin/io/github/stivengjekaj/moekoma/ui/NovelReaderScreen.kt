@@ -558,7 +558,7 @@ private fun NovelChrome(
             }
             IconButton(
                 onClick = onSpeech,
-                modifier = Modifier.semantics { if (speaking) stateDescription = "Sentence ${sentence + 1} of $sentences" },
+                modifier = Modifier.semantics { if (speaking) stateDescription = tr("Sentence ${sentence + 1} of $sentences") },
             ) {
                 Icon(if (speaking) Icons.Outlined.StopCircle else Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = tr(if (speaking) "Stop reading aloud" else "Read aloud"))
             }

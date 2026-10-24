@@ -105,7 +105,7 @@ fun OptionEditor(option: SourceOption, value: OptionValue, onChange: (OptionValu
                                     ))
                                 }
                                 .heightIn(min = 36.dp).padding(horizontal = 12.dp, vertical = 8.dp)
-                                .semantics { stateDescription = when (state) { 1 -> "Included"; 2 -> "Excluded"; else -> "Off" } },
+                                .semantics { stateDescription = tr(when (state) { 1 -> "Included"; 2 -> "Excluded"; else -> "Off" }) },
                         )
                     }
                 }

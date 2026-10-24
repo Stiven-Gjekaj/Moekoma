@@ -446,7 +446,7 @@ private fun ZoomablePage(file: Any, index: Int, fit: PageFit, crop: Boolean, onT
             }
             .semantics {
                 contentDescription = tr("Page ${index + 1}")
-                stateDescription = if (loaded) "Loaded" else "Loading"
+                stateDescription = tr(if (loaded) "Loaded" else "Loading")
             },
     ) {
         var failed by remember(file) { mutableStateOf(false) }

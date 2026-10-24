@@ -289,7 +289,7 @@ fun LibraryScreen(model: AppModel, settings: Settings, sources: Sources, downloa
                                 Box {
                                     IconButton(
                                         onClick = { filterMenu = true },
-                                        modifier = Modifier.semantics { stateDescription = if (filters.isEmpty()) "Off" else filters.joinToString(", ") { it.label } },
+                                        modifier = Modifier.semantics { stateDescription = if (filters.isEmpty()) tr("Off") else filters.joinToString(", ") { tr(it.label) } },
                                     ) {
                                         Icon(Icons.Outlined.FilterList, contentDescription = tr("Filter the read list"), tint = if (filters.isEmpty()) palette.textSecondary else palette.accent)
                                     }
