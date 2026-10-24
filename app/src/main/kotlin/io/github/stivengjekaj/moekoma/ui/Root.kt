@@ -19,6 +19,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -42,7 +43,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.stivengjekaj.moekoma.AppContainer
 import io.github.stivengjekaj.moekoma.BuildConfig
@@ -128,7 +131,7 @@ fun MoekomaRoot(container: AppContainer) {
                             Tab.entries.forEach { item ->
                                 NavigationRailItem(
                                     selected = tab == item, onClick = { tab = item },
-                                    icon = { TabIcon(item, newer != null) }, label = { Text(item.label) },
+                                    icon = { TabIcon(item, newer != null) }, label = { TabLabel(item.label) },
                                     colors = NavigationRailItemDefaults.colors(
                                         selectedIconColor = palette.accent, selectedTextColor = palette.accent,
                                         indicatorColor = palette.surfaceHigh,
@@ -146,7 +149,7 @@ fun MoekomaRoot(container: AppContainer) {
                             Tab.entries.forEach { item ->
                                 NavigationBarItem(
                                     selected = tab == item, onClick = { tab = item },
-                                    icon = { TabIcon(item, newer != null) }, label = { Text(item.label) },
+                                    icon = { TabIcon(item, newer != null) }, label = { TabLabel(item.label) },
                                     colors = NavigationBarItemDefaults.colors(
                                         selectedIconColor = if (palette.isEInk) palette.onAccent else palette.accent,
                                         selectedTextColor = palette.accent,
@@ -240,3 +243,18 @@ private fun TabIcon(tab: Tab, update: Boolean) {
         Icon(tab.icon, contentDescription = null)
     }
 }
+
+/**
+ * The label of a tab. It grows with the font size of the device up to 1.3 times, as the tab bar of iOS does, so
+ * that a word stays on one line at the largest font. TalkBack still reads the full word.
+ */
+@Composable
+private fun TabLabel(text: String) {
+    val style = LocalTextStyle.current
+    val cap = 1.3f / LocalDensity.current.fontScale
+    Text(
+        text, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+        style = if (cap < 1f) style.copy(fontSize = style.fontSize * cap) else style,
+    )
+}
+
