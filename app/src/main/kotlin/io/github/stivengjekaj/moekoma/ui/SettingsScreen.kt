@@ -115,7 +115,7 @@ private fun SettingsRoot(container: AppContainer, newer: String?, open: (Setting
             }
         }
 
-        Section("Sources", footer = "Mihon extensions, Kotatsu parsers, and OPDS catalogs such as Komga, Kavita, and Calibre-web.") {
+        Section("Sources", footer = "Mihon extensions, Kotatsu parsers, LNReader plugins, Aidoku sources, Suwayomi servers, and OPDS catalogs such as Komga, Kavita, and Calibre-web.") {
             LinkRow(if (library.sources.isEmpty()) "Add sources" else "${library.sources.size} source" + (if (library.sources.size == 1) "" else "s")) { open(SettingsRoute.Sources) }
         }
 
