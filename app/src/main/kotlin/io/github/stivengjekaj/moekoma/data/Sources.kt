@@ -449,6 +449,9 @@ class Sources(
         if (added > 0) {
             novel.save(folder)
             model.update(book.id) { it.copy(pageCount = novel.chapters.size, finished = false) }
+            // The new chapters are at the end of the book. They go into the updates.
+            val first = novel.chapters.size - added
+            model.change { library -> library.record((first until novel.chapters.size).map { it to novel.chapters[it].title }, book.id) }
         }
         added
     }

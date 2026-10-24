@@ -44,6 +44,8 @@ class ChapterCheckDeviceTest {
         assertEquals(0, check.failed)
         assertEquals(listOf(book.id to 1), check.found.map { it.first.id to it.second })
         assertEquals("1 new chapter.", check.message())
+        // The new chapter goes into the updates.
+        assertEquals(listOf(book.id to 0), container.model.library.value.updates.map { it.book to it.chapter })
         assertEquals(null, container.sources.refreshAll().message(quiet = true))
 
         // A source whose code is not on the device does not answer, so its book did not update.
