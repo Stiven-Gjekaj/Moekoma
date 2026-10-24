@@ -31,8 +31,14 @@ class Secrets(context: Context) {
         }
     }
 
-    fun password(source: UUID): String? {
-        val stored = prefs.getString(source.toString(), null) ?: return null
+    fun password(source: UUID): String? = secret(source.toString())
+
+    /** Keeps the password of a source. Null removes it. */
+    fun setPassword(source: UUID, password: String?) = setSecret(source.toString(), password)
+
+    /** A secret of the app with a name, such as the token of a tracker. */
+    fun secret(name: String): String? {
+        val stored = prefs.getString(name, null) ?: return null
         return runCatching {
             val bytes = Base64.decode(stored, Base64.NO_WRAP)
             val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -41,16 +47,16 @@ class Secrets(context: Context) {
         }.getOrNull()
     }
 
-    /** Keeps the password of a source. Null removes it. */
-    fun setPassword(source: UUID, password: String?) {
-        if (password == null) {
-            prefs.edit().remove(source.toString()).apply()
+    /** Keeps a secret with a name. Null removes it. */
+    fun setSecret(name: String, value: String?) {
+        if (value == null) {
+            prefs.edit().remove(name).apply()
             return
         }
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, key)
-        val sealed = cipher.iv + cipher.doFinal(password.toByteArray(Charsets.UTF_8))
-        prefs.edit().putString(source.toString(), Base64.encodeToString(sealed, Base64.NO_WRAP)).apply()
+        val sealed = cipher.iv + cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+        prefs.edit().putString(name, Base64.encodeToString(sealed, Base64.NO_WRAP)).apply()
     }
 
     private companion object {
