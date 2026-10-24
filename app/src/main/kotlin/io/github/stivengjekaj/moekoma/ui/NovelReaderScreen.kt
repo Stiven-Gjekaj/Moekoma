@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -60,6 +61,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -72,6 +74,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import io.github.stivengjekaj.moekoma.R
 import io.github.stivengjekaj.moekoma.VolumeKeys
 import io.github.stivengjekaj.moekoma.core.Novel
+import io.github.stivengjekaj.moekoma.core.NovelSearch
 import io.github.stivengjekaj.moekoma.data.AppModel
 import io.github.stivengjekaj.moekoma.data.Settings
 import io.github.stivengjekaj.moekoma.data.TextStyle
@@ -80,6 +83,7 @@ import io.github.stivengjekaj.moekoma.ui.theme.LocalPalette
 import io.github.stivengjekaj.moekoma.ui.theme.Palette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
 import java.util.UUID
@@ -109,6 +113,13 @@ fun NovelReaderScreen(
     var showChapters by remember { mutableStateOf(false) }
     var showStyle by remember { mutableStateOf(false) }
     var webView by remember { mutableStateOf<WebView?>(null) }
+    val control = remember { ChapterControl() }
+    val scope = rememberCoroutineScope()
+    var showSearch by remember { mutableStateOf(false) }
+    var searchWords by remember { mutableStateOf("") }
+    var found by remember { mutableStateOf(NovelSearch.Found(emptyList(), 0)) }
+    // Words to show when the chapter opens, from a search or a highlight.
+    var pendingFind by remember { mutableStateOf<String?>(null) }
 
     BackHandler(onBack = onClose)
     SystemBars(visible = bars)
@@ -172,6 +183,12 @@ fun NovelReaderScreen(
                 onLink = { path -> current.chapters.indexOfFirst { File(folder, it.path).canonicalPath == path }.takeIf { it >= 0 }?.let { go(it) } },
                 onEnd = { forward -> go(chapter + if (forward) 1 else -1, if (forward) 0.0 else 1.0) },
                 onReady = { webView = it },
+                control = control,
+                onLoaded = {
+                    scope.launch {
+                        pendingFind?.let { words -> pendingFind = null; control.find(words) }
+                    }
+                },
             )
         }
 
@@ -179,7 +196,7 @@ fun NovelReaderScreen(
         val chrome: @Composable () -> Unit = {
             NovelChrome(
                 book.title, title, chapter, current?.chapters?.size ?: 0, book.progress,
-                onClose = onClose, onChapters = { showChapters = true }, onStyle = { showStyle = true },
+                onClose = onClose, onChapters = { showChapters = true }, onStyle = { showStyle = true }, onSearch = { showSearch = true },
                 onPrevious = { go(chapter - 1) }, onNext = { go(chapter + 1) },
             )
         }
@@ -189,6 +206,40 @@ fun NovelReaderScreen(
     if (showChapters) {
         ModalBottomSheet(onDismissRequest = { showChapters = false }, containerColor = palette.surface) {
             ChapterList(novel?.chapters ?: emptyList(), chapter) { index -> showChapters = false; go(index) }
+        }
+    }
+    if (showSearch) {
+        // The search reads the chapters that are on the device. The text of a chapter is its HTML with no tags.
+        LaunchedEffect(searchWords) {
+            val chapters = novel?.chapters.orEmpty()
+            found = withContext(Dispatchers.IO) {
+                NovelSearch.search(searchWords, chapters.size) { index -> File(folder, chapters[index].path).takeIf { it.isFile }?.readText() }
+            }
+        }
+        ModalBottomSheet(onDismissRequest = { showSearch = false }, containerColor = palette.surface) {
+            Column(Modifier.padding(horizontal = Gutter).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = searchWords, onValueChange = { searchWords = it }, singleLine = true, placeholder = { Text("Words in the book") },
+                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) }, modifier = Modifier.fillMaxWidth(),
+                )
+                if (found.missing > 0) {
+                    Text("${found.missing} chapters are not on the device, so the search does not read them.", style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                }
+                LazyColumn(Modifier.heightIn(max = 480.dp)) {
+                    items(found.results) { result ->
+                        Column(
+                            Modifier.fillMaxWidth().clickable {
+                                pendingFind = searchWords.trim()
+                                showSearch = false
+                                if (result.chapter == chapter) scope.launch { pendingFind?.let { words -> pendingFind = null; control.find(words) } } else go(result.chapter)
+                            }.padding(vertical = 10.dp),
+                        ) {
+                            Text(novel?.chapters?.getOrNull(result.chapter)?.title ?: "Chapter ${result.chapter + 1}", style = MaterialTheme.typography.titleSmall)
+                            Text(result.snippet, style = MaterialTheme.typography.bodySmall, color = palette.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
         }
     }
     if (showStyle) {
@@ -210,8 +261,9 @@ private fun Color.hex() = "#%06X".format(toArgb() and 0xFFFFFF)
 private fun ChapterView(
     folder: File, path: String, css: String, start: Double, eInk: Boolean, background: Color,
     onPosition: (Double) -> Unit, onTap: () -> Unit, onLink: (String) -> Unit, onEnd: (forward: Boolean) -> Unit,
-    onReady: (WebView) -> Unit,
+    onReady: (WebView) -> Unit, control: ChapterControl, onLoaded: () -> Unit,
 ) {
+    val loaded by rememberUpdatedState(onLoaded)
     val context = LocalContext.current
     val position by rememberUpdatedState(onPosition)
     val tap by rememberUpdatedState(onTap)
@@ -233,12 +285,15 @@ private fun ChapterView(
               const place = max > 0 ? window.scrollY / max : 0;
               let style = document.getElementById('moekoma-style');
               if (!style) { style = document.createElement('style'); style.id = 'moekoma-style'; (document.head || document.documentElement).appendChild(style); }
-              style.textContent = ${JSONObject.quote(currentCss)};
+              style.textContent = ${JSONObject.quote(currentCss + ChapterControl.CSS)};
               const target = $target;
               requestAnimationFrame(function () { window.scrollTo(0, target * (document.documentElement.scrollHeight - window.innerHeight)); });
             })();
             """.trimIndent(),
-        ) { web.alpha = 1f }
+        ) {
+            web.alpha = 1f
+            if (!keepPlace) loaded()
+        }
     }
 
     /** Moves one screen. At the end of a chapter, it goes to the next chapter. */
@@ -295,6 +350,7 @@ private fun ChapterView(
 
                     override fun onPageFinished(web: WebView, url: String) {
                         web.evaluateJavascript(SCRIPT, null)
+                        web.evaluateJavascript(ChapterControl.SCRIPT, null)
                         style(web, keepPlace = false)
                     }
 
@@ -316,6 +372,7 @@ private fun ChapterView(
                     }
                 }
                 view = this
+                control.view = this
                 onReady(this)
             }
         },
@@ -378,7 +435,7 @@ private fun mime(name: String): String = when (name.substringAfterLast('.', "").
 @Composable
 private fun NovelChrome(
     title: String, chapterTitle: String, chapter: Int, count: Int, progress: Double,
-    onClose: () -> Unit, onChapters: () -> Unit, onStyle: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit,
+    onClose: () -> Unit, onChapters: () -> Unit, onStyle: () -> Unit, onSearch: () -> Unit, onPrevious: () -> Unit, onNext: () -> Unit,
 ) {
     val palette = LocalPalette.current
     val barColor = palette.surface
@@ -392,6 +449,7 @@ private fun NovelChrome(
                 Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(chapterTitle, style = MaterialTheme.typography.labelSmall, color = palette.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+            IconButton(onClick = onSearch) { Icon(Icons.Outlined.Search, contentDescription = "Search the book") }
             IconButton(onClick = onChapters) { Icon(Icons.AutoMirrored.Outlined.FormatListBulleted, contentDescription = "Chapters") }
             IconButton(onClick = onStyle) { Icon(Icons.Outlined.FormatSize, contentDescription = "Text settings") }
         }
